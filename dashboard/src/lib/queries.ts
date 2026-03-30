@@ -5,6 +5,10 @@ import type {
   Publication,
   PipelineStats,
   ChannelCount,
+  ActivityLog,
+  ActivityAction,
+  ActorType,
+  Revision,
 } from "./types";
 
 export async function getContents(): Promise<Content[]> {
@@ -105,4 +109,40 @@ export async function getQuickStats(): Promise<{
     totalPublications: publications.count ?? 0,
     totalIdeas: ideas.count ?? 0,
   };
+}
+
+// ─── Phase 2: Activity Logs ────────────────────────────────
+
+export async function getActivityLogs(opts?: {
+  action?: ActivityAction;
+  actor_type?: ActorType;
+  limit?: number;
+}): Promise<ActivityLog[]> {
+  let query = getSupabase().from("activity_logs").select("*");
+
+  if (opts?.action) {
+    query = query.eq("action", opts.action);
+  }
+  if (opts?.actor_type) {
+    query = query.eq("actor_type", opts.actor_type);
+  }
+
+  const limit = opts?.limit ?? 50;
+  query = query.order("timestamp", { ascending: false }).limit(limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as ActivityLog[];
+}
+
+// ─── Phase 2: Revisions ────────────────────────────────────
+
+export async function getRevisions(contentId: string): Promise<Revision[]> {
+  const { data, error } = await getSupabase()
+    .from("revisions")
+    .select("*")
+    .eq("content_id", contentId)
+    .order("version_number", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Revision[];
 }

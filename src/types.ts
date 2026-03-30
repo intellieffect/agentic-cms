@@ -64,3 +64,90 @@ export interface MetricsResult {
   publications: Publication[];
   total_publications: number;
 }
+
+// Phase 2 types
+
+export type ActivityAction = 'create' | 'update' | 'delete' | 'publish' | 'revert' | 'promote';
+export type ActorType = 'agent' | 'human';
+
+export interface ActivityLog {
+  id: string;
+  action: ActivityAction;
+  collection: string;
+  item_id: string;
+  actor?: string | null;
+  actor_type: ActorType;
+  payload?: Record<string, unknown> | null;
+  timestamp: string;
+}
+
+export interface ActivityLogCreateInput {
+  action: ActivityAction;
+  collection: string;
+  item_id: string;
+  actor?: string;
+  actor_type?: ActorType;
+  payload?: Record<string, unknown>;
+}
+
+export interface ActivityLogFilter {
+  collection?: string;
+  action?: ActivityAction;
+  actor_type?: ActorType;
+  limit?: number;
+}
+
+export interface Revision {
+  id: string;
+  content_id: string;
+  version_number: number;
+  data: Record<string, unknown>;
+  delta?: Record<string, unknown> | null;
+  created_by?: string | null;
+  actor_type: ActorType;
+  created_at: string;
+}
+
+export interface Media {
+  id: string;
+  filename: string;
+  mime_type?: string | null;
+  file_size?: number | null;
+  width?: number | null;
+  height?: number | null;
+  url: string;
+  storage_path?: string | null;
+  alt_text?: string | null;
+  caption?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
+export interface MediaCreateInput {
+  filename: string;
+  mime_type?: string;
+  file_size?: number;
+  width?: number;
+  height?: number;
+  url: string;
+  storage_path?: string;
+  alt_text?: string;
+  caption?: string;
+  created_by?: string;
+}
+
+export interface ContentMedia {
+  id: string;
+  content_id: string;
+  media_id: string;
+  role: string;
+  sort_order: number;
+}
+
+export interface ContentRelation {
+  id: string;
+  source_id: string;
+  target_id: string;
+  relation_type: 'related' | 'series' | 'parent-child';
+  sort_order: number;
+}

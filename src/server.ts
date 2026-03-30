@@ -7,6 +7,9 @@ import { SupabaseAdapter } from './adapters/supabase.js';
 import { registerContentTools } from './tools/contents.js';
 import { registerIdeaTools } from './tools/ideas.js';
 import { registerPublicationTools } from './tools/publications.js';
+import { registerActivityTools } from './tools/activity.js';
+import { registerRevisionTools } from './tools/revisions.js';
+import { registerMediaTools } from './tools/media.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -21,12 +24,18 @@ async function main(): Promise<void> {
 
   const server = new McpServer({
     name: 'agentic-cms',
-    version: '0.1.0',
+    version: '0.2.0',
   });
 
+  // Core tools
   registerContentTools(server, adapter);
   registerIdeaTools(server, adapter);
   registerPublicationTools(server, adapter);
+
+  // Phase 2 tools
+  registerActivityTools(server, adapter);
+  registerRevisionTools(server, adapter);
+  registerMediaTools(server, adapter);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

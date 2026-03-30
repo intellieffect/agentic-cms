@@ -49,3 +49,30 @@ export interface ChannelCount {
   channel: string;
   count: number;
 }
+
+// Phase 2 types
+
+export type ActivityAction = 'create' | 'update' | 'delete' | 'publish' | 'revert' | 'promote';
+export type ActorType = 'agent' | 'human';
+
+export interface ActivityLog {
+  id: string;
+  action: ActivityAction;
+  collection: string;
+  item_id: string;
+  actor: string | null;
+  actor_type: ActorType;
+  payload: Record<string, unknown> | null;
+  timestamp: string;
+}
+
+export interface Revision {
+  id: string;
+  content_id: string;
+  version_number: number;
+  data: Record<string, unknown>;
+  delta: Record<string, unknown> | null;
+  created_by: string | null;
+  actor_type: ActorType;
+  created_at: string;
+}
