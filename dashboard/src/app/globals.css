@@ -7,16 +7,31 @@
   --color-muted-foreground: #a1a1aa;
   --color-card: #18181b;
   --color-card-foreground: #fafafa;
+  --color-popover: #18181b;
+  --color-popover-foreground: #fafafa;
   --color-border: #27272a;
-  --color-primary: #3b82f6;
-  --color-primary-foreground: #fafafa;
+  --color-input: #27272a;
+  --color-ring: #3b82f6;
+  --color-primary: #fafafa;
+  --color-primary-foreground: #18181b;
+  --color-secondary: #27272a;
+  --color-secondary-foreground: #fafafa;
   --color-accent: #27272a;
   --color-accent-foreground: #fafafa;
   --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
   --color-success: #22c55e;
   --color-warning: #eab308;
   --color-info: #3b82f6;
+  --color-sidebar: #0a0a0c;
+  --color-sidebar-foreground: #a1a1aa;
+  --color-sidebar-accent: #27272a;
+  --color-sidebar-accent-foreground: #fafafa;
+  --color-sidebar-border: #1e1e22;
+  --color-sidebar-ring: #3b82f6;
   --radius: 0.5rem;
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 3rem;
 }
 
 body {
@@ -25,7 +40,6 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
