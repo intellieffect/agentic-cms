@@ -9,7 +9,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="flex flex-1 flex-col">
+      <div className="relative z-20 flex flex-1 flex-col">
         <Header />
         {children}
       </div>

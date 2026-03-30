@@ -26,8 +26,15 @@ const columns: ColumnDef<Content, unknown>[] = [
     ),
   },
   {
+    accessorKey: "slug",
+    header: () => null,
+    cell: () => null,
+    enableHiding: true,
+    enableSorting: false,
+  },
+  {
     accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
@@ -37,21 +44,24 @@ const columns: ColumnDef<Content, unknown>[] = [
       );
     },
     filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
+    enableSorting: false,
   },
   {
     accessorKey: "category",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+    header: "Category",
     cell: ({ row }) => (
       <span className="text-sm">{row.getValue("category") ?? "—"}</span>
     ),
     filterFn: (row, id, value: string[]) => value.includes(row.getValue(id) as string),
+    enableSorting: false,
   },
   {
     accessorKey: "tags",
     header: "Tags",
     cell: ({ row }) => {
-      const tags = row.original.tags;
-      if (!tags?.length) return <span className="text-muted-foreground">—</span>;
+      const rawTags = row.original.tags;
+      const tags = Array.isArray(rawTags) ? rawTags : [];
+      if (!tags.length) return <span className="text-muted-foreground">—</span>;
       return (
         <div className="flex flex-wrap gap-1">
           {tags.slice(0, 3).map((tag) => (
@@ -92,7 +102,7 @@ export function ContentsTable({ data }: ContentsTableProps) {
     <DataTable
       columns={columns}
       data={data}
-      searchKey="title"
+      initialColumnVisibility={{ slug: false }}
       searchPlaceholder="Search contents..."
       filters={[
         {

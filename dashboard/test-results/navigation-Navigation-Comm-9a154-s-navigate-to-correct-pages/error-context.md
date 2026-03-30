@@ -1,0 +1,110 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e10]:
+          - generic [ref=e11]: Agentic CMS
+          - generic [ref=e12]: AI-powered
+      - generic [ref=e14]:
+        - generic [ref=e15]: Navigation
+        - list [ref=e16]:
+          - listitem [ref=e17]:
+            - link "Dashboard" [ref=e19] [cursor=pointer]:
+              - /url: /
+              - img [ref=e20]
+              - generic [ref=e25]: Dashboard
+              - img [ref=e26]
+          - listitem [ref=e28]:
+            - link "Contents" [ref=e30] [cursor=pointer]:
+              - /url: /contents
+              - img [ref=e31]
+              - generic [ref=e34]: Contents
+          - listitem [ref=e35]:
+            - link "Ideas" [ref=e37] [cursor=pointer]:
+              - /url: /ideas
+              - img [ref=e38]
+              - generic [ref=e40]: Ideas
+          - listitem [ref=e41]:
+            - link "Publications" [ref=e43] [cursor=pointer]:
+              - /url: /publications
+              - img [ref=e44]
+              - generic [ref=e47]: Publications
+          - listitem [ref=e48]:
+            - link "Activity" [ref=e50] [cursor=pointer]:
+              - /url: /activity
+              - img [ref=e51]
+              - generic [ref=e53]: Activity
+          - listitem [ref=e54]:
+            - link "Media" [ref=e56] [cursor=pointer]:
+              - /url: /media
+              - img [ref=e57]
+              - generic [ref=e61]: Media
+      - generic [ref=e63]: v0.2.0 · Built with agents
+    - generic [ref=e64]:
+      - banner [ref=e65]:
+        - button "Toggle Sidebar" [ref=e66]:
+          - img
+          - generic [ref=e67]: Toggle Sidebar
+        - button "Search... ⌘K" [ref=e69]:
+          - img
+          - generic [ref=e70]: Search...
+          - generic: ⌘K
+      - main [ref=e71]:
+        - generic [ref=e72]:
+          - heading "Dashboard" [level=1] [ref=e73]
+          - paragraph [ref=e74]: Your AI-powered content pipeline at a glance.
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e78]:
+                - generic [ref=e79]: Ideas
+                - img [ref=e80]
+              - generic [ref=e83]: "54"
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - generic [ref=e86]: Drafts
+                - img [ref=e87]
+              - generic [ref=e91]: "41"
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - generic [ref=e94]: In Review
+                - img [ref=e95]
+              - generic [ref=e99]: "0"
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e102]: Published
+                - img [ref=e103]
+              - generic [ref=e107]: "5"
+          - generic [ref=e108]:
+            - generic [ref=e109]:
+              - generic [ref=e111]: Agent Activity
+              - generic [ref=e115]:
+                - img [ref=e117]
+                - generic [ref=e119]:
+                  - generic [ref=e120]:
+                    - generic [ref=e121]: Created
+                    - generic [ref=e122]: in
+                    - generic [ref=e123]: contents
+                  - generic [ref=e124]:
+                    - img [ref=e125]
+                    - generic [ref=e128]: Agent
+                  - generic [ref=e129]: 2h ago
+            - generic [ref=e130]:
+              - generic [ref=e132]: Publications by Channel
+              - img [ref=e136]:
+                - generic [ref=e140]: threads
+                - generic [ref=e142]:
+                  - generic [ref=e144]: "0"
+                  - generic [ref=e146]: "15"
+                  - generic [ref=e148]: "30"
+                  - generic [ref=e150]: "45"
+                  - generic [ref=e152]: "60"
+  - button "Open Next.js Dev Tools" [ref=e163] [cursor=pointer]:
+    - img [ref=e164]
+  - alert [ref=e167]
+  - generic [ref=e168]: "0"
+```

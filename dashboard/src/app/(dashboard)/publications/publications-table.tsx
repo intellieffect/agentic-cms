@@ -31,7 +31,7 @@ const columns: ColumnDef<Publication, unknown>[] = [
   },
   {
     accessorKey: "channel",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Channel" />,
+    header: "Channel",
     cell: ({ row }) => {
       const channel = row.getValue("channel") as string;
       return (
@@ -42,6 +42,7 @@ const columns: ColumnDef<Publication, unknown>[] = [
       );
     },
     filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
+    enableSorting: false,
   },
   {
     accessorKey: "url",

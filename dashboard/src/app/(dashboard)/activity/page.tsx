@@ -15,7 +15,7 @@ export default function ActivityPage() {
   return (
     <Main>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Activity Log</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Activity</h1>
         <p className="text-muted-foreground">See what agents and humans are doing in your CMS.</p>
       </div>
       <Suspense

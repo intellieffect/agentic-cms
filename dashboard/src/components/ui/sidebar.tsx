@@ -85,29 +85,30 @@ export function Sidebar({ className, children }: { className?: string; children:
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
         <SheetContent side="left" className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden">
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <aside data-sidebar="sidebar" className="flex h-full w-full flex-col">{children}</aside>
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <div className="group peer hidden md:block">
+    <div className="group peer hidden overflow-hidden md:block">
       <div
         className={cn(
           "relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
           state === "collapsed" && "w-[--sidebar-width-icon]"
         )}
       />
-      <div
+      <aside
+        data-sidebar="sidebar"
         className={cn(
-          "fixed inset-y-0 left-0 z-10 hidden h-svh w-[--sidebar-width] flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 left-0 z-10 hidden h-svh w-[--sidebar-width] flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-linear md:flex",
           state === "collapsed" && "w-[--sidebar-width-icon]",
           className
         )}
       >
         {children}
-      </div>
+      </aside>
     </div>
   );
 }
@@ -202,7 +203,7 @@ export function SidebarRail() {
 export function SidebarTrigger({ className, ...props }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
   return (
-    <Button variant="ghost" size="icon" className={cn("h-7 w-7", className)} onClick={toggleSidebar} {...props}>
+    <Button variant="ghost" size="icon" data-sidebar="trigger" className={cn("h-7 w-7", className)} onClick={toggleSidebar} {...props}>
       <PanelLeftIcon />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>

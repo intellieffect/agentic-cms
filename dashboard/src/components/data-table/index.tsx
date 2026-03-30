@@ -37,6 +37,7 @@ interface DataTableProps<TData, TValue> {
     options: { label: string; value: string }[];
   }[];
   onRowClick?: (row: TData) => void;
+  initialColumnVisibility?: Record<string, boolean>;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,10 +47,11 @@ export function DataTable<TData, TValue>({
   searchPlaceholder,
   filters,
   onRowClick,
+  initialColumnVisibility,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialColumnVisibility ?? {});
   const [globalFilter, setGlobalFilter] = useState("");
   const [rowSelection, setRowSelection] = useState({});
 
