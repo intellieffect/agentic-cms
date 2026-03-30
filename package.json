@@ -1,0 +1,29 @@
+{
+  "name": "@brxce/agentic-cms",
+  "version": "0.1.0",
+  "description": "Open-source MCP server that turns any CMS backend into an AI-agent-ready content management system.",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "agentic-cms": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js"
+  },
+  "keywords": ["mcp", "cms", "ai", "agents", "supabase", "content-management"],
+  "author": "IntelliEffect",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@supabase/supabase-js": "^2.49.4",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
