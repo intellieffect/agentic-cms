@@ -3,6 +3,8 @@ import type {
   Content,
   Idea,
   Publication,
+  Topic,
+  Variant,
   PipelineStats,
   ChannelCount,
   ActivityLog,
@@ -39,6 +41,15 @@ export async function getIdeas(): Promise<Idea[]> {
   return data ?? [];
 }
 
+export async function getTopics(): Promise<Topic[]> {
+  const { data, error } = await getSupabase()
+    .from("topics")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getPublications(): Promise<Publication[]> {
   const { data, error } = await getSupabase()
     .from("publications")
@@ -48,16 +59,40 @@ export async function getPublications(): Promise<Publication[]> {
   return data ?? [];
 }
 
+export async function getVariants(contentId: string): Promise<Variant[]> {
+  const { data, error } = await getSupabase()
+    .from("variants")
+    .select("*")
+    .eq("content_id", contentId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getAllVariants(): Promise<Variant[]> {
+  const { data, error } = await getSupabase()
+    .from("variants")
+    .select("*, contents(title)")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getPipelineStats(): Promise<PipelineStats> {
-  const [ideas, contents] = await Promise.all([
+  const [topics, ideas, variants, contents] = await Promise.all([
+    getSupabase().from("topics").select("id", { count: "exact", head: true }),
     getSupabase().from("ideas").select("id", { count: "exact", head: true }),
+    getSupabase().from("variants").select("id", { count: "exact", head: true }),
     getSupabase().from("contents").select("id, status"),
   ]);
 
   const allContents = contents.data ?? [];
 
   return {
+    topics: topics.count ?? 0,
     ideas: ideas.count ?? 0,
+    variants: variants.count ?? 0,
     drafts: allContents.filter((c) => c.status === "draft").length,
     inReview: allContents.filter((c) => c.status === "review").length,
     published: allContents.filter((c) => c.status === "published").length,

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboardIcon,
+  TagIcon,
   FileTextIcon,
   LightbulbIcon,
   SendIcon,
+  SplitIcon,
   ActivityIcon,
   ImageIcon,
   BotIcon,
@@ -25,9 +27,11 @@ import {
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
+  { title: "Topics", url: "/topics", icon: TagIcon },
   { title: "Contents", url: "/contents", icon: FileTextIcon },
   { title: "Ideas", url: "/ideas", icon: LightbulbIcon },
   { title: "Publications", url: "/publications", icon: SendIcon },
+  { title: "Variants", url: "/variants", icon: SplitIcon },
   { title: "Activity", url: "/activity", icon: ActivityIcon },
   { title: "Media", url: "/media", icon: ImageIcon },
 ];
