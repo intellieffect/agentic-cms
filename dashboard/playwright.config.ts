@@ -10,4 +10,10 @@ export default defineConfig({
   },
   retries: 1,
   reporter: [['html', { open: 'never' }], ['list']],
+  webServer: {
+    command: 'PORT=3003 npm run dev',
+    port: 3003,
+    reuseExistingServer: !process.env.CI,
+    timeout: 30000,
+  },
 });

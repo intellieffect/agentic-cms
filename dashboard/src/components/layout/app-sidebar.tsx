@@ -10,7 +10,6 @@ import {
   ActivityIcon,
   ImageIcon,
   BotIcon,
-  ChevronRightIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -60,13 +59,10 @@ export function AppSidebar() {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.url}>
-                <SidebarMenuButton isActive={isActive(item.url)} tooltip={item.title}>
-                  <Link href={item.url} className="flex w-full items-center gap-2">
-                    <item.icon className="h-4 w-4" />
+                <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                  <Link href={item.url}>
+                    <item.icon />
                     <span>{item.title}</span>
-                    {isActive(item.url) && (
-                      <ChevronRightIcon className="ml-auto h-3 w-3 opacity-50" />
-                    )}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

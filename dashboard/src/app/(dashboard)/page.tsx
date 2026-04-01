@@ -56,7 +56,7 @@ function StatsCardsSkeleton() {
 async function ActivitySection() {
   const logs = await getActivityLogs({ limit: 15 });
   return (
-    <Card className="col-span-3">
+    <Card>
       <CardHeader>
         <CardTitle className="text-base">Agent Activity</CardTitle>
       </CardHeader>
@@ -70,7 +70,7 @@ async function ActivitySection() {
 async function ChartSection() {
   const channels = await getPublicationsByChannel();
   return (
-    <Card className="col-span-2">
+    <Card>
       <CardHeader>
         <CardTitle className="text-base">Publications by Channel</CardTitle>
       </CardHeader>
@@ -112,12 +112,16 @@ export default function DashboardPage() {
         </Suspense>
 
         <div className="grid gap-6 lg:grid-cols-5">
-          <Suspense fallback={<SectionSkeleton className="col-span-3" />}>
-            <ActivitySection />
-          </Suspense>
-          <Suspense fallback={<SectionSkeleton className="col-span-2" />}>
-            <ChartSection />
-          </Suspense>
+          <div className="lg:col-span-3">
+            <Suspense fallback={<SectionSkeleton />}>
+              <ActivitySection />
+            </Suspense>
+          </div>
+          <div className="lg:col-span-2">
+            <Suspense fallback={<SectionSkeleton />}>
+              <ChartSection />
+            </Suspense>
+          </div>
         </div>
       </div>
     </Main>
