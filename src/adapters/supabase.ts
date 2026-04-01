@@ -6,6 +6,11 @@ import type {
   ContentFilter,
   ContentUpdateInput,
   Idea,
+  Topic,
+  TopicCreateInput,
+  Variant,
+  VariantCreateInput,
+  VariantUpdateInput,
   MetricsResult,
   Publication,
   PublicationCreateInput,
@@ -196,6 +201,99 @@ export class SupabaseAdapter implements CMSAdapter {
     return content;
   }
 
+  // ─── Topics ────────────────────────────────────────────────
+
+  async listTopics(): Promise<Topic[]> {
+    const { data, error } = await this.client
+      .from('topics')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (error) throw new Error(`Failed to list topics: ${error.message}`);
+    return data as Topic[];
+  }
+
+  async createTopic(input: TopicCreateInput): Promise<Topic> {
+    const { data, error } = await this.client
+      .from('topics')
+      .insert(input)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create topic: ${error.message}`);
+    const topic = data as Topic;
+
+    await this.logActivity({
+      action: 'create',
+      collection: 'topics',
+      item_id: topic.id,
+      actor_type: 'agent',
+      payload: { name: topic.name, sort_order: topic.sort_order },
+    }).catch((err) => console.error('Failed to log topic activity:', err));
+
+    return topic;
+  }
+
+  // ─── Variants ──────────────────────────────────────────────
+
+  async listVariants(contentId: string): Promise<Variant[]> {
+    const { data, error } = await this.client
+      .from('variants')
+      .select('*')
+      .eq('content_id', contentId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to list variants: ${error.message}`);
+    return data as Variant[];
+  }
+
+  async createVariant(input: VariantCreateInput): Promise<Variant> {
+    const { data, error } = await this.client
+      .from('variants')
+      .insert(input)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create variant: ${error.message}`);
+    const variant = data as Variant;
+
+    await this.logActivity({
+      action: 'create',
+      collection: 'variants',
+      item_id: variant.id,
+      actor_type: 'agent',
+      payload: {
+        content_id: variant.content_id,
+        platform: variant.platform,
+        format: variant.format,
+      },
+    }).catch((err) => console.error('Failed to log variant activity:', err));
+
+    return variant;
+  }
+
+  async updateVariant(id: string, input: VariantUpdateInput): Promise<Variant> {
+    const { data, error } = await this.client
+      .from('variants')
+      .update({ ...input, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to update variant: ${error.message}`);
+    const variant = data as Variant;
+
+    await this.logActivity({
+      action: 'update',
+      collection: 'variants',
+      item_id: variant.id,
+      actor_type: 'agent',
+      payload: input as Record<string, unknown>,
+    }).catch((err) => console.error('Failed to log variant activity:', err));
+
+    return variant;
+  }
+
   // ─── Publications ──────────────────────────────────────────
 
   async createPublication(input: PublicationCreateInput): Promise<Publication> {
@@ -320,6 +418,18 @@ export class SupabaseAdapter implements CMSAdapter {
       .order('version_number', { ascending: false });
 
     if (error) throw new Error(`Failed to get revisions: ${error.message}`);
+    return data as Revision[];
+  }
+
+  async getHumanFeedback(contentId: string): Promise<Revision[]> {
+    const { data, error } = await this.client
+      .from('revisions')
+      .select('*')
+      .eq('content_id', contentId)
+      .eq('actor_type', 'human')
+      .order('created_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to get human feedback: ${error.message}`);
     return data as Revision[];
   }
 

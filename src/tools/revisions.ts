@@ -31,6 +31,33 @@ export function registerRevisionTools(server: McpServer, adapter: CMSAdapter): v
   );
 
   server.tool(
+    'get_human_feedback',
+    'Get human-authored revision feedback for a content item.',
+    {
+      content_id: z.string().uuid().describe('Content ID to get human feedback for'),
+    },
+    async (params) => {
+      try {
+        const feedback = await adapter.getHumanFeedback(params.content_id);
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({ feedback, count: feedback.length }, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: message }) }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
     'revert_to_revision',
     'Revert a content item to a specific revision. Creates a new revision and logs the revert action.',
     {

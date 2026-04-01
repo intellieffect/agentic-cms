@@ -6,6 +6,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SupabaseAdapter } from './adapters/supabase.js';
 import { registerContentTools } from './tools/contents.js';
 import { registerIdeaTools } from './tools/ideas.js';
+import { registerTopicTools } from './tools/topics.js';
+import { registerVariantTools } from './tools/variants.js';
 import { registerPublicationTools } from './tools/publications.js';
 import { registerActivityTools } from './tools/activity.js';
 import { registerRevisionTools } from './tools/revisions.js';
@@ -30,6 +32,8 @@ async function main(): Promise<void> {
   // Core tools
   registerContentTools(server, adapter);
   registerIdeaTools(server, adapter);
+  registerTopicTools(server, adapter);
+  registerVariantTools(server, adapter);
   registerPublicationTools(server, adapter);
 
   // Phase 2 tools
