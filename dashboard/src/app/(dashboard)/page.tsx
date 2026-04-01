@@ -5,21 +5,22 @@ import { Main } from "@/components/layout/main";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPipelineStats, getPublicationsByChannel, getActivityLogs } from "@/lib/queries";
-import { LightbulbIcon, FileTextIcon, EyeIcon, SendIcon } from "lucide-react";
+import { TagIcon, LightbulbIcon, FileTextIcon, SplitIcon, SendIcon } from "lucide-react";
 import { ActivityFeed } from "@/components/activity-feed";
 import { PublicationsChart } from "./publications-chart";
 
 async function StatsCards() {
   const stats = await getPipelineStats();
   const cards = [
+    { title: "Topics", value: stats.topics, icon: TagIcon, color: "text-accent" },
     { title: "Ideas", value: stats.ideas, icon: LightbulbIcon, color: "text-warning" },
-    { title: "Drafts", value: stats.drafts, icon: FileTextIcon, color: "text-muted-foreground" },
-    { title: "In Review", value: stats.inReview, icon: EyeIcon, color: "text-info" },
+    { title: "Contents", value: stats.drafts + stats.inReview, icon: FileTextIcon, color: "text-info" },
+    { title: "Variants", value: stats.variants, icon: SplitIcon, color: "text-pink-500" },
     { title: "Published", value: stats.published, icon: SendIcon, color: "text-success" },
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -37,8 +38,8 @@ async function StatsCards() {
 
 function StatsCardsSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {Array.from({ length: 5 }).map((_, i) => (
         <Card key={i}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <Skeleton className="h-4 w-20" />
