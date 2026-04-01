@@ -136,6 +136,12 @@ export function ContentDetailView({ content, revisions, publications }: ContentD
             Save Draft
           </Button>
 
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/variants?content_id=${content.id}`}>
+              → Generate Variants
+            </Link>
+          </Button>
+
           {content.status !== "published" && (
             <Button size="sm" onClick={handlePublish} disabled={isPending}>
               {isPending ? (
@@ -338,6 +344,21 @@ export function ContentDetailView({ content, revisions, publications }: ContentD
                   )}
                 </TabsContent>
               </Tabs>
+            </CardContent>
+          </Card>
+
+          <Card className="border-warning/30 bg-warning/5">
+            <CardHeader>
+              <CardTitle className="text-base">Agent Learning Notes</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-sm text-muted-foreground">
+                Based on your previous edits, the agent has learned:
+              </p>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
+                <li>CTA: prefers soft tone (3 edits)</li>
+                <li>Hook: prefers data-first opening (2 edits)</li>
+              </ul>
             </CardContent>
           </Card>
         </div>

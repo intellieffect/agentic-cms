@@ -3,12 +3,12 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { Main } from "@/components/layout/main";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getIdeas } from "@/lib/queries";
+import { getIdeas, getTopics } from "@/lib/queries";
 import { IdeasList } from "./ideas-list";
 
 async function IdeasData() {
-  const ideas = await getIdeas();
-  return <IdeasList ideas={ideas} />;
+  const [ideas, topics] = await Promise.all([getIdeas(), getTopics()]);
+  return <IdeasList ideas={ideas} topics={topics} />;
 }
 
 export default function IdeasPage() {
