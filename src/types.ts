@@ -5,7 +5,9 @@ export interface Content {
   title: string;
   slug: string;
   status: ContentStatus;
+  topic_id?: string | null;
   category?: string | null;
+  content_type?: string | null;
   body_md?: string | null;
   tags?: string[] | null;
   hook?: string | null;
@@ -23,6 +25,9 @@ export interface Idea {
   id: string;
   raw_text: string;
   source: string;
+  topic_id?: string | null;
+  angle?: string | null;
+  target_audience?: string | null;
   promoted_to?: string | null;
   created_at: string;
 }
@@ -30,11 +35,39 @@ export interface Idea {
 export interface Publication {
   id: string;
   content_id: string;
+  variant_id?: string | null;
   channel: string;
   channel_post_id?: string | null;
+  postiz_post_id?: string | null;
   url?: string | null;
   published_at: string;
   metrics?: Record<string, unknown> | null;
+}
+
+export interface Topic {
+  id: string;
+  name: string;
+  keywords: string[];
+  intent: string;
+  description: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Variant {
+  id: string;
+  content_id: string;
+  platform: string;
+  format: string;
+  body_text: string;
+  hashtags: string[];
+  character_count: number;
+  platform_settings: Record<string, unknown> | null;
+  status: string;
+  actor_type: ActorType;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ContentFilter {
@@ -51,10 +84,44 @@ export type ContentCreateInput = Omit<Content, 'id' | 'created_at' | 'updated_at
 
 export type ContentUpdateInput = Partial<Omit<Content, 'id' | 'created_at' | 'updated_at'>>;
 
+export interface TopicCreateInput {
+  name: string;
+  keywords?: string[];
+  intent?: string;
+  description?: string;
+  sort_order?: number;
+}
+
+export interface VariantCreateInput {
+  content_id: string;
+  platform: string;
+  format: string;
+  body_text?: string;
+  hashtags?: string[];
+  character_count?: number;
+  platform_settings?: Record<string, unknown>;
+  status?: string;
+  actor_type?: ActorType;
+}
+
+export interface VariantUpdateInput {
+  content_id?: string;
+  platform?: string;
+  format?: string;
+  body_text?: string;
+  hashtags?: string[];
+  character_count?: number;
+  platform_settings?: Record<string, unknown>;
+  status?: string;
+  actor_type?: ActorType;
+}
+
 export interface PublicationCreateInput {
   content_id: string;
+  variant_id?: string;
   channel: string;
   channel_post_id?: string;
+  postiz_post_id?: string;
   url?: string;
   metrics?: Record<string, unknown>;
 }

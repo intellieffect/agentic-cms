@@ -4,6 +4,11 @@ import type {
   ContentFilter,
   ContentUpdateInput,
   Idea,
+  Topic,
+  TopicCreateInput,
+  Variant,
+  VariantCreateInput,
+  VariantUpdateInput,
   MetricsResult,
   Publication,
   PublicationCreateInput,
@@ -26,6 +31,15 @@ export interface CMSAdapter {
   listIdeas(): Promise<Idea[]>;
   promoteIdea(ideaId: string, contentData: ContentCreateInput): Promise<Content>;
 
+  // Topics
+  listTopics(): Promise<Topic[]>;
+  createTopic(input: TopicCreateInput): Promise<Topic>;
+
+  // Variants
+  listVariants(contentId: string): Promise<Variant[]>;
+  createVariant(input: VariantCreateInput): Promise<Variant>;
+  updateVariant(id: string, input: VariantUpdateInput): Promise<Variant>;
+
   // Publications
   createPublication(input: PublicationCreateInput): Promise<Publication>;
   getMetrics(contentId: string): Promise<MetricsResult>;
@@ -37,6 +51,7 @@ export interface CMSAdapter {
   // Revisions
   createRevision(contentId: string, data: Record<string, unknown>, createdBy?: string, actorType?: 'agent' | 'human'): Promise<Revision>;
   getRevisions(contentId: string): Promise<Revision[]>;
+  getHumanFeedback(contentId: string): Promise<Revision[]>;
 
   // Media
   listMedia(limit?: number): Promise<Media[]>;
