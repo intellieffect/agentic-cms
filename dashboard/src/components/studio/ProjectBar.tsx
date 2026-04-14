@@ -206,7 +206,7 @@ export const ProjectBar: React.FC = () => {
                   let duration = 10;
                   for (let retry = 0; retry < 3; retry++) {
                     try {
-                      const pr = await fetch(`/api/media/probe/${encodeURIComponent(fname)}`);
+                      const pr = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(fname)}`);
                       if (pr.ok) {
                         const pd = await pr.json();
                         if (pd.duration && pd.duration > 0) { duration = pd.duration; break; }

@@ -72,7 +72,7 @@ export const MediaPanel: React.FC = () => {
     let duration = file.duration || 0;
     if (!duration) {
       try {
-        const r = await fetch(`/api/media/probe/${encodeURIComponent(file.name)}`);
+        const r = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(file.name)}`);
         if (r.ok) {
           const d = await r.json();
           duration = d.duration || 10;
@@ -103,7 +103,7 @@ export const MediaPanel: React.FC = () => {
     let duration = file.duration || 0;
     if (!duration) {
       try {
-        const r = await fetch(`/api/media/probe/${encodeURIComponent(file.name)}`);
+        const r = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(file.name)}`);
         if (r.ok) {
           const d = await r.json();
           duration = d.duration || 10;
@@ -358,7 +358,7 @@ export const MediaPanel: React.FC = () => {
               // 프로브로 duration 확인
               let duration = 10;
               try {
-                const pr = await fetch(`/api/media/probe/${encodeURIComponent(fname)}`);
+                const pr = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(fname)}`);
                 if (pr.ok) { const pd = await pr.json(); duration = pd.duration || 10; }
               } catch {}
               // 타임라인에 바로 추가

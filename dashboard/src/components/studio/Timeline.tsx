@@ -91,7 +91,7 @@ export const Timeline: React.FC = () => {
         let duration = 10;
         for (let retry = 0; retry < 3; retry++) {
           try {
-            const pr = await fetch(`/api/media/probe/${encodeURIComponent(file.name)}`);
+            const pr = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(file.name)}`);
             if (pr.ok) {
               const pd = await pr.json();
               if (pd.duration && pd.duration > 0) { duration = pd.duration; break; }
@@ -649,7 +649,7 @@ export const Timeline: React.FC = () => {
   useEffect(() => {
     for (const clip of clips) {
       if (clipAudioInfo[clip.source]) continue;
-      fetch(`/api/media/probe/${encodeURIComponent(clip.source)}`)
+      fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
         .then((r) => r.ok ? r.json() : null)
         .then((info) => {
           if (!info) return;
