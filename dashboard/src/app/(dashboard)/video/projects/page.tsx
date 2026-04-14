@@ -5,16 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from '@/components/studio/store';
 
-// Suppress Remotion video playback errors in dev (browser decoder limit)
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (e) => {
-    if (e.message?.includes('error while playing the video') || e.message?.includes('error playing video') || e.message?.includes('Error occurred in video')) {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      return true;
-    }
-  });
-}
 import { ProjectBar } from '@/components/studio/ProjectBar';
 import { RemotionPreview } from '@/components/studio/RemotionPreview';
 import { Timeline } from '@/components/studio/Timeline';
@@ -24,21 +14,6 @@ import { BgmPanel } from '@/components/studio/BgmPanel';
 import { TransitionPanel } from '@/components/studio/TransitionPanel';
 import { ReferencePanel } from '@/components/studio/ReferencePanel';
 import { EffectPanel } from '@/components/studio/EffectPanel';
-
-// Suppress Remotion video playback errors in dev
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (e) => {
-    if (
-      e.message?.includes('error while playing the video') ||
-      e.message?.includes('error playing video') ||
-      e.message?.includes('Error occurred in video')
-    ) {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      return true;
-    }
-  });
-}
 
 // ─── Project Summary types ───
 

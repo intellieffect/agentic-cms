@@ -14,23 +14,6 @@ export interface EditorConfig {
   mediaProxyPrefix?: string;
   /** Section title for host app sidebar (default: "콘텐츠 제작") */
   sectionTitle?: string;
-  tables: {
-    videos: string;
-    accounts: string;
-    carousels: string;
-    projects: string;
-    finished: string;
-    presets: string;
-    renderJobs: string;
-    refPosts: string;
-    refAccounts: string;
-    refSlides: string;
-    storyboards: string;
-    subtitles: string;
-    collections: string;
-    collectionItems: string;
-    plans: string;
-  };
   media: {
     root: string;
     finished: string;
@@ -61,27 +44,10 @@ const defaultConfig: EditorConfig = {
   routePrefix: '',
   apiUrl: resolveApiUrl(),
   mediaProxyPrefix: process.env.NEXT_PUBLIC_MEDIA_PROXY_PREFIX || '/_proxy',
-  tables: {
-    videos: 'reference_videos',
-    accounts: 'reference_accounts',
-    carousels: 'carousels',
-    projects: 'projects',
-    finished: 'finished_videos',
-    presets: 'presets',
-    renderJobs: 'render_jobs',
-    refPosts: 'ref_posts',
-    refAccounts: 'ref_accounts',
-    refSlides: 'ref_slides',
-    storyboards: 'storyboards',
-    subtitles: 'subtitles',
-    collections: 'reference_collections',
-    collectionItems: 'reference_collection_items',
-    plans: 'plans',
-  },
   media: {
-    root: process.env.NEXT_PUBLIC_MEDIA_ROOT || '/Volumes/Media',
-    finished: process.env.NEXT_PUBLIC_MEDIA_FINISHED || '~/Desktop/_미디어/완료영상',
-    defaultSource: process.env.NEXT_PUBLIC_MEDIA_DEFAULT_SOURCE || '/Volumes/Seagate/인텔리이펙트 영상소스',
+    root: process.env.NEXT_PUBLIC_MEDIA_ROOT || '',
+    finished: process.env.NEXT_PUBLIC_MEDIA_FINISHED || '',
+    defaultSource: process.env.NEXT_PUBLIC_MEDIA_DEFAULT_SOURCE || '',
   },
 };
 
@@ -91,7 +57,6 @@ export function setEditorConfig(config: Partial<EditorConfig>) {
   _config = {
     ...defaultConfig,
     ...config,
-    tables: { ...defaultConfig.tables, ...config.tables },
     media: { ...defaultConfig.media, ...config.media },
   };
 }

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n next,editor -c cyan,yellow \"next dev\" \"npm run dev:editor 2>/dev/null || true\"",
-    "dev:next": "next dev",
-    "dev:editor": "node -e \"require('dotenv').config({path:'.env.local'});const d=process.env.EDITOR_API_DIR;if(!d){console.log('[editor-api] EDITOR_API_DIR not set');process.exit(0)}const{execSync}=require('child_process');execSync('cd '+d+' && .venv/bin/python -m src.server.app',{stdio:'inherit'})\"",
+    "dev": "next dev",
+    "dev:all": "concurrently -n next,editor -c cyan,yellow \"next dev\" \"npm run dev:editor 2>/dev/null || true\"",
+    "dev:editor": "node -e \"require('dotenv').config({path:'.env.local'});const p=require('path');const d=p.resolve(process.env.EDITOR_API_DIR||'');if(!d||!require('fs').existsSync(p.join(d,'.venv'))){console.log('[editor-api] EDITOR_API_DIR not set or invalid');process.exit(0)}require('child_process').execSync('.venv/bin/python -m src.server.app',{stdio:'inherit',cwd:d})\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
