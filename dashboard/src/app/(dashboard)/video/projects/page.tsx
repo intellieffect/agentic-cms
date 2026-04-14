@@ -185,10 +185,12 @@ function ProjectList() {
                   </div>
                 ) : (
                   <button
-                    className="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-red-400 flex-shrink-0 transition-opacity"
+                    className="text-muted-foreground hover:text-red-400 flex-shrink-0 transition-colors"
+                    style={{ fontSize: 16, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' }}
                     onClick={(e) => { e.stopPropagation(); setDeleteConfirm(p.id); }}
+                    title="프로젝트 삭제"
                   >
-                    삭제
+                    🗑
                   </button>
                 )}
               </div>
