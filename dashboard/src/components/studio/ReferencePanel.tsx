@@ -60,14 +60,14 @@ export const ReferencePanel: React.FC = () => {
         {selectedRef ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 8 }}>
             <div style={{
-              flex: 1,
               background: '#000',
               borderRadius: 6,
               overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              minHeight: 0,
+              maxHeight: 240,
+              flexShrink: 0,
             }}>
               <video
                 ref={refVideoRef}
