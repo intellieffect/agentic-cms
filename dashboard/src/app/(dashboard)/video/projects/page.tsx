@@ -162,11 +162,18 @@ function ProjectList() {
                   />
                 ) : (
                   <span
-                    className="flex-1 text-sm font-medium text-foreground truncate"
+                    className="flex-1 text-sm font-medium text-foreground truncate flex items-center gap-2"
                     onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}
-                    onDoubleClick={(e) => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name || p.id); }}
                   >
                     {p.name || p.id}
+                    <button
+                      className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                      style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}
+                      onClick={(e) => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name || p.id); }}
+                      title="이름 수정"
+                    >
+                      ✏️
+                    </button>
                   </span>
                 )}
                 <span className="text-xs text-muted-foreground flex-shrink-0" onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}>
