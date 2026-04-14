@@ -142,43 +142,96 @@ export const RemotionPreview: React.FC = () => {
 
   const durationInFrames = Math.max(1, Math.ceil(totalDuration * FPS));
 
-  // BGM + 영상 프리로드 — Remotion prefetch로 재생 딜레이 제거
-  const prefetchFreeRef = useRef<(() => void)[]>([]);
-  useEffect(() => {
-    // 이전 prefetch 해제
-    prefetchFreeRef.current.forEach((free) => free());
-    prefetchFreeRef.current = [];
+  // BGM + 영상 프리로드 — currentFrame 기반 윈도우 prefetch
+  const currentFrame = useEditorStore((s) => s.currentFrame);
+  const prefetchFreeRef = useRef<Map<string, () => void>>(new Map());
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedFrame, setDebouncedFrame] = useState(0);
 
+  // currentFrame을 500ms debounce
+  useEffect(() => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedFrame(currentFrame);
+    }, 500);
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, [currentFrame]);
+
+  useEffect(() => {
     const apiUrl = getEditorConfig().apiUrl;
     const base = typeof window !== 'undefined' ? `${window.location.origin}${apiUrl}` : apiUrl;
 
-    // BGM 프리로드
+    // 현재 프레임 기준으로 재생 중인 클립 인덱스 계산
+    const currentTime = debouncedFrame / FPS;
+    let activeIndex = 0;
+    let cursor = 0;
+    for (let i = 0; i < clips.length; i++) {
+      const speed = clipMeta[i]?.speed ?? 1;
+      const dur = (clips[i].end - clips[i].start) / speed;
+      if (currentTime < cursor + dur) {
+        activeIndex = i;
+        break;
+      }
+      cursor += dur;
+      if (i === clips.length - 1) activeIndex = i;
+    }
+
+    // 현재 클립 ±2 범위만 prefetch
+    const windowStart = Math.max(0, activeIndex - 2);
+    const windowEnd = Math.min(clips.length - 1, activeIndex + 2);
+    const neededSources = new Set<string>();
+
+    for (let i = windowStart; i <= windowEnd; i++) {
+      const src = clips[i]?.source;
+      if (src) neededSources.add(src);
+    }
+
+    // BGM은 항상 prefetch (개수가 적으므로)
     if (bgmEnabled && bgmClips.length) {
       for (const bgm of bgmClips) {
-        try {
-          const url = `${base}/${bgm.source}`;
-          const { free } = prefetch(url, { method: 'blob-url', contentType: 'audio/mpeg' });
-          prefetchFreeRef.current.push(free);
-        } catch { /* ignore prefetch errors */ }
+        neededSources.add(`bgm:${bgm.source}`);
       }
     }
 
-    // 영상 클립 프리로드 (처음 3개만)
-    for (const clip of clips.slice(0, 3)) {
-      const src = clip.source;
-      if (!src) continue;
+    // 윈도우 밖의 prefetch 해제
+    for (const [key, free] of prefetchFreeRef.current) {
+      if (!neededSources.has(key)) {
+        free();
+        prefetchFreeRef.current.delete(key);
+      }
+    }
+
+    // 새로 필요한 것만 prefetch
+    for (const key of neededSources) {
+      if (prefetchFreeRef.current.has(key)) continue;
       try {
-        const url = `${base}/${src}`;
-        const { free } = prefetch(url, { method: 'blob-url', contentType: 'video/mp4' });
-        prefetchFreeRef.current.push(free);
+        const isBgm = key.startsWith('bgm:');
+        const source = isBgm ? key.slice(4) : key;
+        const url = `${base}/${source}`;
+        const { free } = prefetch(url, {
+          method: 'blob-url',
+          contentType: isBgm ? 'audio/mpeg' : 'video/mp4',
+        });
+        prefetchFreeRef.current.set(key, free);
       } catch { /* ignore prefetch errors */ }
     }
 
     return () => {
-      prefetchFreeRef.current.forEach((free) => free());
-      prefetchFreeRef.current = [];
+      // cleanup은 컴포넌트 unmount 시에만
     };
-  }, [bgmClips, bgmEnabled, clips]);
+  }, [debouncedFrame, bgmClips, bgmEnabled, clips, clipMeta]);
+
+  // Unmount 시 전체 해제
+  useEffect(() => {
+    return () => {
+      for (const [, free] of prefetchFreeRef.current) {
+        free();
+      }
+      prefetchFreeRef.current.clear();
+    };
+  }, []);
 
   const inputProps = {
     clips,
