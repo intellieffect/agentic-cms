@@ -3,6 +3,17 @@ import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from '../store';
 import type { ClipAudioInfo } from './constants';
 
+// 동시 실행 제한 큐 — 최대 concurrency개까지만 병렬 처리
+async function processQueue(tasks: (() => Promise<void>)[], concurrency: number) {
+  const executing: Promise<void>[] = [];
+  for (const task of tasks) {
+    const p = task().then(() => { executing.splice(executing.indexOf(p), 1); });
+    executing.push(p);
+    if (executing.length >= concurrency) await Promise.race(executing);
+  }
+  await Promise.all(executing);
+}
+
 export function useWaveform() {
   const clips = useEditorStore((s) => s.clips);
   const bgmClips = useEditorStore((s) => s.bgmClips);
@@ -128,40 +139,52 @@ export function useWaveform() {
     );
   }, [drawWaveformBars]);
 
-  // Load waveform data for BGM clips
+  // Load waveform data for BGM clips (최대 2개 동시)
   useEffect(() => {
-    for (const bgm of bgmClips) {
-      if (bgmWaveforms.current.has(bgm.source)) continue;
-      extractWaveform(bgm.source)
-        .then((result) => {
+    let cancelled = false;
+    const tasks = bgmClips
+      .filter((bgm) => !bgmWaveforms.current.has(bgm.source))
+      .map((bgm) => () =>
+        extractWaveform(bgm.source).then((result) => {
+          if (cancelled) return;
           if (result) {
             bgmWaveforms.current.set(bgm.source, result.peaks);
             bgmWaveformDurations.current.set(bgm.source, result.duration);
             setWaveformVersion((v) => v + 1);
           }
-        })
-        .catch(() => { /* ignore */ });
-    }
+        }).catch(() => { /* ignore */ })
+      );
+    if (tasks.length > 0) processQueue(tasks, 2);
+    return () => { cancelled = true; };
   }, [bgmClips, extractWaveform]);
 
-  // Load waveform data for clip audio
+  // Load waveform data for clip audio (최대 2개 동시)
   useEffect(() => {
-    for (const clip of clips) {
-      if (clipAudioInfo[clip.source]) continue;
-      fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
-        .then((r) => r.ok ? r.json() : null)
-        .then((info) => {
-          if (!info) return;
-          setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: info.hasAudio !== false } });
-          if (info.hasAudio === false || clipWaveforms.current.has(clip.source)) return;
-          return extractWaveform(clip.source).then((result) => {
-            if (result) clipWaveforms.current.set(clip.source, result.peaks);
-          });
-        })
-        .catch(() => {
-          setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: true } });
-        });
-    }
+    let cancelled = false;
+    const tasks = clips
+      .filter((clip) => !clipAudioInfo[clip.source])
+      .map((clip) => () =>
+        fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((info) => {
+            if (cancelled || !info) return;
+            setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: info.hasAudio !== false } });
+            if (info.hasAudio === false || clipWaveforms.current.has(clip.source)) return;
+            return extractWaveform(clip.source).then((result) => {
+              if (cancelled) return;
+              if (result) {
+                clipWaveforms.current.set(clip.source, result.peaks);
+                setWaveformVersion((v) => v + 1);
+              }
+            });
+          })
+          .catch(() => {
+            if (cancelled) return;
+            setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: true } });
+          })
+      );
+    if (tasks.length > 0) processQueue(tasks, 2);
+    return () => { cancelled = true; };
   }, [clips, clipAudioInfo, extractWaveform]);
 
   return {
