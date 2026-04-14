@@ -5,24 +5,26 @@ import { useRouter } from 'next/navigation';
 import { editorRoute } from '@/lib/editor-routes';
 import { theme } from '@/lib/editor-theme';
 import { getEditorConfig } from '@/lib/editor-config';
+import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from './store';
 import { RenderDialog } from './RenderDialog';
 import type { Clip } from './types';
 
 export const ProjectBar: React.FC = () => {
   const router = useRouter();
-  const name = useEditorStore((s) => s.name);
+  const { name, subsEnabled, bgmEnabled, orientation, globalSubs } = useEditorStore(useShallow((s) => ({
+    name: s.name,
+    subsEnabled: s.subsEnabled,
+    bgmEnabled: s.bgmEnabled,
+    orientation: s.orientation,
+    globalSubs: s.globalSubs,
+  })));
   const setName = useEditorStore((s) => s.setName);
   const getProjectData = useEditorStore((s) => s.getProjectData);
   const addClip = useEditorStore((s) => s.addClip);
-  const subsEnabled = useEditorStore((s) => s.subsEnabled);
-  const bgmEnabled = useEditorStore((s) => s.bgmEnabled);
   const setSubsEnabled = useEditorStore((s) => s.setSubsEnabled);
   const setBgmEnabled = useEditorStore((s) => s.setBgmEnabled);
-  const orientation = useEditorStore((s) => s.orientation);
   const setOrientation = useEditorStore((s) => s.setOrientation);
-
-  const globalSubs = useEditorStore((s) => s.globalSubs);
   const exportSrt = useEditorStore((s) => s.exportSrt);
 
   const exportRef = useRef<HTMLDivElement>(null);
