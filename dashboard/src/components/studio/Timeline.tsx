@@ -75,7 +75,7 @@ export const Timeline: React.FC = () => {
         // Next.js rewrite 프록시 먼저 시도, 실패 시 직접 요청
         let uploadOk = false;
         try {
-          const res = await fetch('/api/upload', { method: 'POST', body: formData });
+          const res = await fetch(`${getEditorConfig().apiUrl}/api/upload`, { method: 'POST', body: formData });
           uploadOk = res.ok;
         } catch {}
         if (!uploadOk) {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 import type { SubtitleEffect } from './remotion-types';
 
@@ -100,7 +101,7 @@ export const SubtitlePanel: React.FC = () => {
         const speed = clipMeta[i]?.speed ?? 1;
         const clipDur = (clip.end - clip.start) / speed;
 
-        const r = await fetch('/api/whisper/transcribe-sync', {
+        const r = await fetch(`${getEditorConfig().apiUrl}/api/whisper/transcribe-sync`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

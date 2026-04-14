@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { editorRoute } from '@/lib/editor-routes';
 import { theme } from '@/lib/editor-theme';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 import { RenderDialog } from './RenderDialog';
 import type { Clip } from './types';
@@ -49,7 +50,7 @@ export const ProjectBar: React.FC = () => {
     setSaveStatus('');
     try {
       const data = getProjectData();
-      const r = await fetch('/api/projects/save', {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/projects/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -76,7 +77,7 @@ export const ProjectBar: React.FC = () => {
       const { id: _id, ...rest } = raw;
       delete rest.dbId;
       const dupData = { ...rest, id: `proj_${Date.now()}`, name: newName };
-      const r = await fetch('/api/projects/save', {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/projects/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dupData),
@@ -182,7 +183,7 @@ export const ProjectBar: React.FC = () => {
             style={{ color: theme.accent, borderColor: theme.accent }}
             onClick={async () => {
               try {
-                const r = await fetch('/api/resolver/pick-file', {
+                const r = await fetch(`${getEditorConfig().apiUrl}/api/resolver/pick-file`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ filename: '영상', multiple: true }),
@@ -194,7 +195,7 @@ export const ProjectBar: React.FC = () => {
                 if (paths.length === 0) return;
                 for (const filepath of paths) {
                   const fname = filepath.split('/').pop() || 'video.mp4';
-                  const linkRes = await fetch('/api/resolver/link-file', {
+                  const linkRes = await fetch(`${getEditorConfig().apiUrl}/api/resolver/link-file`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ filename: fname, filepath }),

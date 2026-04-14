@@ -23,7 +23,7 @@ export const MediaPanel: React.FC = () => {
   const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/list-videos');
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/list-videos`);
       if (r.ok) {
         const data = await r.json();
         setFiles(data.videos || data.files || (Array.isArray(data) ? data : []));
@@ -44,7 +44,7 @@ export const MediaPanel: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
       try {
-        await fetch('/api/upload', { method: 'POST', body: formData });
+        await fetch(`${getEditorConfig().apiUrl}/api/upload`, { method: 'POST', body: formData });
       } catch {
         // ignore
       }
@@ -318,11 +318,11 @@ export const MediaPanel: React.FC = () => {
         <button
           onClick={async () => {
             try {
-              const r = await fetch('/api/resolver/pick-directory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+              const r = await fetch(`${getEditorConfig().apiUrl}/api/resolver/pick-directory`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
               if (r.ok) {
                 const d = await r.json();
                 if (d.directory) {
-                  await fetch('/api/resolver/add-directory', {
+                  await fetch(`${getEditorConfig().apiUrl}/api/resolver/add-directory`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ directory: d.directory }),
@@ -340,7 +340,7 @@ export const MediaPanel: React.FC = () => {
           onClick={async () => {
             try {
               // Finder에서 영상 파일 선택 → 심볼릭 링크 → 타임라인에 추가
-              const r = await fetch('/api/resolver/pick-file', {
+              const r = await fetch(`${getEditorConfig().apiUrl}/api/resolver/pick-file`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: '영상' }),
@@ -350,7 +350,7 @@ export const MediaPanel: React.FC = () => {
               if (!d.filepath) return;
               const fname = d.filepath.split('/').pop() || 'video.mp4';
               // 심볼릭 링크 생성
-              await fetch('/api/resolver/link-file', {
+              await fetch(`${getEditorConfig().apiUrl}/api/resolver/link-file`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: fname, filepath: d.filepath }),

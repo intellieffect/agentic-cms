@@ -52,3 +52,43 @@ body {
   background: var(--color-muted);
   border-radius: 3px;
 }
+
+/* ─── brxce-editor theme variables ─── */
+:root {
+  --be-bg: #0f0f0f;
+  --be-bg-card: #141414;
+  --be-bg-input: #1a1a1a;
+  --be-bg-hover: #222;
+  --be-bg-btn: #222;
+  --be-border: #333;
+  --be-border-light: #222;
+  --be-border-hover: #444;
+  --be-text: #e0e0e0;
+  --be-text-muted: #888;
+  --be-text-dim: #666;
+  --be-accent: #4a9eff;
+  --be-accent-hover: #3a8eef;
+  --be-danger: #e04040;
+  --be-danger-hover: #c03030;
+}
+
+.btn {
+  padding: 4px 10px;
+  border: 1px solid var(--be-border);
+  background: var(--be-bg-btn);
+  color: #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: .15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.btn:hover { background: var(--be-border); border-color: var(--be-border-hover); }
+.btn-pri { background: var(--be-accent); border-color: var(--be-accent); color: #fff; }
+.btn-pri:hover { background: var(--be-accent-hover); }
+.btn-danger { background: var(--be-danger); border-color: var(--be-danger); color: #fff; }
+.btn-danger:hover { background: var(--be-danger-hover); }
+.btn-on { background: #374151; border-color: var(--be-accent); color: var(--be-accent); }
+.sep { width: 1px; height: 20px; background: #2a2a2a; flex-shrink: 0; }
+.top-bar .btn { white-space: nowrap; flex-shrink: 0; }
