@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from '../store';
 import { NUM_VIDEO_TRACKS } from '../types';
 import { FPS, MIN_CLIP_DURATION, SNAP_THRESHOLD_PX, TRACK_HEIGHT } from './constants';
@@ -12,13 +13,15 @@ interface UseDragParams {
 }
 
 export function useDrag({ clipStarts, clipDurations, trackRef, bgmWaveformDurations }: UseDragParams) {
-  const clips = useEditorStore((s) => s.clips);
-  const clipMeta = useEditorStore((s) => s.clipMeta);
-  const globalSubs = useEditorStore((s) => s.globalSubs);
-  const bgmClips = useEditorStore((s) => s.bgmClips);
-  const currentFrame = useEditorStore((s) => s.currentFrame);
-  const selectedClipIndices = useEditorStore((s) => s.selectedClipIndices);
-  const pxPerSec = useEditorStore((s) => s.pxPerSec);
+  const { clips, clipMeta, globalSubs, bgmClips, currentFrame, selectedClipIndices, pxPerSec } = useEditorStore(useShallow((s) => ({
+    clips: s.clips,
+    clipMeta: s.clipMeta,
+    globalSubs: s.globalSubs,
+    bgmClips: s.bgmClips,
+    currentFrame: s.currentFrame,
+    selectedClipIndices: s.selectedClipIndices,
+    pxPerSec: s.pxPerSec,
+  })));
   const updateClip = useEditorStore((s) => s.updateClip);
   const updateGlobalSub = useEditorStore((s) => s.updateGlobalSub);
   const updateBgmClip = useEditorStore((s) => s.updateBgmClip);

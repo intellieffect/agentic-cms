@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { getEditorConfig } from '@/lib/editor-config';
+import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from './store';
 import type { Clip } from './types';
 import { NUM_VIDEO_TRACKS } from './types';
@@ -12,26 +13,33 @@ import { useKeyboardShortcuts } from './timeline/useKeyboardShortcuts';
 import { useDrag } from './timeline/useDrag';
 
 export const Timeline: React.FC = () => {
-  const clips = useEditorStore((s) => s.clips);
-  const clipMeta = useEditorStore((s) => s.clipMeta);
-  const transitions = useEditorStore((s) => s.transitions);
-  const globalSubs = useEditorStore((s) => s.globalSubs);
-  const bgmClips = useEditorStore((s) => s.bgmClips);
-  const totalDuration = useEditorStore((s) => s.totalDuration);
-  const currentFrame = useEditorStore((s) => s.currentFrame);
-  const isPlaying = useEditorStore((s) => s.isPlaying);
-  const selectedClipIndex = useEditorStore((s) => s.selectedClipIndex);
-  const selectedClipIndices = useEditorStore((s) => s.selectedClipIndices);
-  const selectedSubIndex = useEditorStore((s) => s.selectedSubIndex);
-  const pxPerSec = useEditorStore((s) => s.pxPerSec);
+  const {
+    clips, clipMeta, transitions, globalSubs, bgmClips,
+    totalDuration, currentFrame, isPlaying,
+    selectedClipIndex, selectedClipIndices, selectedSubIndex,
+    pxPerSec, subsEnabled, bgmEnabled,
+  } = useEditorStore(useShallow((s) => ({
+    clips: s.clips,
+    clipMeta: s.clipMeta,
+    transitions: s.transitions,
+    globalSubs: s.globalSubs,
+    bgmClips: s.bgmClips,
+    totalDuration: s.totalDuration,
+    currentFrame: s.currentFrame,
+    isPlaying: s.isPlaying,
+    selectedClipIndex: s.selectedClipIndex,
+    selectedClipIndices: s.selectedClipIndices,
+    selectedSubIndex: s.selectedSubIndex,
+    pxPerSec: s.pxPerSec,
+    subsEnabled: s.subsEnabled,
+    bgmEnabled: s.bgmEnabled,
+  })));
   const setSelectedClipIndex = useEditorStore((s) => s.setSelectedClipIndex);
   const toggleClipSelection = useEditorStore((s) => s.toggleClipSelection);
   const selectClipRange = useEditorStore((s) => s.selectClipRange);
   const setSelectedSubIndex = useEditorStore((s) => s.setSelectedSubIndex);
   const setActivePanel = useEditorStore((s) => s.setActivePanel);
   const setPxPerSec = useEditorStore((s) => s.setPxPerSec);
-  const subsEnabled = useEditorStore((s) => s.subsEnabled);
-  const bgmEnabled = useEditorStore((s) => s.bgmEnabled);
   const removeClip = useEditorStore((s) => s.removeClip);
   const removeSubtitle = useEditorStore((s) => s.removeSubtitle);
   const updateClipMeta = useEditorStore((s) => s.updateClipMeta);

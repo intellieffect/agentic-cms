@@ -6,6 +6,7 @@ import { prefetch } from 'remotion';
 import { VideoProject } from '../remotion/VideoProject';
 import { registerFonts } from '../remotion/fonts';
 import { getEditorConfig } from '@/lib/editor-config';
+import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from './store';
 import { CanvasOverlay } from './CanvasOverlay';
 
@@ -22,21 +23,27 @@ export const RemotionPreview: React.FC = () => {
   const fontsLoaded = useRef(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const clips = useEditorStore((s) => s.clips);
-  const clipMeta = useEditorStore((s) => s.clipMeta);
-  const clipCrops = useEditorStore((s) => s.clipCrops);
-  const clipZooms = useEditorStore((s) => s.clipZooms);
-  const clipSubStyles = useEditorStore((s) => s.clipSubStyles);
-  const transitions = useEditorStore((s) => s.transitions);
-  const globalSubs = useEditorStore((s) => s.globalSubs);
-  const bgmClips = useEditorStore((s) => s.bgmClips);
-  const globalEffects = useEditorStore((s) => s.globalEffects);
-  const fadeInOut = useEditorStore((s) => s.fadeInOut);
-  const subsEnabled = useEditorStore((s) => s.subsEnabled);
-  const bgmEnabled = useEditorStore((s) => s.bgmEnabled);
-  const orientation = useEditorStore((s) => s.orientation);
-  const totalDuration = useEditorStore((s) => s.totalDuration);
-  const sources = useEditorStore((s) => s.sources);
+  const {
+    clips, clipMeta, clipCrops, clipZooms, clipSubStyles,
+    transitions, globalSubs, bgmClips, globalEffects, fadeInOut,
+    subsEnabled, bgmEnabled, orientation, totalDuration, sources,
+  } = useEditorStore(useShallow((s) => ({
+    clips: s.clips,
+    clipMeta: s.clipMeta,
+    clipCrops: s.clipCrops,
+    clipZooms: s.clipZooms,
+    clipSubStyles: s.clipSubStyles,
+    transitions: s.transitions,
+    globalSubs: s.globalSubs,
+    bgmClips: s.bgmClips,
+    globalEffects: s.globalEffects,
+    fadeInOut: s.fadeInOut,
+    subsEnabled: s.subsEnabled,
+    bgmEnabled: s.bgmEnabled,
+    orientation: s.orientation,
+    totalDuration: s.totalDuration,
+    sources: s.sources,
+  })));
   const setCurrentFrame = useEditorStore((s) => s.setCurrentFrame);
   const setIsPlaying = useEditorStore((s) => s.setIsPlaying);
 
