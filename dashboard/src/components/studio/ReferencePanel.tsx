@@ -66,7 +66,7 @@ export const ReferencePanel: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              maxHeight: 480,
+              maxHeight: 600,
               flexShrink: 0,
             }}>
               <video
