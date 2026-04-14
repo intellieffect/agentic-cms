@@ -1,5 +1,7 @@
 'use client';
 
+import { getEditorConfig } from '@/lib/editor-config';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { formatDuration, formatSize } from '@/lib/utils';
 import type { FinishedVideo } from '@/lib/types';
@@ -30,7 +32,7 @@ export default function VideoFinishedPage() {
   const loadVideos = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/finished?limit=200');
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/finished?limit=200`);
       const d = await r.json();
       setVideos(d.videos || []);
     } catch {
@@ -123,7 +125,7 @@ export default function VideoFinishedPage() {
     fd.append('name', file.name.replace(/\.[^/.]+$/, ''));
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/finished/upload');
+    xhr.open('POST', `${getEditorConfig().apiUrl}/api/finished/upload`);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         const pct = Math.round((e.loaded / e.total) * 100);
