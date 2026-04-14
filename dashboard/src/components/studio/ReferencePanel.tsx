@@ -26,7 +26,12 @@ export const ReferencePanel: React.FC = () => {
     fetch(`${getEditorConfig().apiUrl}/api/references/videos?limit=30&sort=likes`)
       .then((r) => r.json())
       .then((d) => {
-        const vids = d.videos || [];
+        const apiUrl = getEditorConfig().apiUrl;
+        const vids = (d.videos || []).map((v: RefVideo) => ({
+          ...v,
+          thumbnail_url: v.thumbnail_url && v.thumbnail_url.startsWith('/') ? `${apiUrl}${v.thumbnail_url}` : v.thumbnail_url,
+          video_url: v.video_url && v.video_url.startsWith('/') ? `${apiUrl}${v.video_url}` : v.video_url,
+        }));
         setVideos(vids);
         // 저장된 referenceId가 있으면 자동 선택
         if (referenceId) {
