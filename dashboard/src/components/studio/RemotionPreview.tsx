@@ -219,7 +219,15 @@ export const RemotionPreview: React.FC = () => {
         position: 'relative',
       }}
     >
-      <div style={{ position: 'relative', height: '100%', maxWidth: '100%', aspectRatio: orientation === 'square' ? '1/1' : orientation === 'horizontal' ? '16/9' : '9/16', margin: '0 auto' }}>
+      <div style={{
+        position: 'relative',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        aspectRatio: orientation === 'square' ? '1/1' : orientation === 'horizontal' ? '16/9' : '9/16',
+        // 세로 기준으로 크기 결정: 컨테이너 높이에 맞추고 가로는 aspectRatio로 자동
+        width: orientation === 'horizontal' ? '100%' : 'auto',
+        height: orientation === 'horizontal' ? 'auto' : '100%',
+      }}>
         <Player
           ref={playerRef}
           component={VideoProjectComponent}
