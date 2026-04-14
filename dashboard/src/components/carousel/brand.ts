@@ -1,3 +1,4 @@
+// TODO: 브랜드 설정을 환경변수 또는 설정 파일로 분리
 export const BRXCE_BRAND = {
   colors: {
     primary: '#FF6B35',

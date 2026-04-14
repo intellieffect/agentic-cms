@@ -150,8 +150,8 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
               현재 프로젝트를 MP4로 렌더링합니다.
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={onClose}>취소</button>
-              <button className="btn btn-pri" onClick={handleRender}>렌더 시작</button>
+              <button className="be-btn" onClick={onClose}>취소</button>
+              <button className="be-btn be-btn-pri" onClick={handleRender}>렌더 시작</button>
             </div>
           </>
         )}
@@ -190,10 +190,10 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={onClose}>닫기</button>
+              <button className="be-btn" onClick={onClose}>닫기</button>
               {!saved && (
                 <button
-                  className="btn"
+                  className="be-btn"
                   style={{ color: '#60a5fa', borderColor: '#60a5fa44' }}
                   onClick={handleSaveToFinished}
                   disabled={saving}
@@ -201,7 +201,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
                   {saving ? '저장 중...' : '📥 완료 영상 저장'}
                 </button>
               )}
-              <button className="btn btn-pri" onClick={handleDownload}>다운로드</button>
+              <button className="be-btn be-btn-pri" onClick={handleDownload}>다운로드</button>
             </div>
           </>
         )}
@@ -212,8 +212,8 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
               오류: {errorMsg}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn" onClick={onClose}>닫기</button>
-              <button className="btn" onClick={handleRender}>재시도</button>
+              <button className="be-btn" onClick={onClose}>닫기</button>
+              <button className="be-btn" onClick={handleRender}>재시도</button>
             </div>
           </>
         )}

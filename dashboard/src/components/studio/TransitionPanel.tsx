@@ -50,7 +50,7 @@ export const TransitionPanel: React.FC = () => {
       <div style={{ padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
-            className={`btn ${fadeInOut.enabled ? 'btn-on' : ''}`}
+            className={`be-btn ${fadeInOut.enabled ? 'be-btn-on' : ''}`}
             onClick={() => updateFadeInOut({ enabled: !fadeInOut.enabled })}
             style={{ fontSize: 9 }}
           >

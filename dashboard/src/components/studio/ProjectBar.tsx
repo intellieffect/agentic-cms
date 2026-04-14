@@ -96,7 +96,7 @@ export const ProjectBar: React.FC = () => {
     <>
       <div className="top-bar">
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 12, padding: '4px 8px' }}
           onClick={() => router.push('/video/projects')}
         >
@@ -117,7 +117,7 @@ export const ProjectBar: React.FC = () => {
                 borderRadius: 4, padding: '4px 8px', color: '#fff', fontSize: 14,
               }}
             />
-            <button className="btn" style={{ fontSize: 12 }} onClick={() => setEditing(false)}>OK</button>
+            <button className="be-btn" style={{ fontSize: 12 }} onClick={() => setEditing(false)}>OK</button>
           </div>
         ) : (
           <span
@@ -153,7 +153,7 @@ export const ProjectBar: React.FC = () => {
           </div>
           {/* 자막 토글 */}
           <button
-            className="btn"
+            className="be-btn"
             style={{
               fontSize: 10, padding: '4px 8px',
               color: subsEnabled ? '#f59e0b' : '#555',
@@ -166,7 +166,7 @@ export const ProjectBar: React.FC = () => {
           </button>
           {/* BGM 토글 */}
           <button
-            className="btn"
+            className="be-btn"
             style={{
               fontSize: 10, padding: '4px 8px',
               color: bgmEnabled ? '#10b981' : '#555',
@@ -179,7 +179,7 @@ export const ProjectBar: React.FC = () => {
           </button>
           <div style={{ width: 1, height: 16, background: theme.border }} />
           <button
-            className="btn"
+            className="be-btn"
             style={{ color: theme.accent, borderColor: theme.accent }}
             onClick={async () => {
               try {
@@ -231,7 +231,7 @@ export const ProjectBar: React.FC = () => {
           {/* 내보내기 드롭다운 */}
           <div ref={exportRef} style={{ position: 'relative' }}>
             <button
-              className="btn"
+              className="be-btn"
               style={{ fontSize: 12, padding: '4px 10px' }}
               onClick={() => setExportOpen(!exportOpen)}
               title="내보내기"
@@ -288,17 +288,17 @@ export const ProjectBar: React.FC = () => {
             )}
           </div>
           <button
-            className="btn"
+            className="be-btn"
             style={{ fontSize: 12, padding: '4px 10px' }}
             onClick={handleDuplicate}
             title="프로젝트 복제"
           >
             📋 복제
           </button>
-          <button className="btn" onClick={handleSave} disabled={saving}>
+          <button className="be-btn" onClick={handleSave} disabled={saving}>
             {saving ? '저장 중...' : '저장'}
           </button>
-          <button className="btn btn-pri" onClick={() => setRenderOpen(true)}>
+          <button className="be-btn be-btn-pri" onClick={() => setRenderOpen(true)}>
             렌더
           </button>
         </div>

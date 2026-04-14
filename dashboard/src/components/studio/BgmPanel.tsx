@@ -156,7 +156,7 @@ export const BgmPanel: React.FC = () => {
               {bgm.source}
             </div>
             <button
-              className="btn"
+              className="be-btn"
               style={{ fontSize: 9, padding: '1px 5px', color: '#ef4444', borderColor: '#ef444444' }}
               onClick={() => removeBgmClip(i)}
             >
@@ -228,7 +228,7 @@ export const BgmPanel: React.FC = () => {
 
           {/* Auto analyze */}
           <button
-            className="btn"
+            className="be-btn"
             style={{ fontSize: 10, padding: '4px 8px' }}
             onClick={() => handleAnalyze(i)}
             disabled={analyzing === i}

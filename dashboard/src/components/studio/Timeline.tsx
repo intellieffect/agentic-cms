@@ -741,25 +741,25 @@ export const Timeline: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderBottom: '1px solid #222', flexShrink: 0 }}>
         {/* Undo/Redo buttons */}
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px', opacity: canUndo() ? 1 : 0.3 }}
           onClick={() => undo()}
           disabled={!canUndo()}
           title="실행 취소 (Cmd+Z)"
         >↩</button>
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px', opacity: canRedo() ? 1 : 0.3 }}
           onClick={() => redo()}
           disabled={!canRedo()}
           title="다시 실행 (Cmd+Shift+Z)"
         >↪</button>
         <div style={{ width: 1, height: 12, background: '#333', margin: '0 2px' }} />
-        <button className="btn" style={{ fontSize: 9, padding: '2px 6px' }} onClick={() => setPxPerSec(pxPerSec - 20)}>-</button>
+        <button className="be-btn" style={{ fontSize: 9, padding: '2px 6px' }} onClick={() => setPxPerSec(pxPerSec - 20)}>-</button>
         <span style={{ fontSize: 9, color: '#555', minWidth: 32, textAlign: 'center' }}>{pxPerSec}px/s</span>
-        <button className="btn" style={{ fontSize: 9, padding: '2px 6px' }} onClick={() => setPxPerSec(pxPerSec + 20)}>+</button>
+        <button className="be-btn" style={{ fontSize: 9, padding: '2px 6px' }} onClick={() => setPxPerSec(pxPerSec + 20)}>+</button>
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px' }}
           onClick={() => {
             if (totalDuration > 0 && trackRef.current) {
@@ -771,7 +771,7 @@ export const Timeline: React.FC = () => {
         >Fit</button>
         <div style={{ width: 1, height: 12, background: '#333', margin: '0 2px' }} />
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px' }}
           title="플레이헤드 위치에서 클립 분할 (B)"
           onClick={() => {
@@ -792,7 +792,7 @@ export const Timeline: React.FC = () => {
         >✂️</button>
         <div style={{ width: 1, height: 12, background: '#333', margin: '0 2px' }} />
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px' }}
           onClick={() => setAllClipAudioMuted(!allClipAudioMuted)}
           title="전체 영상 클립 오디오 켜기/끄기"
@@ -803,7 +803,7 @@ export const Timeline: React.FC = () => {
         <div style={{ flex: 1 }} />
         {selectedClipIndex >= 0 && (
           <button
-            className="btn"
+            className="be-btn"
             style={{ fontSize: 9, padding: '2px 6px', color: '#ef4444', borderColor: '#ef444444' }}
             onClick={() => {
               const state = useEditorStore.getState();
@@ -819,7 +819,7 @@ export const Timeline: React.FC = () => {
         )}
         {selectedSubIndex >= 0 && (
           <button
-            className="btn"
+            className="be-btn"
             style={{ fontSize: 9, padding: '2px 6px', color: '#ef4444', borderColor: '#ef444444' }}
             onClick={() => removeSubtitle(selectedSubIndex)}
           >

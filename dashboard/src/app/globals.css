@@ -72,7 +72,7 @@ body {
   --be-danger-hover: #c03030;
 }
 
-.btn {
+.be-btn {
   padding: 4px 10px;
   border: 1px solid var(--be-border);
   background: var(--be-bg-btn);
@@ -84,12 +84,12 @@ body {
   white-space: nowrap;
   font-family: inherit;
 }
-.btn:hover { background: var(--be-border); border-color: var(--be-border-hover); }
-.btn-pri { background: var(--be-accent); border-color: var(--be-accent); color: #fff; }
-.btn-pri:hover { background: var(--be-accent-hover); }
-.btn-danger { background: var(--be-danger); border-color: var(--be-danger); color: #fff; }
-.btn-danger:hover { background: var(--be-danger-hover); }
-.btn-on { background: #374151; border-color: var(--be-accent); color: var(--be-accent); }
+.be-btn:hover { background: var(--be-border); border-color: var(--be-border-hover); }
+.be-btn-pri { background: var(--be-accent); border-color: var(--be-accent); color: #fff; }
+.be-btn-pri:hover { background: var(--be-accent-hover); }
+.be-btn-danger { background: var(--be-danger); border-color: var(--be-danger); color: #fff; }
+.be-btn-danger:hover { background: var(--be-danger-hover); }
+.be-btn-on { background: #374151; border-color: var(--be-accent); color: var(--be-accent); }
 .sep { width: 1px; height: 20px; background: #2a2a2a; flex-shrink: 0; }
 .top-bar {
   display: flex;
@@ -104,4 +104,4 @@ body {
 }
 .top-bar-title { font-size: 12px; font-weight: 600; color: #ccc; }
 .top-bar-right { margin-left: auto; display: flex; gap: 4px; align-items: center; flex-shrink: 0; flex-wrap: nowrap; }
-.top-bar .btn { white-space: nowrap; flex-shrink: 0; }
+.top-bar .be-btn { white-space: nowrap; flex-shrink: 0; }

@@ -5,6 +5,7 @@ import { Player, type PlayerRef } from '@remotion/player';
 import { prefetch } from 'remotion';
 import { VideoProject } from '../remotion/VideoProject';
 import { registerFonts } from '../remotion/fonts';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 import { CanvasOverlay } from './CanvasOverlay';
 
@@ -144,7 +145,8 @@ export const RemotionPreview: React.FC = () => {
     prefetchFreeRef.current.forEach((free) => free());
     prefetchFreeRef.current = [];
 
-    const base = typeof window !== 'undefined' ? `${window.location.origin}/editor-api` : 'http://localhost:8092';
+    const apiUrl = getEditorConfig().apiUrl;
+    const base = typeof window !== 'undefined' ? `${window.location.origin}${apiUrl}` : apiUrl;
 
     // BGM 프리로드
     if (bgmEnabled && bgmClips.length) {
@@ -188,7 +190,7 @@ export const RemotionPreview: React.FC = () => {
     sources,
     globalEffects,
     fadeInOut,
-    mediaBasePath: typeof window !== 'undefined' ? `${window.location.origin}/editor-api` : 'http://localhost:8092',
+    mediaBasePath: (() => { const u = getEditorConfig().apiUrl; return typeof window !== 'undefined' ? `${window.location.origin}${u}` : u; })(),
   };
 
   if (clips.length === 0) {

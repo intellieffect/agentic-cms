@@ -212,7 +212,7 @@ export const MediaPanel: React.FC = () => {
           미디어
         </div>
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px' }}
           onClick={fetchFiles}
           disabled={loading}
