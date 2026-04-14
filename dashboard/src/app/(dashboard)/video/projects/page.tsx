@@ -284,7 +284,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
   React.useEffect(() => {
     if (!panelInitRef.current) {
       panelInitRef.current = true;
-      setPanelWidth(Math.round(window.innerWidth * 0.6));
+      setPanelWidth(Math.round(window.innerWidth * 0.65));
     }
   }, []);
   const [timelineHeight, setTimelineHeight] = React.useState(380);
@@ -295,7 +295,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
     const onMove = (e: MouseEvent) => {
       if (panelDrag.current) {
         const delta = panelDrag.current.startX - e.clientX;
-        setPanelWidth(Math.max(280, Math.min(1200, panelDrag.current.startW + delta)));
+        setPanelWidth(Math.max(280, Math.min(Math.round(window.innerWidth * 0.7), panelDrag.current.startW + delta)));
       }
       if (tlDrag.current) {
         const delta = tlDrag.current.startY - e.clientY;
