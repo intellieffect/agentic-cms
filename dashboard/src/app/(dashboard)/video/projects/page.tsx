@@ -297,7 +297,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 3rem)', overflow: 'hidden', margin: '-1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 3.5rem)', overflow: 'hidden' }}>
       <ProjectBar />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
