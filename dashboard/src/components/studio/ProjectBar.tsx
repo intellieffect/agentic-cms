@@ -85,7 +85,7 @@ export const ProjectBar: React.FC = () => {
       if (r.ok) {
         const d = await r.json();
         const newId = d.dbId || d.id;
-        if (newId) router.push(editorRoute(`/studio?project=${encodeURIComponent(newId)}`));
+        if (newId) router.push(`/video/projects?project=${encodeURIComponent(newId)}`);
       }
     } catch {
       alert('복제 실패');
@@ -98,7 +98,7 @@ export const ProjectBar: React.FC = () => {
         <button
           className="btn"
           style={{ fontSize: 12, padding: '4px 8px' }}
-          onClick={() => router.push(editorRoute('/'))}
+          onClick={() => router.push('/video/projects')}
         >
           &larr; 프로젝트
         </button>
