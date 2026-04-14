@@ -63,7 +63,7 @@ export default function VideoReferencesPage() {
       return next;
     });
     try {
-      await fetch(`/api/references/videos/${id}/favorite`, {
+      await fetch(`${getEditorConfig().apiUrl}/api/references/videos/${id}/favorite`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ favorite: !wasFav }),
@@ -100,7 +100,7 @@ export default function VideoReferencesPage() {
     params.set('offset', String(currentPage * PAGE_SIZE));
 
     try {
-      const r = await fetch(`/api/references/videos?${params}`);
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/videos?${params}`);
       const d = await r.json();
       const vids = d.videos || [];
       setVideos(vids);
@@ -137,7 +137,7 @@ export default function VideoReferencesPage() {
   const openDetail = async (id: string) => {
     setModalOpen(true);
     try {
-      const r = await fetch(`/api/references/videos/${id}`);
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/videos/${id}`);
       const data = await r.json();
       setCurrentVideo(data);
     } catch { /* ignore */ }
@@ -154,7 +154,7 @@ export default function VideoReferencesPage() {
       music_title: currentVideo.music_title || null,
     };
     try {
-      const r = await fetch(`/api/references/videos/${currentVideo.id}`, {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/videos/${currentVideo.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -222,7 +222,7 @@ export default function VideoReferencesPage() {
   const deleteVideo = async (videoId: string) => {
     if (!confirm('이 레퍼런스 영상을 삭제하시겠습니까?')) return;
     try {
-      const r = await fetch(`/api/references/videos/${videoId}`, { method: 'DELETE' });
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/videos/${videoId}`, { method: 'DELETE' });
       if (!r.ok) {
         const d = await r.json();
         throw new Error(d.error || String(r.status));
@@ -348,13 +348,13 @@ export default function VideoReferencesPage() {
                   const dur = v.duration_sec ? formatDuration(v.duration_sec) : '';
                   const tags = (v.style_tags || []).slice(0, 3);
                   const date = v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR') : '';
-                  const streamUrl = v.video_url || `/api/references/videos/${v.id}/stream`;
+                  const streamUrl = v.video_url || `${getEditorConfig().apiUrl}/api/references/videos/${v.id}/stream`;
                   const isFav = favorites.has(v.id);
 
                   return (
                     <VideoCard
                       key={v.id}
-                      thumbnailUrl={`/api/references/videos/${v.id}/thumbnail`}
+                      thumbnailUrl={`${getEditorConfig().apiUrl}/api/references/videos/${v.id}/thumbnail`}
                       streamUrl={streamUrl}
                       duration={dur}
                       platformIcon={getPlatformIcon(v.platform)}
@@ -416,7 +416,7 @@ export default function VideoReferencesPage() {
       <Modal
         open={modalOpen}
         onClose={() => { setModalOpen(false); setCurrentVideo(null); }}
-        videoSrc={currentVideo ? `/api/references/videos/${currentVideo.id}/stream` : undefined}
+        videoSrc={currentVideo ? `${getEditorConfig().apiUrl}/api/references/videos/${currentVideo.id}/stream` : undefined}
       >
         {currentVideo ? (
           <>
@@ -489,7 +489,7 @@ export default function VideoReferencesPage() {
                   className="px-2 py-1 rounded text-xs border border-border bg-muted text-foreground whitespace-nowrap"
                   onClick={async () => {
                     try {
-                      const r = await fetch(`/api/references/recognize-music/${currentVideo.id}`, { method: 'POST' });
+                      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/recognize-music/${currentVideo.id}`, { method: 'POST' });
                       const d = await r.json();
                       if (d.result) {
                         setCurrentVideo({ ...currentVideo, music_artist: d.result.artist, music_title: d.result.title });
