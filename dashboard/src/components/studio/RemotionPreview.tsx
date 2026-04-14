@@ -219,7 +219,7 @@ export const RemotionPreview: React.FC = () => {
         position: 'relative',
       }}
     >
-      <div style={{ position: 'relative', width: '100%', maxWidth: '100%', maxHeight: '100%', aspectRatio: orientation === 'square' ? '1/1' : orientation === 'horizontal' ? '16/9' : '9/16', margin: '0 auto' }}>
+      <div style={{ position: 'relative', height: '100%', maxWidth: '100%', aspectRatio: orientation === 'square' ? '1/1' : orientation === 'horizontal' ? '16/9' : '9/16', margin: '0 auto' }}>
         <Player
           ref={playerRef}
           component={VideoProjectComponent}
