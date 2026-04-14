@@ -13,7 +13,6 @@ import {
   ImageIcon,
   BotIcon,
   VideoIcon,
-  ScissorsIcon,
   BookmarkCheckIcon,
   FilmIcon,
   LayoutTemplateIcon,
@@ -44,14 +43,12 @@ const cmsNavItems = [
 
 const videoNavItems = [
   { title: "프로젝트", url: "/video/projects", icon: VideoIcon },
-  { title: "영상 편집", url: "/video/edit", icon: ScissorsIcon },
   { title: "레퍼런스", url: "/video/references", icon: BookmarkCheckIcon },
   { title: "완료 영상", url: "/video/finished", icon: FilmIcon },
-  { title: "템플릿", url: "/video/templates", icon: LayoutTemplateIcon },
 ];
 
 const carouselNavItems = [
-  { title: "에디터", url: "/carousel", icon: LayersIcon },
+  { title: "캐러셀", url: "/carousel", icon: LayersIcon },
   { title: "레퍼런스", url: "/carousel/references", icon: BookmarkCheckIcon },
   { title: "템플릿", url: "/carousel/templates", icon: LayoutTemplateIcon },
 ];
