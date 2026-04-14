@@ -63,7 +63,7 @@ export default function VideoFinishedPage() {
   const openDetail = async (id: string) => {
     setModalOpen(true);
     try {
-      const r = await fetch(`/api/finished/${id}`);
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/finished/${id}`);
       const d = await r.json();
       setCurrentVideo(d.video || d);
     } catch { /* ignore */ }
@@ -77,7 +77,7 @@ export default function VideoFinishedPage() {
       notes: currentVideo.notes || '',
     };
     try {
-      const r = await fetch(`/api/finished/${currentVideo.id}`, {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/finished/${currentVideo.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -101,7 +101,7 @@ export default function VideoFinishedPage() {
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
     try {
-      const r = await fetch(`/api/finished/${deleteConfirm.id}`, { method: 'DELETE' });
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/finished/${deleteConfirm.id}`, { method: 'DELETE' });
       if (!r.ok) throw new Error(String(r.status));
       setDeleteConfirm(null);
       setModalOpen(false);
@@ -209,8 +209,8 @@ export default function VideoFinishedPage() {
               return (
                 <VideoCard
                   key={v.id}
-                  thumbnailUrl={`/api/finished/${v.id}/thumbnail`}
-                  streamUrl={`/api/finished/${v.id}/stream`}
+                  thumbnailUrl={`${getEditorConfig().apiUrl}/api/finished/${v.id}/thumbnail`}
+                  streamUrl={`${getEditorConfig().apiUrl}/api/finished/${v.id}/stream`}
                   duration={dur}
                   onClick={() => openDetail(v.id)}
                 >
@@ -238,7 +238,7 @@ export default function VideoFinishedPage() {
       <Modal
         open={modalOpen}
         onClose={() => { setModalOpen(false); setCurrentVideo(null); }}
-        videoSrc={currentVideo ? `/api/finished/${currentVideo.id}/stream` : undefined}
+        videoSrc={currentVideo ? `${getEditorConfig().apiUrl}/api/finished/${currentVideo.id}/stream` : undefined}
         videoAutoPlay
       >
         {currentVideo ? (
@@ -293,7 +293,7 @@ export default function VideoFinishedPage() {
               </button>
               <a
                 className="px-3 py-1.5 rounded text-xs border border-border bg-muted text-foreground inline-flex items-center"
-                href={`/api/finished/${currentVideo.id}/stream?download=1&name=${encodeURIComponent((currentVideo.name || 'video') + '.mp4')}`}
+                href={`${getEditorConfig().apiUrl}/api/finished/${currentVideo.id}/stream?download=1&name=${encodeURIComponent((currentVideo.name || 'video') + '.mp4')}`}
               >
                 다운로드
               </a>
