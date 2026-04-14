@@ -1,5 +1,7 @@
 'use client';
 
+import { getEditorConfig } from '@/lib/editor-config';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDuration, fmtNum } from '@/lib/utils';
@@ -43,7 +45,7 @@ export default function VideoReferencesPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch('/api/references/favorites')
+    fetch(`${getEditorConfig().apiUrl}/api/references/favorites`)
       .then((r) => r.json())
       .then((d) => {
         const ids = (d.videos || []).map((v: { id: string }) => v.id);
@@ -81,7 +83,7 @@ export default function VideoReferencesPage() {
 
   const loadAccounts = useCallback(async () => {
     try {
-      const r = await fetch('/api/references/accounts');
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/accounts`);
       const d = await r.json();
       setAccounts(d.accounts || []);
     } catch { /* ignore */ }
@@ -171,7 +173,7 @@ export default function VideoReferencesPage() {
     const accountName = currentVideo.account_name || currentVideo.username || '';
     const name = accountName ? `${accountName} 프로젝트` : '레퍼런스 프로젝트';
     try {
-      const r = await fetch('/api/projects', {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -200,7 +202,7 @@ export default function VideoReferencesPage() {
     if (!url || importing) return;
     setImporting(true);
     try {
-      const r = await fetch('/api/references/import', {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/references/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from '@/components/studio/store';
 import { ProjectBar } from '@/components/studio/ProjectBar';
 import { RemotionPreview } from '@/components/studio/RemotionPreview';
@@ -49,7 +50,7 @@ function ProjectList() {
   const loadProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/projects');
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/projects`);
       const d = await r.json();
       setProjects(d.projects || []);
     } catch {
@@ -150,7 +151,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
 
     const load = async () => {
       try {
-        const r = await fetch(`/api/projects/load/${encodeURIComponent(projectId)}`);
+        const r = await fetch(`${getEditorConfig().apiUrl}/api/projects/load/${encodeURIComponent(projectId)}`);
         if (r.ok) {
           const data = await r.json();
           loadProject({ ...data, id: projectId });
@@ -159,7 +160,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
           const bgmSources = (data.bgmClips || []).map((b: { source: string }) => b.source);
           const allFiles = [...new Set([...sources, ...bgmSources])].filter(Boolean);
           if (allFiles.length > 0) {
-            fetch('/api/resolver/resolve', {
+            fetch(`${getEditorConfig().apiUrl}/api/resolver/resolve`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ filenames: allFiles }),
@@ -167,7 +168,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
           }
           return;
         }
-        const r2 = await fetch(`/api/projects/${encodeURIComponent(projectId)}`);
+        const r2 = await fetch(`${getEditorConfig().apiUrl}/api/projects/${encodeURIComponent(projectId)}`);
         if (r2.ok) {
           const d = await r2.json();
           const proj = d.project || d;
@@ -227,7 +228,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
         const data = useEditorStore.getState().getProjectData();
-        fetch('/api/projects/save', {
+        fetch(`${getEditorConfig().apiUrl}/api/projects/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
