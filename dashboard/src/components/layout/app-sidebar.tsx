@@ -12,6 +12,12 @@ import {
   ActivityIcon,
   ImageIcon,
   BotIcon,
+  VideoIcon,
+  ScissorsIcon,
+  BookmarkCheckIcon,
+  FilmIcon,
+  LayoutTemplateIcon,
+  LayersIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,7 +31,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 
-const navItems = [
+const cmsNavItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
   { title: "Topics", url: "/topics", icon: TagIcon },
   { title: "Contents", url: "/contents", icon: FileTextIcon },
@@ -36,13 +42,49 @@ const navItems = [
   { title: "Media", url: "/media", icon: ImageIcon },
 ];
 
+const videoNavItems = [
+  { title: "프로젝트", url: "/video/projects", icon: VideoIcon },
+  { title: "영상 편집", url: "/video/edit", icon: ScissorsIcon },
+  { title: "레퍼런스", url: "/video/references", icon: BookmarkCheckIcon },
+  { title: "완료 영상", url: "/video/finished", icon: FilmIcon },
+  { title: "템플릿", url: "/video/templates", icon: LayoutTemplateIcon },
+];
+
+const carouselNavItems = [
+  { title: "에디터", url: "/carousel", icon: LayersIcon },
+  { title: "레퍼런스", url: "/carousel/references", icon: BookmarkCheckIcon },
+  { title: "템플릿", url: "/carousel/templates", icon: LayoutTemplateIcon },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
 
   const isActive = (url: string) => {
     if (url === "/") return pathname === "/";
+    if (url === "/carousel") return pathname === "/carousel";
     return pathname.startsWith(url);
   };
+
+  const renderNavGroup = (
+    label: string,
+    items: typeof cmsNavItems
+  ) => (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarMenu>
+        {items.map((item) => (
+          <SidebarMenuItem key={item.url}>
+            <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+              <Link href={item.url}>
+                <item.icon />
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar>
@@ -58,21 +100,9 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.url}>
-                <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                  <Link href={item.url}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+        {renderNavGroup("CMS", cmsNavItems)}
+        {renderNavGroup("영상 (Video)", videoNavItems)}
+        {renderNavGroup("캐러셀 (Carousel)", carouselNavItems)}
       </SidebarContent>
       <SidebarFooter>
         <div className="px-2 py-2 text-xs text-muted-foreground">
