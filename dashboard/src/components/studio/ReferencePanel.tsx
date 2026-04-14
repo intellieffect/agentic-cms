@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 
 interface RefVideo {
@@ -22,7 +23,7 @@ export const ReferencePanel: React.FC = () => {
   const setReferenceId = useEditorStore((s) => s.setReferenceId);
 
   useEffect(() => {
-    fetch('/api/references/videos?limit=30&sort=likes')
+    fetch(`${getEditorConfig().apiUrl}/api/references/videos?limit=30&sort=likes`)
       .then((r) => r.json())
       .then((d) => {
         const vids = d.videos || [];

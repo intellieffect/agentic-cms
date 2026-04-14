@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 
 export const ExportPanel: React.FC = () => {

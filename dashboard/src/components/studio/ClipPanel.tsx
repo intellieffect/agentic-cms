@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 import type { ClipZoom } from './types';
 
@@ -124,7 +125,7 @@ export const ClipPanel: React.FC = () => {
         <button
           onClick={async () => {
             try {
-              const r = await fetch('/api/resolver/pick-file', {
+              const r = await fetch(`${getEditorConfig().apiUrl}/api/resolver/pick-file`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: '영상' }),
@@ -133,7 +134,7 @@ export const ClipPanel: React.FC = () => {
               const d = await r.json();
               if (!d.filepath) return;
               const fname = d.filepath.split('/').pop() || 'video.mp4';
-              await fetch('/api/resolver/link-file', {
+              await fetch(`${getEditorConfig().apiUrl}/api/resolver/link-file`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: fname, filepath: d.filepath }),

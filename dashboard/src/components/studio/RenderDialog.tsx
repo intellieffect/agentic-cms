@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 
 interface RenderDialogProps {
@@ -43,7 +44,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
     setSaving(true);
     try {
       const data = getProjectData();
-      const r = await fetch('/api/finished/from-render', {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/finished/from-render`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -66,7 +67,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
 
   const pollStatus = useCallback(async () => {
     try {
-      const r = await fetch('/api/render-remotion/status');
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/render-remotion/status`);
       const d = await r.json();
       const st = d.state || d.status;
       if (st === 'rendering' || st === 'starting') {
@@ -96,7 +97,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
     setErrorMsg('');
     try {
       const data = getProjectData();
-      const res = await fetch('/api/render-remotion', {
+      const res = await fetch(`${getEditorConfig().apiUrl}/api/render-remotion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

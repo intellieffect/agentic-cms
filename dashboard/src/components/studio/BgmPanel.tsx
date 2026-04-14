@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
+import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 
 interface AnalyzeResult {
@@ -33,7 +34,7 @@ export const BgmPanel: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
       try {
-        const r = await fetch('/api/upload', { method: 'POST', body: formData });
+        const r = await fetch(`${getEditorConfig().apiUrl}/api/upload`, { method: 'POST', body: formData });
         if (r.ok) {
           addBgmClip({
             source: file.name,
@@ -78,7 +79,7 @@ export const BgmPanel: React.FC = () => {
         return { source: c.source, start: c.start, end: c.end, speed };
       });
 
-      const r = await fetch('/api/bgm/analyze', {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/bgm/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
