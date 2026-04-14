@@ -144,14 +144,16 @@ export const RemotionPreview: React.FC = () => {
     prefetchFreeRef.current.forEach((free) => free());
     prefetchFreeRef.current = [];
 
-    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    const base = typeof window !== 'undefined' ? `${window.location.origin}/editor-api` : 'http://localhost:8092';
 
     // BGM 프리로드
     if (bgmEnabled && bgmClips.length) {
       for (const bgm of bgmClips) {
-        const url = `${base}/${bgm.source}`;
-        const { free } = prefetch(url, { method: 'blob-url', contentType: 'audio/mpeg' });
-        prefetchFreeRef.current.push(free);
+        try {
+          const url = `${base}/${bgm.source}`;
+          const { free } = prefetch(url, { method: 'blob-url', contentType: 'audio/mpeg' });
+          prefetchFreeRef.current.push(free);
+        } catch { /* ignore prefetch errors */ }
       }
     }
 
@@ -159,9 +161,11 @@ export const RemotionPreview: React.FC = () => {
     for (const clip of clips.slice(0, 3)) {
       const src = clip.source;
       if (!src) continue;
-      const url = `${base}/${src}`;
-      const { free } = prefetch(url, { method: 'blob-url', contentType: 'video/mp4' });
-      prefetchFreeRef.current.push(free);
+      try {
+        const url = `${base}/${src}`;
+        const { free } = prefetch(url, { method: 'blob-url', contentType: 'video/mp4' });
+        prefetchFreeRef.current.push(free);
+      } catch { /* ignore prefetch errors */ }
     }
 
     return () => {
