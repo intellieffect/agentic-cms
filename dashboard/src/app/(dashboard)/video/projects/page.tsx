@@ -264,7 +264,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
   React.useEffect(() => {
     if (!panelInitRef.current) {
       panelInitRef.current = true;
-      setPanelWidth(Math.round(window.innerWidth * 0.5));
+      setPanelWidth(Math.round(window.innerWidth * 0.48));
     }
   }, []);
   const [timelineHeight, setTimelineHeight] = React.useState(380);
