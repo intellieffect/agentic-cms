@@ -1,0 +1,18 @@
+export const theme = {
+  bg: 'var(--be-bg)',
+  bgCard: 'var(--be-bg-card)',
+  bgInput: 'var(--be-bg-input)',
+  bgHover: 'var(--be-bg-hover)',
+  bgBtn: 'var(--be-bg-btn)',
+  accent: 'var(--be-accent)',
+  accentHover: 'var(--be-accent-hover)',
+  danger: 'var(--be-danger)',
+  dangerHover: 'var(--be-danger-hover)',
+  border: 'var(--be-border)',
+  borderLight: 'var(--be-border-light)',
+  borderHover: 'var(--be-border-hover)',
+  text: 'var(--be-text)',
+  textMuted: 'var(--be-text-muted)',
+  textDim: 'var(--be-text-dim)',
+  textAccent: 'var(--be-text-accent)',
+} as const;

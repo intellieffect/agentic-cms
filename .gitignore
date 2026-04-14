@@ -4,3 +4,5 @@ reference/
 .env
 *.js.map
 *.d.ts.map
+dashboard/src/app/(dashboard)/video/edit_removed_*
+dashboard/src/app/(dashboard)/video/templates_removed_*
