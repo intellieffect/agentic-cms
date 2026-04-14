@@ -48,7 +48,7 @@ export const ClipPanel: React.FC = () => {
   // 소스 영상 전체 길이 프로브
   useEffect(() => {
     if (!clip) return;
-    fetch(`/api/media/probe/${encodeURIComponent(clip.source)}`)
+    fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
       .then(r => r.json())
       .then(d => setSourceDuration(d.duration || clip.end + 10))
       .catch(() => setSourceDuration(clip.end + 10));
@@ -141,7 +141,7 @@ export const ClipPanel: React.FC = () => {
               });
               let duration = 10;
               try {
-                const pr = await fetch(`/api/media/probe/${encodeURIComponent(fname)}`);
+                const pr = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(fname)}`);
                 if (pr.ok) { const pd = await pr.json(); duration = pd.duration || 10; }
               } catch {}
               replaceClipSource(selectedClipIndex, fname, duration);

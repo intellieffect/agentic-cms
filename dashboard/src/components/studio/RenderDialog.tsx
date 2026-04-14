@@ -48,7 +48,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filePath: '/api/render-remotion/download',
+          filePath: `${getEditorConfig().apiUrl}/api/render-remotion/download`,
           name: name || '렌더링 영상',
           projectId: data.id || (data as unknown as Record<string, unknown>).dbId,
         }),
@@ -113,7 +113,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
 
   const handleDownload = () => {
     const a = document.createElement('a');
-    a.href = '/api/render-remotion/download';
+    a.href = `${getEditorConfig().apiUrl}/api/render-remotion/download`;
     a.download = `${name || 'video'}.mp4`;
     a.click();
   };
