@@ -33,7 +33,7 @@ export const ExportPanel: React.FC = () => {
           {globalSubs.length}개 자막을 SRT 형식으로 내보냅니다
         </div>
         <button
-          className="btn btn-pri"
+          className="be-btn be-btn-pri"
           style={{ fontSize: 10, padding: '5px 12px', width: '100%' }}
           onClick={exportSrt}
           disabled={globalSubs.length === 0}
@@ -49,7 +49,7 @@ export const ExportPanel: React.FC = () => {
           전체 프로젝트 데이터를 JSON으로 내보냅니다
         </div>
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 10, padding: '5px 12px', width: '100%' }}
           onClick={handleExportJson}
         >

@@ -87,12 +87,12 @@ export const ReferencePanel: React.FC = () => {
             <div style={{ marginTop: 6, display: 'flex', gap: 4, flexShrink: 0 }}>
               <button
                 onClick={() => { const rv = refVideoRef.current; if (rv) { rv.paused ? rv.play() : rv.pause(); } }}
-                className="btn"
+                className="be-btn"
                 style={{ flex: 1, fontSize: 10, padding: '5px 0' }}
               >▶ 재생/정지</button>
               <button
                 onClick={() => { const rv = refVideoRef.current; if (rv) rv.currentTime = 0; }}
-                className="btn"
+                className="be-btn"
                 style={{ flex: 1, fontSize: 10, padding: '5px 0' }}
               >⏮ 처음</button>
             </div>

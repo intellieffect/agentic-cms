@@ -35,7 +35,7 @@ export const EffectPanel: React.FC = () => {
           글로벌 이펙트
         </div>
         <button
-          className="btn"
+          className="be-btn"
           style={{ fontSize: 9, padding: '2px 6px' }}
           onClick={handleReset}
         >

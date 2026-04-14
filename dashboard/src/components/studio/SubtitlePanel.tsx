@@ -178,9 +178,9 @@ export const SubtitlePanel: React.FC = () => {
           자막 ({globalSubs.length})
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
-          <button className="btn" style={{ fontSize: 9, padding: '2px 6px' }} onClick={handleAdd}>+ 추가</button>
+          <button className="be-btn" style={{ fontSize: 9, padding: '2px 6px' }} onClick={handleAdd}>+ 추가</button>
           <button
-            className="btn"
+            className="be-btn"
             style={{ fontSize: 9, padding: '2px 6px', color: '#a78bfa', borderColor: '#a78bfa44' }}
             onClick={handleWhisperGenerate}
             disabled={whisperLoading}
@@ -189,7 +189,7 @@ export const SubtitlePanel: React.FC = () => {
           </button>
           {selectedSubIndex >= 0 && (
             <button
-              className="btn"
+              className="be-btn"
               style={{ fontSize: 9, padding: '2px 6px', color: '#ef4444', borderColor: '#ef444444' }}
               onClick={handleDelete}
             >
@@ -305,7 +305,7 @@ const SubEditor: React.FC<{ index: number }> = ({ index }) => {
         {EFFECTS.map((ef) => (
           <button
             key={ef.value}
-            className={`btn ${sub.effect === ef.value || (!sub.effect && ef.value === 'fadeIn') ? 'btn-on' : ''}`}
+            className={`be-btn ${sub.effect === ef.value || (!sub.effect && ef.value === 'fadeIn') ? 'be-btn-on' : ''}`}
             onClick={() => updateGlobalSub(index, { effect: ef.value })}
             style={{ fontSize: 10 }}
           >
@@ -388,7 +388,7 @@ const SubEditor: React.FC<{ index: number }> = ({ index }) => {
         ].map((a) => (
           <button
             key={a.value}
-            className={`btn ${(style.textAlign || 'center') === a.value ? 'btn-on' : ''}`}
+            className={`be-btn ${(style.textAlign || 'center') === a.value ? 'be-btn-on' : ''}`}
             onClick={() => updateGlobalSub(index, { style: { ...style, textAlign: a.value } })}
             style={{ fontSize: 10, flex: 1 }}
           >
@@ -412,7 +412,7 @@ const SubEditor: React.FC<{ index: number }> = ({ index }) => {
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <label style={{ fontSize: 9, color: '#666' }}>배경</label>
         <button
-          className={`btn ${style.bg !== false ? 'btn-on' : ''}`}
+          className={`be-btn ${style.bg !== false ? 'be-btn-on' : ''}`}
           onClick={() => updateGlobalSub(index, { style: { ...style, bg: !(style.bg !== false) } })}
           style={{ fontSize: 9 }}
         >
