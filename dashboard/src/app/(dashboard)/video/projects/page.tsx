@@ -6,19 +6,7 @@ import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from '@/components/studio/store';
 
 import { ProjectBar } from '@/components/studio/ProjectBar';
-import dynamic from 'next/dynamic';
-
-const RemotionPreview = dynamic(
-  () => import('@/components/studio/RemotionPreview').then((m) => ({ default: m.RemotionPreview })),
-  {
-    ssr: false,
-    loading: () => (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', color: '#555' }}>
-        프리뷰 로딩 중...
-      </div>
-    ),
-  }
-);
+import { RemotionPreview } from '@/components/studio/RemotionPreview';
 import { Timeline } from '@/components/studio/Timeline';
 import { SubtitlePanel } from '@/components/studio/SubtitlePanel';
 import { ClipPanel } from '@/components/studio/ClipPanel';
