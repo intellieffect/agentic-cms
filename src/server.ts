@@ -12,6 +12,7 @@ import { registerPublicationTools } from './tools/publications.js';
 import { registerActivityTools } from './tools/activity.js';
 import { registerRevisionTools } from './tools/revisions.js';
 import { registerMediaTools } from './tools/media.js';
+import { registerVideoTools } from './tools/video.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const editorApiUrl = process.env.EDITOR_API_URL || 'http://localhost:8092';
   const adapter = new SupabaseAdapter(supabaseUrl, supabaseKey);
 
   const server = new McpServer({
@@ -40,6 +42,9 @@ async function main(): Promise<void> {
   registerActivityTools(server, adapter);
   registerRevisionTools(server, adapter);
   registerMediaTools(server, adapter);
+
+  // Video editor tools
+  registerVideoTools(server, editorApiUrl);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
