@@ -44,9 +44,23 @@ export interface EditorConfig {
   };
 }
 
+/**
+ * Editor API URL 결정
+ * - 브라우저: '/editor-api' (Next.js proxy 경유, CORS 우회)
+ * - 서버: 환경변수 또는 기본값 직접 사용
+ */
+function resolveApiUrl(): string {
+  if (typeof window !== 'undefined') {
+    // 브라우저에서는 Next.js rewrites proxy 경유
+    return '/editor-api';
+  }
+  return process.env.NEXT_PUBLIC_EDITOR_API_URL || 'http://localhost:8092';
+}
+
 const defaultConfig: EditorConfig = {
   routePrefix: '',
-  apiUrl: 'http://localhost:8092',
+  apiUrl: resolveApiUrl(),
+  mediaProxyPrefix: process.env.NEXT_PUBLIC_MEDIA_PROXY_PREFIX || '/_proxy',
   tables: {
     videos: 'reference_videos',
     accounts: 'reference_accounts',
@@ -65,9 +79,9 @@ const defaultConfig: EditorConfig = {
     plans: 'plans',
   },
   media: {
-    root: '/Volumes/Media',
-    finished: '~/Desktop/_미디어/완료영상',
-    defaultSource: '/Volumes/Seagate/인텔리이펙트 영상소스',
+    root: process.env.NEXT_PUBLIC_MEDIA_ROOT || '/Volumes/Media',
+    finished: process.env.NEXT_PUBLIC_MEDIA_FINISHED || '~/Desktop/_미디어/완료영상',
+    defaultSource: process.env.NEXT_PUBLIC_MEDIA_DEFAULT_SOURCE || '/Volumes/Seagate/인텔리이펙트 영상소스',
   },
 };
 
@@ -87,9 +101,3 @@ export function getEditorConfig(): EditorConfig {
 }
 
 export default _config;
-
-/**
- * Media proxy prefix for stable video file serving.
- * Flask catch-all route can be unreliable; /_proxy/ is always stable.
- * Override this if your backend serves media from a different path.
- */
