@@ -1,0 +1,187 @@
+.gridWrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  align-content: start;
+}
+
+.cardTitle {
+  font-size: 11px;
+  color: #ccc;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.cardMeta {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  color: #666;
+}
+
+.cardMeta span {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cardTags {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.cardTags span {
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 8px;
+  background: #1a1a2a;
+  border: 1px solid #2563eb33;
+  color: #60a5fa;
+}
+
+.cardDate {
+  font-size: 8px;
+  color: #444;
+  margin-top: 4px;
+}
+
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detailSection h3 {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.detailNameInput {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #e0e0e0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  width: 100%;
+}
+
+.detailNameInput:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.detailMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 10px;
+  color: #666;
+}
+
+.detailMeta span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.saveBar {
+  display: flex;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #1e1e1e;
+  margin-top: auto;
+}
+
+.uploadOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .85);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadBox {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  width: 480px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dropZone {
+  border: 2px dashed #2a2a2a;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #555;
+  font-size: 11px;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.dropZone:hover,
+.dragover {
+  border-color: #2563eb;
+  color: #60a5fa;
+  background: #0a0a2a;
+}
+
+.uploadProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressBar {
+  height: 4px;
+  background: #1e1e1e;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 2px;
+  transition: width .3s;
+}
+
+.progressText {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+}
+
+@media (max-width: 1280px) {
+  .grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .grid { grid-template-columns: 1fr; }
+}
