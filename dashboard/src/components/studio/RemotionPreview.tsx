@@ -184,7 +184,7 @@ export const RemotionPreview: React.FC = () => {
     sources,
     globalEffects,
     fadeInOut,
-    mediaBasePath: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3100',
+    mediaBasePath: typeof window !== 'undefined' ? `${window.location.origin}/editor-api` : 'http://localhost:8092',
   };
 
   if (clips.length === 0) {
