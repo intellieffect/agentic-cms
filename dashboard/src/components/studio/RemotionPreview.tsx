@@ -99,6 +99,7 @@ export const RemotionPreview: React.FC = () => {
   }, []);
 
   // Expose player controls for keyboard shortcuts
+  // TODO: window 전역 통신을 zustand store 액션 또는 React Context로 교체
   useEffect(() => {
     const win = window as unknown as Record<string, unknown>;
     win.__studioSeekTo = seekTo;

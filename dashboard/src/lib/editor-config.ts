@@ -64,5 +64,3 @@ export function setEditorConfig(config: Partial<EditorConfig>) {
 export function getEditorConfig(): EditorConfig {
   return _config;
 }
-
-export default _config;
