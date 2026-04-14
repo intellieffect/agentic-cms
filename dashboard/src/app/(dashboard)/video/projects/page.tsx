@@ -320,10 +320,10 @@ function StudioEditor({ projectId }: { projectId: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 3.5rem)', overflow: 'hidden' }}>
       <ProjectBar />
 
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: '#0a0a0a', overflow: 'hidden', minWidth: 100,
+          background: '#0a0a0a', overflow: 'hidden', minWidth: 100, minHeight: 0,
         }}>
           <RemotionPreview />
         </div>
