@@ -1,0 +1,92 @@
+.card {
+  background: #141414;
+  border: 1px solid #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: .15s;
+}
+
+.card:hover {
+  border-color: #333;
+  transform: translateY(-1px);
+}
+
+.thumb {
+  position: relative;
+  aspect-ratio: 9/16;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.card:hover .video {
+  opacity: 1;
+}
+
+.duration {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, .8);
+  color: #fff;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: 'SF Mono', monospace;
+}
+
+.platform {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 10px;
+}
+
+.favBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, .6);
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: .15s;
+  z-index: 2;
+}
+
+.favBtn:hover {
+  background: rgba(0, 0, 0, .8);
+  color: #fbbf24;
+}
+
+.favActive {
+  color: #fbbf24;
+}
+
+.body {
+  padding: 8px 10px;
+}
