@@ -49,6 +49,30 @@ function ProjectList() {
     loadProjects();
   }, [loadProjects]);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const renameProject = async (id: string, newName: string) => {
+    try {
+      await fetch(`${getEditorConfig().apiUrl}/api/projects/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, dbId: id, name: newName }),
+      });
+      loadProjects();
+    } catch { /* ignore */ }
+    setEditingId(null);
+  };
+
+  const deleteProject = async (id: string) => {
+    try {
+      await fetch(`${getEditorConfig().apiUrl}/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      loadProjects();
+    } catch { /* ignore */ }
+    setDeleteConfirm(null);
+  };
+
   const sorted = [...projects].sort((a, b) => {
     const ta = typeof a.updatedAt === 'number' ? a.updatedAt : Date.parse(a.updatedAt as string) || 0;
     const tb = typeof b.updatedAt === 'number' ? b.updatedAt : Date.parse(b.updatedAt as string) || 0;
@@ -117,24 +141,56 @@ function ProjectList() {
             {sorted.map((p) => (
               <div
                 key={p.id}
-                onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}
-                className="flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/10 cursor-pointer transition-colors"
+                className="flex items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:bg-accent/10 cursor-pointer transition-colors group"
               >
-                <span className="text-sm" style={{ color: p.source === 'db' ? '#60a5fa' : '#888' }}>
+                <span
+                  className="text-sm"
+                  style={{ color: p.source === 'db' ? '#60a5fa' : '#888' }}
+                  onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}
+                >
                   {p.source === 'db' ? '\u2601\uFE0F' : '\uD83D\uDCBB'}
                 </span>
-                <span className="flex-1 text-sm font-medium text-foreground truncate">
-                  {p.name || p.id}
-                </span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                {editingId === p.id ? (
+                  <input
+                    autoFocus
+                    className="flex-1 text-sm font-medium bg-transparent border-b border-muted-foreground text-foreground outline-none"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={() => { if (editName.trim()) renameProject(p.id, editName.trim()); else setEditingId(null); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && editName.trim()) renameProject(p.id, editName.trim()); if (e.key === 'Escape') setEditingId(null); }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span
+                    className="flex-1 text-sm font-medium text-foreground truncate"
+                    onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingId(p.id); setEditName(p.name || p.id); }}
+                  >
+                    {p.name || p.id}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground flex-shrink-0" onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}>
                   {p.clipCount || 0} clips
                 </span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span className="text-xs text-muted-foreground flex-shrink-0" onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}>
                   {formatDur(p.totalDuration || 0)}
                 </span>
-                <span className="text-xs text-muted-foreground/60 flex-shrink-0">
+                <span className="text-xs text-muted-foreground/60 flex-shrink-0" onClick={() => router.push(`/video/projects?project=${encodeURIComponent(p.id)}`)}>
                   {formatDate(p.updatedAt)}
                 </span>
+                {deleteConfirm === p.id ? (
+                  <div className="flex gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button className="px-2 py-1 text-xs rounded text-white" style={{ background: '#dc2626' }} onClick={() => deleteProject(p.id)}>삭제</button>
+                    <button className="px-2 py-1 text-xs rounded border border-border text-muted-foreground" onClick={() => setDeleteConfirm(null)}>취소</button>
+                  </div>
+                ) : (
+                  <button
+                    className="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-red-400 flex-shrink-0 transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(p.id); }}
+                  >
+                    삭제
+                  </button>
+                )}
               </div>
             ))}
           </div>
