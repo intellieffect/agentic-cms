@@ -1,12 +1,13 @@
 'use client';
 
+// TODO: 트랙 렌더링(TrackRow), 드래그 로직(useDrag hook), 키보드 단축키(useKeyboardShortcuts hook) 분리 예정
+// TODO: useShallow로 관련 selector 그룹핑하여 리렌더링 최적화
+
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 import type { Clip } from './types';
 import { NUM_VIDEO_TRACKS } from './types';
-
-const API_URL = typeof window !== 'undefined' ? getEditorConfig().apiUrl : 'http://localhost:8092';
 
 const FPS = 30;
 const TRACK_HEIGHT = 48;
@@ -81,7 +82,7 @@ export const Timeline: React.FC = () => {
         if (!uploadOk) {
           const formData2 = new FormData();
           formData2.append('file', file);
-          const res2 = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData2 });
+          const res2 = await fetch(`${getEditorConfig().apiUrl}/api/upload`, { method: 'POST', body: formData2 });
           uploadOk = res2.ok;
         }
         if (!uploadOk) {

@@ -55,9 +55,8 @@ export default function VideoFinishedPage() {
   })();
 
   const debounceSearch = (val: string) => {
-    setSearch(val);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {}, 200);
+    searchTimer.current = setTimeout(() => setSearch(val), 200);
   };
 
   const openDetail = async (id: string) => {

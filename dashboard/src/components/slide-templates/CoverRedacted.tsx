@@ -2,6 +2,10 @@ import { SlideTitle, MutedText } from '@/components/slide-primitives'
 import { fontSize, fontWeight, lineHeight, spacing, gap, layout } from '@/lib/studio/slide-tokens'
 import { DEFAULT_COLORS, SlideBase, type BaseSlideStyleProps } from './SlideBase'
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export interface CoverRedactedProps extends BaseSlideStyleProps {
   titleFontSize?: number
   title: string
@@ -18,9 +22,11 @@ export const coverRedactedDefaultProps: CoverRedactedProps = {
 
 export function CoverRedacted({ title, redactedWord, subtitle, titleFontSize, ...colors }: CoverRedactedProps) {
   const accent = colors.accentColor ?? '#ff6b6b'
-  const rendered = (title || '')
+  const safeTitle = escapeHtml(title || '')
+  const safeRedactedWord = escapeHtml(redactedWord || '')
+  const rendered = safeTitle
     .replace(/█+/g, () =>
-      `<span style="background:${colors.accentColorEnd ? `linear-gradient(90deg,${accent},${colors.accentColorEnd})` : accent};color:transparent;border-radius:4px;padding:0 8px">${redactedWord}</span>`
+      `<span style="background:${colors.accentColorEnd ? `linear-gradient(90deg,${accent},${colors.accentColorEnd})` : accent};color:transparent;border-radius:4px;padding:0 8px">${safeRedactedWord}</span>`
     )
     .replace(/\*\*(.+?)\*\*/g, colors.accentColorEnd
       ? `<span style="background:linear-gradient(90deg,${accent},${colors.accentColorEnd});-webkit-background-clip:text;background-clip:text;color:transparent">$1</span>`
