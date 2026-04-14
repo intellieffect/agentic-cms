@@ -259,12 +259,12 @@ function StudioEditor({ projectId }: { projectId: string }) {
     { key: 'effect' as const, label: '이펙트' },
   ];
 
-  const [panelWidth, setPanelWidth] = React.useState(550);
+  const [panelWidth, setPanelWidth] = React.useState(500);
   const panelInitRef = React.useRef(false);
   React.useEffect(() => {
     if (!panelInitRef.current) {
       panelInitRef.current = true;
-      setPanelWidth(Math.round(window.innerWidth * 0.45));
+      setPanelWidth(Math.round(window.innerWidth * 0.5));
     }
   }, []);
   const [timelineHeight, setTimelineHeight] = React.useState(380);
