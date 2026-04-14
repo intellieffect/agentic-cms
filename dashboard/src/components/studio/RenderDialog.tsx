@@ -48,7 +48,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filePath: `${getEditorConfig().apiUrl}/api/render-remotion/download`,
+          filePath: '/api/render-remotion/download',
           name: name || '렌더링 영상',
           projectId: data.id || (data as unknown as Record<string, unknown>).dbId,
         }),
