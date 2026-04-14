@@ -109,6 +109,26 @@ function ProjectList() {
               {projects.length}개 프로젝트 / 클립 {totalClips}개 / {formatDur(totalDuration)}
             </p>
           </div>
+          <button
+            onClick={async () => {
+              try {
+                const r = await fetch(`${getEditorConfig().apiUrl}/api/projects/save`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: `새 프로젝트 ${new Date().toLocaleDateString('ko-KR')}`, clips: [], clipMeta: [], clipCrops: [], clipZooms: [], clipSubStyles: [], transitions: [], subs: [], globalSubs: [], bgmClips: [], totalDuration: 0, sources: [], orientation: 'horizontal' }),
+                });
+                if (r.ok) {
+                  const d = await r.json();
+                  const id = d.dbId || d.id;
+                  if (id) router.push(`/video/projects?project=${encodeURIComponent(id)}`);
+                }
+              } catch {}
+            }}
+            className="px-4 py-2 rounded-lg text-sm font-medium"
+            style={{ background: 'var(--be-accent)', color: '#fff', border: 'none', cursor: 'pointer' }}
+          >
+            + 새 프로젝트
+          </button>
         </div>
 
         {loading ? (
