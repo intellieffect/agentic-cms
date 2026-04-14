@@ -76,8 +76,7 @@ export function useDrag({ clipStarts, clipDurations, trackRef, bgmWaveformDurati
   // Seek
   const seekToTime = useCallback((time: number) => {
     const frame = Math.max(0, Math.round(time * FPS));
-    const seekTo = (window as unknown as Record<string, (f: number) => void>).__studioSeekTo;
-    if (seekTo) seekTo(frame);
+    useEditorStore.getState().seekToFrame(frame);
   }, []);
 
   const getTimeFromX = useCallback((clientX: number) => {

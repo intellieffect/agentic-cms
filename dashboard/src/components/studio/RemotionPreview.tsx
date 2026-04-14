@@ -105,15 +105,11 @@ export const RemotionPreview: React.FC = () => {
     else p.play();
   }, []);
 
-  // Expose player controls for keyboard shortcuts
-  // TODO: window 전역 통신을 zustand store 액션 또는 React Context로 교체
+  // Expose player controls via zustand store
   useEffect(() => {
-    const win = window as unknown as Record<string, unknown>;
-    win.__studioSeekTo = seekTo;
-    win.__studioPlayerRef = { toggle, seekTo };
+    useEditorStore.getState().setPlayerCallbacks(seekTo, toggle);
     return () => {
-      delete win.__studioSeekTo;
-      delete win.__studioPlayerRef;
+      useEditorStore.getState().clearPlayerCallbacks();
     };
   }, [seekTo, toggle]);
 

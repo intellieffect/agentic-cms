@@ -199,8 +199,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
 
       if (e.code === 'Space' && !isInput) {
         e.preventDefault();
-        const player = (window as unknown as Record<string, unknown>).__studioPlayerRef as { toggle?: () => void } | undefined;
-        if (player?.toggle) player.toggle();
+        useEditorStore.getState().togglePlayback();
       }
 
       if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && !isInput) {
@@ -208,8 +207,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
         const store = useEditorStore.getState();
         const delta = e.code === 'ArrowLeft' ? -1 : 1;
         const frame = Math.max(0, store.currentFrame + delta);
-        const seekTo = (window as unknown as Record<string, (f: number) => void>).__studioSeekTo;
-        if (seekTo) seekTo(frame);
+        useEditorStore.getState().seekToFrame(frame);
       }
 
       if (e.code === 'KeyB' && !isInput) {
