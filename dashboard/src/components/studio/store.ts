@@ -129,6 +129,14 @@ interface EditorState {
   // Global effects
   updateGlobalEffect: (type: GlobalEffect['type'], value: number) => void;
 
+  // Player callbacks (replaces window.__studioSeekTo / __studioPlayerRef)
+  _playerSeekTo: ((frame: number) => void) | null;
+  _playerToggle: (() => void) | null;
+  setPlayerCallbacks: (seekTo: (frame: number) => void, toggle: () => void) => void;
+  clearPlayerCallbacks: () => void;
+  seekToFrame: (frame: number) => void;
+  togglePlayback: () => void;
+
   // Export
   exportSrt: () => void;
 
@@ -878,6 +886,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       ),
     }));
   },
+
+  // Player callbacks
+  _playerSeekTo: null,
+  _playerToggle: null,
+  setPlayerCallbacks: (seekTo, toggle) => set({ _playerSeekTo: seekTo, _playerToggle: toggle }),
+  clearPlayerCallbacks: () => set({ _playerSeekTo: null, _playerToggle: null }),
+  seekToFrame: (frame) => { const fn = get()._playerSeekTo; if (fn) fn(frame); },
+  togglePlayback: () => { const fn = get()._playerToggle; if (fn) fn(); },
 
   // Export SRT
   exportSrt: () => {
