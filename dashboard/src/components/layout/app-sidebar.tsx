@@ -12,6 +12,8 @@ import {
   ActivityIcon,
   ImageIcon,
   BotIcon,
+  BarChart3Icon,
+  TrendingUpIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +36,11 @@ const navItems = [
   { title: "Variants", url: "/variants", icon: SplitIcon },
   { title: "Activity", url: "/activity", icon: ActivityIcon },
   { title: "Media", url: "/media", icon: ImageIcon },
+];
+
+const analyticsItems = [
+  { title: "Campaign", url: "/analytics", icon: BarChart3Icon },
+  { title: "Traffic", url: "/analytics/traffic", icon: TrendingUpIcon },
 ];
 
 export function AppSidebar() {
@@ -62,6 +69,21 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarMenu>
             {navItems.map((item) => (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                  <Link href={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+          <SidebarMenu>
+            {analyticsItems.map((item) => (
               <SidebarMenuItem key={item.url}>
                 <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                   <Link href={item.url}>
