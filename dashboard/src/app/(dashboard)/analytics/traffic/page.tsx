@@ -92,7 +92,7 @@ export default function TrafficPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-col gap-3">
         <h1 className="text-2xl font-bold">트래픽</h1>
         <Tabs value={mode} onValueChange={(nextMode) => {
