@@ -144,21 +144,24 @@ export const RemotionPreview: React.FC = () => {
 
   // 미디어 로딩 상태 추적
   const [mediaLoading, setMediaLoading] = useState(true);
-  const mediaLoadedRef = useRef<Set<string>>(new Set());
+  const mediaCheckDoneRef = useRef(false);
+  // 소스 목록을 문자열로 안정화하여 불필요한 재실행 방지
+  const clipSourcesKey = clips.map(c => c.source).join('|');
+  const bgmSourcesKey = bgmClips.map(b => b.source).join('|');
   useEffect(() => {
     if (clips.length === 0) { setMediaLoading(false); return; }
-    mediaLoadedRef.current.clear();
-    setMediaLoading(true);
+    if (mediaCheckDoneRef.current) return; // 이미 체크 완료
 
+    setMediaLoading(true);
     const apiUrl = getEditorConfig().apiUrl;
     const base = typeof window !== 'undefined' ? `${window.location.origin}${apiUrl}` : apiUrl;
     const allSources = [...new Set(clips.map(c => c.source))];
     const bgmSources = bgmEnabled ? bgmClips.map(b => b.source) : [];
     const total = allSources.length + bgmSources.length;
-    if (total === 0) { setMediaLoading(false); return; }
+    if (total === 0) { setMediaLoading(false); mediaCheckDoneRef.current = true; return; }
 
     let loaded = 0;
-    const checkDone = () => { loaded++; if (loaded >= total) setMediaLoading(false); };
+    const checkDone = () => { loaded++; if (loaded >= total) { setMediaLoading(false); mediaCheckDoneRef.current = true; } };
 
     for (const src of allSources) {
       fetch(`${base}/_proxy/${encodeURIComponent(src)}`, { method: 'HEAD' })
@@ -170,7 +173,8 @@ export const RemotionPreview: React.FC = () => {
         .then(() => checkDone())
         .catch(() => checkDone());
     }
-  }, [clips, bgmClips, bgmEnabled]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clipSourcesKey, bgmSourcesKey, bgmEnabled]);
 
   // BGM + 영상 프리로드 — Remotion prefetch로 재생 딜레이 제거
   const prefetchFreeRef = useRef<(() => void)[]>([]);
