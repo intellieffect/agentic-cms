@@ -48,6 +48,7 @@ export function AppSidebar() {
 
   const isActive = (url: string) => {
     if (url === "/") return pathname === "/";
+    if (url === "/analytics") return pathname === "/analytics";
     return pathname.startsWith(url);
   };
 
