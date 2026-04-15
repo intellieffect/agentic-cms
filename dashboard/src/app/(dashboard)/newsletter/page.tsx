@@ -39,7 +39,7 @@ export default function NewsletterPage() {
   const [bodyHtml, setBodyHtml] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState("");
-  const [tab, setTab] = useState<"compose" | "subscribers" | "logs">("compose");
+  const [tab, setTab] = useState<"subscribers" | "logs">("subscribers");
 
   const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
@@ -266,7 +266,7 @@ export default function NewsletterPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-border">
-        {(["compose", "subscribers", "logs"] as const).map((t) => (
+        {(["subscribers", "logs"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -274,50 +274,12 @@ export default function NewsletterPage() {
               tab === t ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t === "compose" ? "작성" : t === "subscribers" ? "구독자" : "발송 이력"}
+            {t === "subscribers" ? "구독자" : "발송 이력"}
           </button>
         ))}
       </div>
 
       {/* Compose */}
-      {tab === "compose" && (
-        <div className="space-y-4">
-          {/* Note about blog-based sending */}
-          <div className="p-3 rounded-lg border border-border bg-card text-sm text-muted-foreground">
-            게시글을 뉴스레터로 발송하려면{" "}
-            <a href="/publications" className="text-foreground underline hover:text-muted-foreground">
-              Publications
-            </a>{" "}
-            페이지에서 해당 글의 &quot;뉴스레터 발송&quot; 버튼을 사용하세요.
-          </div>
-
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="뉴스레터 제목"
-            className="w-full p-3 rounded-lg border border-input bg-background text-foreground text-sm outline-none focus:border-ring"
-          />
-          <textarea
-            value={bodyHtml}
-            onChange={(e) => setBodyHtml(e.target.value)}
-            placeholder="본문 (HTML)"
-            rows={12}
-            className="w-full p-3 rounded-lg border border-input bg-background text-foreground text-sm outline-none focus:border-ring font-mono resize-y"
-          />
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleSend}
-              disabled={sending}
-              className="px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold cursor-pointer hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {sending ? "발송 중..." : `${activeCount}명에게 발송`}
-            </button>
-            {result && <span className="text-sm">{result}</span>}
-          </div>
-        </div>
-      )}
-
       {/* Subscribers */}
       {tab === "subscribers" && (
         <div>
