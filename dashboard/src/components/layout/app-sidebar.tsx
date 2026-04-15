@@ -17,6 +17,8 @@ import {
   FilmIcon,
   LayoutTemplateIcon,
   LayersIcon,
+  BarChart3Icon,
+  TrendingUpIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -53,12 +55,18 @@ const carouselNavItems = [
   { title: "템플릿", url: "/carousel/templates", icon: LayoutTemplateIcon },
 ];
 
+const analyticsNavItems = [
+  { title: "Campaign", url: "/analytics", icon: BarChart3Icon },
+  { title: "Traffic", url: "/analytics/traffic", icon: TrendingUpIcon },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
 
   const isActive = (url: string) => {
     if (url === "/") return pathname === "/";
     if (url === "/carousel") return pathname === "/carousel";
+    if (url === "/analytics") return pathname === "/analytics";
     return pathname.startsWith(url);
   };
 
@@ -98,6 +106,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {renderNavGroup("CMS", cmsNavItems)}
+        {renderNavGroup("Analytics", analyticsNavItems)}
         {renderNavGroup("영상 (Video)", videoNavItems)}
         {renderNavGroup("캐러셀 (Carousel)", carouselNavItems)}
       </SidebarContent>
