@@ -39,7 +39,6 @@ const navItems = [
 ];
 
 const analyticsItems = [
-  { title: "Campaign", url: "/analytics", icon: BarChart3Icon },
   { title: "Traffic", url: "/analytics/traffic", icon: TrendingUpIcon },
 ];
 
