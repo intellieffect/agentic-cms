@@ -11,6 +11,7 @@ import {
   SplitIcon,
   ActivityIcon,
   ImageIcon,
+  MailIcon,
   BotIcon,
   VideoIcon,
   BookmarkCheckIcon,
@@ -42,6 +43,7 @@ const cmsNavItems = [
   { title: "Activity", url: "/activity", icon: ActivityIcon },
   { title: "Media", url: "/media", icon: ImageIcon },
   { title: "Blog", url: "/blog-manage", icon: PenSquareIcon },
+  { title: "Newsletter", url: "/newsletter", icon: MailIcon },
 ];
 
 const videoNavItems = [
