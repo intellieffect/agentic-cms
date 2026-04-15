@@ -289,7 +289,7 @@ export default function BlogDetailPage() {
   const badge = STATUS_BADGE[post.status] || STATUS_BADGE.draft;
 
   return (
-    <div>
+    <div className="p-6">
       {/* Header */}
       <button
         onClick={() => router.push("/blog-manage")}
