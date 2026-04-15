@@ -164,18 +164,26 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
 
         {status === 'rendering' && (
           <>
-            <div style={{ fontSize: 12, color: '#f59e0b' }}>
-              인코딩 중... {progress}%
-            </div>
-            <div style={{ height: 8, background: '#333', borderRadius: 4, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%',
-                width: `${progress}%`,
-                background: 'linear-gradient(90deg, #7c3aed, #3b82f6)',
-                borderRadius: 4,
-                transition: 'width 0.5s ease',
-              }} />
-            </div>
+            {phase && phase.includes('인코딩') ? (
+              <>
+                <div style={{ fontSize: 12, color: '#f59e0b' }}>
+                  인코딩 중... {progress}%
+                </div>
+                <div style={{ height: 8, background: '#333', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${progress}%`,
+                    background: 'linear-gradient(90deg, #7c3aed, #3b82f6)',
+                    borderRadius: 4,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 12, color: '#888', textAlign: 'center', padding: 12 }}>
+                렌더링 준비 중...
+              </div>
+            )}
           </>
         )}
 
