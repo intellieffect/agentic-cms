@@ -17,7 +17,6 @@ import {
   FilmIcon,
   LayoutTemplateIcon,
   LayersIcon,
-  BarChart3Icon,
   TrendingUpIcon,
 } from "lucide-react";
 import {
@@ -56,7 +55,6 @@ const carouselNavItems = [
 ];
 
 const analyticsNavItems = [
-  { title: "Campaign", url: "/analytics", icon: BarChart3Icon },
   { title: "Traffic", url: "/analytics/traffic", icon: TrendingUpIcon },
 ];
 
