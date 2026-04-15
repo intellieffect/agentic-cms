@@ -65,6 +65,9 @@ export default function BlogDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const savingTitleRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Newsletter states
@@ -301,9 +304,46 @@ export default function BlogDetailPage() {
 
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-[#fafafa] mb-3">
-            {post.title}
-          </h1>
+          {editingTitle ? (
+            <input
+              autoFocus
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={async () => {
+                if (savingTitleRef.current) return;
+                savingTitleRef.current = true;
+                try {
+                  const trimmed = titleDraft.trim();
+                  if (trimmed && trimmed !== post.title) {
+                    const res = await fetch(`/api/blog-manage/${id}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ title: trimmed, skipPublishedAt: true }),
+                    });
+                    if (!res.ok) throw new Error("failed");
+                    setPost((p) => p ? { ...p, title: trimmed } : p);
+                  }
+                } catch {
+                  toast.error("제목 저장에 실패했습니다.");
+                } finally {
+                  setEditingTitle(false);
+                  savingTitleRef.current = false;
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") setEditingTitle(false);
+              }}
+              className="text-2xl font-bold text-[#fafafa] mb-3 bg-transparent border-b border-[#444] outline-none w-full"
+            />
+          ) : (
+            <h1
+              className="text-2xl font-bold text-[#fafafa] mb-3 cursor-pointer border-b border-transparent hover:border-[#444] transition-colors"
+              onClick={() => { setTitleDraft(post.title); setEditingTitle(true); }}
+            >
+              {post.title}
+            </h1>
+          )}
           <div className="flex items-center gap-3 flex-wrap text-xs text-[#666]">
             <Badge variant="outline" className={badge.className}>
               {badge.label}
