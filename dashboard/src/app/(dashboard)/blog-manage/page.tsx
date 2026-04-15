@@ -101,7 +101,7 @@ export default function BlogManagePage() {
   ];
 
   return (
-    <div>
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">블로그 관리</h1>
 
       <div className="flex items-center gap-3 mb-4 flex-wrap">
