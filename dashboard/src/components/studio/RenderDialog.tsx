@@ -165,7 +165,7 @@ export const RenderDialog: React.FC<RenderDialogProps> = ({ open, onClose }) => 
         {status === 'rendering' && (
           <>
             <div style={{ fontSize: 12, color: '#f59e0b' }}>
-              {phase || '렌더 중...'} — {progress}%
+              인코딩 중... {progress}%
             </div>
             <div style={{ height: 8, background: '#333', borderRadius: 4, overflow: 'hidden' }}>
               <div style={{
