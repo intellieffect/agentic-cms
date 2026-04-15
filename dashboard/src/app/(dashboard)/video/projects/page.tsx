@@ -215,10 +215,12 @@ function StudioEditor({ projectId }: { projectId: string }) {
   const loadProject = useEditorStore((s) => s.loadProject);
   const activePanel = useEditorStore((s) => s.activePanel);
   const clips = useEditorStore((s) => s.clips);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load project on mount
   useEffect(() => {
     if (!projectId) return;
+    setIsLoading(true);
 
     const load = async () => {
       try {
@@ -251,6 +253,8 @@ function StudioEditor({ projectId }: { projectId: string }) {
         }
       } catch {
         // ignore
+      } finally {
+        setIsLoading(false);
       }
     };
     load();
@@ -353,6 +357,21 @@ function StudioEditor({ projectId }: { projectId: string }) {
       window.removeEventListener('mouseup', onUp);
     };
   }, []);
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 3.5rem)', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 36, height: 36, border: '3px solid #333', borderTop: '3px solid #60a5fa',
+            borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+          }} />
+          <span style={{ color: '#888', fontSize: 12 }}>프로젝트 로딩 중...</span>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 3.5rem)', overflow: 'hidden' }}>
