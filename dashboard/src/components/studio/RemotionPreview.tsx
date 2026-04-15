@@ -142,6 +142,36 @@ export const RemotionPreview: React.FC = () => {
 
   const durationInFrames = Math.max(1, Math.ceil(totalDuration * FPS));
 
+  // 미디어 로딩 상태 추적
+  const [mediaLoading, setMediaLoading] = useState(true);
+  const mediaLoadedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (clips.length === 0) { setMediaLoading(false); return; }
+    mediaLoadedRef.current.clear();
+    setMediaLoading(true);
+
+    const apiUrl = getEditorConfig().apiUrl;
+    const base = typeof window !== 'undefined' ? `${window.location.origin}${apiUrl}` : apiUrl;
+    const allSources = [...new Set(clips.map(c => c.source))];
+    const bgmSources = bgmEnabled ? bgmClips.map(b => b.source) : [];
+    const total = allSources.length + bgmSources.length;
+    if (total === 0) { setMediaLoading(false); return; }
+
+    let loaded = 0;
+    const checkDone = () => { loaded++; if (loaded >= total) setMediaLoading(false); };
+
+    for (const src of allSources) {
+      fetch(`${base}/_proxy/${encodeURIComponent(src)}`, { method: 'HEAD' })
+        .then(() => checkDone())
+        .catch(() => checkDone());
+    }
+    for (const src of bgmSources) {
+      fetch(`${base}/${encodeURIComponent(src)}`, { method: 'HEAD' })
+        .then(() => checkDone())
+        .catch(() => checkDone());
+    }
+  }, [clips, bgmClips, bgmEnabled]);
+
   // BGM + 영상 프리로드 — Remotion prefetch로 재생 딜레이 제거
   const prefetchFreeRef = useRef<(() => void)[]>([]);
   useEffect(() => {
@@ -225,6 +255,20 @@ export const RemotionPreview: React.FC = () => {
         position: 'relative',
       }}
     >
+      {mediaLoading && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 20,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.8)',
+        }}>
+          <div style={{
+            width: 32, height: 32, border: '3px solid #333', borderTop: '3px solid #60a5fa',
+            borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+          }} />
+          <span style={{ color: '#888', fontSize: 11, marginTop: 10 }}>미디어 로딩 중...</span>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
       <div style={{ position: 'relative', width: '100%', maxHeight: '100%', aspectRatio: orientation === 'square' ? '1/1' : orientation === 'horizontal' ? '16/9' : '9/16' }}>
         <Player
           ref={playerRef}
