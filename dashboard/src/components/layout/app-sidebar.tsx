@@ -18,6 +18,7 @@ import {
   LayoutTemplateIcon,
   LayersIcon,
   TrendingUpIcon,
+  PenSquareIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const cmsNavItems = [
   { title: "Variants", url: "/variants", icon: SplitIcon },
   { title: "Activity", url: "/activity", icon: ActivityIcon },
   { title: "Media", url: "/media", icon: ImageIcon },
+  { title: "Blog", url: "/blog-manage", icon: PenSquareIcon },
 ];
 
 const videoNavItems = [
