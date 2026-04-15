@@ -8,7 +8,7 @@ async function getClient() {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY environment variable is not set");
   }
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n')),
     scopes: ["https://www.googleapis.com/auth/webmasters.readonly"],
   });
   return google.searchconsole({ version: "v1", auth });
