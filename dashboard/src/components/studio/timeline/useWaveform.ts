@@ -128,7 +128,8 @@ export function useWaveform() {
     );
   }, [drawWaveformBars]);
 
-  // Load waveform data for BGM clips
+  // Load waveform data for BGM clips — bgmSourcesKey로 안정화
+  const bgmSourcesKey = bgmClips.map(b => b.source).join('|');
   useEffect(() => {
     for (const bgm of bgmClips) {
       if (bgmWaveforms.current.has(bgm.source)) continue;
@@ -142,12 +143,16 @@ export function useWaveform() {
         })
         .catch(() => { /* ignore */ });
     }
-  }, [bgmClips, extractWaveform]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bgmSourcesKey, extractWaveform]);
 
-  // Load waveform data for clip audio
+  // Load waveform data for clip audio — clipSourcesKey로 안정화
+  const clipSourcesKey = clips.map(c => c.source).join('|');
+  const probedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     for (const clip of clips) {
-      if (clipAudioInfo[clip.source]) continue;
+      if (probedRef.current.has(clip.source)) continue;
+      probedRef.current.add(clip.source);
       fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
         .then((r) => r.ok ? r.json() : null)
         .then((info) => {
@@ -162,7 +167,8 @@ export function useWaveform() {
           setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: true } });
         });
     }
-  }, [clips, clipAudioInfo, extractWaveform]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clipSourcesKey, extractWaveform]);
 
   return {
     bgmWaveformDurations,
