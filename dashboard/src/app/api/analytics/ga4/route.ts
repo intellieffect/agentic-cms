@@ -21,7 +21,16 @@ export async function GET(req: NextRequest) {
   try {
     const client = await getClient();
 
-    const [overviewRes, pagesRes, sourcesRes, dailyRes] = await Promise.all([
+    const CUSTOM_EVENT_NAMES = [
+      "newsletter_submit", "newsletter_form_view",
+      "blog_article_view", "blog_share", "blog_search", "blog_category_click",
+      "cta_click",
+      "booking_page_view", "booking_form_submit", "booking_complete",
+      "sign_up", "login",
+      "page_not_found", "outbound_click",
+    ];
+
+    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes, ctaRes] = await Promise.all([
       client.properties.runReport({
         property: `properties/${PROPERTY_ID}`,
         requestBody: {
@@ -75,6 +84,40 @@ export async function GET(req: NextRequest) {
           orderBys: [{ dimension: { dimensionName: "date" } }],
         },
       }),
+      // 커스텀 이벤트 카운트
+      client.properties.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        requestBody: {
+          dateRanges: [{ startDate, endDate: "today" }],
+          dimensions: [{ name: "eventName" }],
+          metrics: [{ name: "eventCount" }],
+          dimensionFilter: {
+            filter: {
+              fieldName: "eventName",
+              inListFilter: {
+                values: CUSTOM_EVENT_NAMES,
+              },
+            },
+          },
+          orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+        },
+      }),
+      // CTA별 클릭 수
+      client.properties.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        requestBody: {
+          dateRanges: [{ startDate, endDate: "today" }],
+          dimensions: [{ name: "customEvent:cta_id" }],
+          metrics: [{ name: "eventCount" }],
+          dimensionFilter: {
+            filter: {
+              fieldName: "eventName",
+              stringFilter: { value: "cta_click" },
+            },
+          },
+          orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+        },
+      }),
     ]);
 
     const ov = overviewRes.data.rows?.[0]?.metricValues || [];
@@ -110,7 +153,44 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ overview, pages, sources, daily });
+    // 커스텀 이벤트 파싱
+    const events = (eventsRes.data.rows || []).map((r) => ({
+      eventName: r.dimensionValues?.[0]?.value || "",
+      count: Number(r.metricValues?.[0]?.value || 0),
+    }));
+
+    const eventMap = new Map<string, number>(events.map((e) => [e.eventName, e.count]));
+    const get = (name: string): number => eventMap.get(name) || 0;
+
+    const newsletterFormViews = get("newsletter_form_view");
+    const newsletterSubmits = get("newsletter_submit");
+    const bookingPageViews = get("booking_page_view");
+    const bookingSubmits = get("booking_form_submit");
+    const bookingCompletes = get("booking_complete");
+
+    const conversions = {
+      newsletter: {
+        formViews: newsletterFormViews,
+        submits: newsletterSubmits,
+        rate: newsletterFormViews > 0 ? newsletterSubmits / newsletterFormViews : 0,
+      },
+      booking: {
+        pageViews: bookingPageViews,
+        submits: bookingSubmits,
+        completes: bookingCompletes,
+        rate: bookingPageViews > 0 ? bookingCompletes / bookingPageViews : 0,
+      },
+      signups: get("sign_up"),
+      logins: get("login"),
+    };
+
+    // CTA 클릭 파싱
+    const ctaClicks = (ctaRes.data.rows || []).map((r) => ({
+      ctaId: r.dimensionValues?.[0]?.value || "",
+      count: Number(r.metricValues?.[0]?.value || 0),
+    }));
+
+    return NextResponse.json({ overview, pages, sources, daily, events, conversions, ctaClicks });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
