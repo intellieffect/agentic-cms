@@ -150,6 +150,14 @@ interface GA4Data {
   pages: { path: string; pageViews: number; users: number; avgDuration: number }[];
   sources: { source: string; sessions: number; users: number; bounceRate: number }[];
   daily: { date: string; pv: number; uv: number }[];
+  events: { eventName: string; count: number }[];
+  conversions: {
+    newsletter: { formViews: number; submits: number; rate: number };
+    booking: { pageViews: number; submits: number; completes: number; rate: number };
+    signups: number;
+    logins: number;
+  };
+  ctaClicks: { ctaId: string; count: number }[];
 }
 
 function GA4Tab() {
@@ -275,6 +283,110 @@ function GA4Tab() {
           </tbody>
         </table>
       </div>
+
+      {/* 전환 퍼널 */}
+      {data.conversions && (
+        <>
+          <div className="text-sm font-medium text-[#ccc] mt-2">전환 퍼널</div>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
+              <div className="text-xs text-[#888] mb-1">뉴스레터 전환</div>
+              <div className="text-2xl font-bold">{(data.conversions.newsletter.rate * 100).toFixed(1)}%</div>
+              <div className="text-xs text-[#555] mt-1">
+                뷰 {fmtNum(data.conversions.newsletter.formViews)} → 제출 {fmtNum(data.conversions.newsletter.submits)}
+              </div>
+            </div>
+            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
+              <div className="text-xs text-[#888] mb-1">부킹 전환</div>
+              <div className="text-2xl font-bold">{(data.conversions.booking.rate * 100).toFixed(1)}%</div>
+              <div className="text-xs text-[#555] mt-1">
+                뷰 {fmtNum(data.conversions.booking.pageViews)} → 제출 {fmtNum(data.conversions.booking.submits)} → 완료 {fmtNum(data.conversions.booking.completes)}
+              </div>
+            </div>
+            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
+              <div className="text-xs text-[#888] mb-1">회원가입</div>
+              <div className="text-2xl font-bold">{fmtNum(data.conversions.signups)}</div>
+            </div>
+            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
+              <div className="text-xs text-[#888] mb-1">로그인</div>
+              <div className="text-2xl font-bold">{fmtNum(data.conversions.logins)}</div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 블로그 참여도 */}
+      {data.events && data.events.length > 0 && (() => {
+        const blogEvents = data.events.filter((e) =>
+          ["blog_article_view", "blog_share", "blog_search", "blog_category_click"].includes(e.eventName)
+        );
+        if (blogEvents.length === 0) return null;
+        const BLOG_LABEL: Record<string, string> = {
+          blog_article_view: "글 조회",
+          blog_share: "공유",
+          blog_search: "검색",
+          blog_category_click: "카테고리 클릭",
+        };
+        return (
+          <>
+            <div className="text-sm font-medium text-[#ccc] mt-2">블로그 참여도</div>
+            <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${blogEvents.length}, minmax(0, 1fr))` }}>
+              {blogEvents.map((e) => (
+                <div key={e.eventName} className="p-4 bg-[#141414] border border-[#222] rounded-xl">
+                  <div className="text-xs text-[#888] mb-1">{BLOG_LABEL[e.eventName] || e.eventName}</div>
+                  <div className="text-2xl font-bold">{fmtNum(e.count)}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
+
+      {/* 커스텀 이벤트 테이블 */}
+      {data.events && data.events.length > 0 && (
+        <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
+          <div className="p-4 text-sm font-medium">커스텀 이벤트</div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#222] text-[#888]">
+                <th className="px-4 py-3 text-left">이벤트</th>
+                <th className="px-4 py-3 text-right">횟수</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.events.map((e) => (
+                <tr key={e.eventName} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  <td className="px-4 py-2 text-[#ccc]">{e.eventName}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmtNum(e.count)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* CTA 클릭 테이블 */}
+      {data.ctaClicks && data.ctaClicks.length > 0 && (
+        <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
+          <div className="p-4 text-sm font-medium">CTA 클릭</div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#222] text-[#888]">
+                <th className="px-4 py-3 text-left">CTA ID</th>
+                <th className="px-4 py-3 text-right">클릭수</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.ctaClicks.map((c) => (
+                <tr key={c.ctaId} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  <td className="px-4 py-2 text-[#ccc]">{c.ctaId}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">{fmtNum(c.count)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
