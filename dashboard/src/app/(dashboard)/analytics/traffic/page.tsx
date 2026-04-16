@@ -397,6 +397,8 @@ interface GSCData {
   queries: { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
   pages: { page: string; clicks: number; impressions: number; ctr: number; position: number }[];
   daily: { date: string; clicks: number; impressions: number }[];
+  countries?: { country: string; clicks: number; impressions: number; ctr: number; position: number }[];
+  devices?: { device: string; clicks: number; impressions: number; ctr: number; position: number }[];
 }
 
 function GSCTab() {
@@ -404,7 +406,7 @@ function GSCTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<Period>(7);
-  const [view, setView] = useState<"queries" | "pages">("queries");
+  const [view, setView] = useState<"queries" | "pages" | "countries" | "devices">("queries");
 
   useEffect(() => {
     let cancelled = false;
@@ -478,7 +480,7 @@ function GSCTab() {
         )}
       </div>
       <div className="flex gap-1">
-        {([["queries", "검색어"], ["pages", "페이지"]] as const).map(([key, label]) => (
+        {([["queries", "검색어"], ["pages", "페이지"], ["countries", "국가"], ["devices", "기기"]] as const).map(([key, label]) => (
           <button key={key} onClick={() => setView(key)} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${view === key ? "bg-[#333] text-white" : "text-[#888] hover:text-white"}`}>{label}</button>
         ))}
       </div>
@@ -486,7 +488,7 @@ function GSCTab() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#222] text-[#888]">
-              <th className="px-4 py-3 text-left">{view === "queries" ? "검색어" : "페이지"}</th>
+              <th className="px-4 py-3 text-left">{view === "queries" ? "검색어" : view === "pages" ? "페이지" : view === "countries" ? "국가" : "기기"}</th>
               <th className="px-4 py-3 text-right">클릭</th>
               <th className="px-4 py-3 text-right">노출</th>
               <th className="px-4 py-3 text-right">CTR</th>
@@ -494,8 +496,8 @@ function GSCTab() {
             </tr>
           </thead>
           <tbody>
-            {(view === "queries" ? data.queries : data.pages).map((r) => {
-              const label = view === "queries" ? (r as GSCData["queries"][0]).query : (r as GSCData["pages"][0]).page;
+            {(view === "queries" ? data.queries : view === "pages" ? data.pages : view === "countries" ? (data.countries || []) : (data.devices || [])).map((r) => {
+              const label = view === "queries" ? (r as GSCData["queries"][0]).query : view === "pages" ? (r as GSCData["pages"][0]).page : view === "countries" ? (r as NonNullable<GSCData["countries"]>[0]).country : (r as NonNullable<GSCData["devices"]>[0]).device;
               return (
                 <tr key={label} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
                   <td className="px-4 py-2 text-[#ccc] max-w-[300px] truncate">{label}</td>

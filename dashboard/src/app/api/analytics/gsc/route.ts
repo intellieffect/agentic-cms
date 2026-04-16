@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   try {
     const client = await getClient();
 
-    const [queriesRes, pagesRes, dailyRes] = await Promise.all([
+    const [queriesRes, pagesRes, dailyRes, countriesRes, devicesRes] = await Promise.all([
       client.searchanalytics.query({
         siteUrl: SITE_URL,
         requestBody: {
@@ -53,6 +53,23 @@ export async function GET(req: NextRequest) {
           startDate: formatDate(startDate),
           endDate: formatDate(endDate),
           dimensions: ["date"],
+        },
+      }),
+      client.searchanalytics.query({
+        siteUrl: SITE_URL,
+        requestBody: {
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          dimensions: ["country"],
+          rowLimit: 20,
+        },
+      }),
+      client.searchanalytics.query({
+        siteUrl: SITE_URL,
+        requestBody: {
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          dimensions: ["device"],
         },
       }),
     ]);
@@ -87,11 +104,29 @@ export async function GET(req: NextRequest) {
         ? queries.reduce((s, q) => s + q.position, 0) / queries.length
         : 0;
 
+    const countries = (countriesRes.data.rows || []).map((r) => ({
+      country: r.keys?.[0] || "",
+      clicks: r.clicks || 0,
+      impressions: r.impressions || 0,
+      ctr: r.ctr || 0,
+      position: r.position || 0,
+    }));
+
+    const devices = (devicesRes.data.rows || []).map((r) => ({
+      device: r.keys?.[0] || "",
+      clicks: r.clicks || 0,
+      impressions: r.impressions || 0,
+      ctr: r.ctr || 0,
+      position: r.position || 0,
+    }));
+
     return NextResponse.json({
       overview: { totalClicks, totalImpressions, avgCtr, avgPosition },
       queries,
       pages,
       daily,
+      countries,
+      devices,
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
