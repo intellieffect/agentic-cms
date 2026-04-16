@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       "page_not_found", "outbound_click",
     ];
 
-    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes, ctaRes] = await Promise.all([
+    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes] = await Promise.all([
       client.properties.runReport({
         property: `properties/${PROPERTY_ID}`,
         requestBody: {
@@ -102,22 +102,6 @@ export async function GET(req: NextRequest) {
           orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
         },
       }),
-      // CTA별 클릭 수
-      client.properties.runReport({
-        property: `properties/${PROPERTY_ID}`,
-        requestBody: {
-          dateRanges: [{ startDate, endDate: "today" }],
-          dimensions: [{ name: "customEvent:cta_id" }],
-          metrics: [{ name: "eventCount" }],
-          dimensionFilter: {
-            filter: {
-              fieldName: "eventName",
-              stringFilter: { value: "cta_click" },
-            },
-          },
-          orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
-        },
-      }),
     ]);
 
     const ov = overviewRes.data.rows?.[0]?.metricValues || [];
@@ -184,11 +168,10 @@ export async function GET(req: NextRequest) {
       logins: get("login"),
     };
 
-    // CTA 클릭 파싱
-    const ctaClicks = (ctaRes.data.rows || []).map((r) => ({
-      ctaId: r.dimensionValues?.[0]?.value || "",
-      count: Number(r.metricValues?.[0]?.value || 0),
-    }));
+    // CTA 클릭 — cta_id별 분석은 GA4 커스텀 차원 등록 후 가능, 현재는 총 클릭수만
+    const ctaClicks: { ctaId: string; count: number }[] = [];
+    const ctaTotal = get("cta_click");
+    if (ctaTotal > 0) ctaClicks.push({ ctaId: "total", count: ctaTotal });
 
     return NextResponse.json({ overview, pages, sources, daily, events, conversions, ctaClicks });
   } catch (e: unknown) {
