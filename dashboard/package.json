@@ -8,7 +8,10 @@
     "dev:editor": "node scripts/start-editor.js",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:update": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@platejs/basic-nodes": "^49.0.0",
