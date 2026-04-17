@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
           startDate: formatDate(startDate),
           endDate: formatDate(endDate),
           dimensions: ["device"],
+          rowLimit: 10,
         },
       }),
     ]);

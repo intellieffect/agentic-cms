@@ -392,6 +392,32 @@ function GA4Tab() {
 }
 
 /* ─── GSC Tab ─── */
+
+// GSC 는 country 를 ISO 3166 alpha-3 소문자 (예: "kor", "usa") 로 반환.
+// 자주 나올 만한 국가만 한국어로 매핑하고 그 외는 원본 코드 유지.
+const COUNTRY_NAME_KO: Record<string, string> = {
+  kor: "대한민국", usa: "미국", jpn: "일본", chn: "중국", hkg: "홍콩", twn: "대만",
+  vnm: "베트남", tha: "태국", idn: "인도네시아", phl: "필리핀", mys: "말레이시아",
+  sgp: "싱가포르", ind: "인도", gbr: "영국", deu: "독일", fra: "프랑스", ita: "이탈리아",
+  esp: "스페인", nld: "네덜란드", swe: "스웨덴", nor: "노르웨이", fin: "핀란드",
+  pol: "폴란드", ukr: "우크라이나", rus: "러시아", tur: "튀르키예", can: "캐나다",
+  mex: "멕시코", bra: "브라질", arg: "아르헨티나", aus: "호주", nzl: "뉴질랜드",
+  are: "아랍에미리트", sau: "사우디아라비아", zaf: "남아프리카공화국", egy: "이집트",
+};
+const formatCountry = (code: string): string => {
+  const key = code.toLowerCase();
+  const name = COUNTRY_NAME_KO[key];
+  return name ? `${name} (${key.toUpperCase()})` : key.toUpperCase();
+};
+
+// GSC 는 device 를 대문자 (DESKTOP / MOBILE / TABLET) 로 반환.
+const DEVICE_NAME_KO: Record<string, string> = {
+  DESKTOP: "데스크톱",
+  MOBILE: "모바일",
+  TABLET: "태블릿",
+};
+const formatDevice = (code: string): string => DEVICE_NAME_KO[code.toUpperCase()] ?? code;
+
 interface GSCData {
   overview: { totalClicks: number; totalImpressions: number; avgCtr: number; avgPosition: number };
   queries: { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
@@ -503,13 +529,17 @@ function GSCTab() {
                 view === "countries" ? (data.countries ?? []) :
                 (data.devices ?? []);
               return rows.map((r) => {
-                const label =
+                const rawKey =
                   view === "queries" ? (r as GSCData["queries"][0]).query :
                   view === "pages" ? (r as GSCData["pages"][0]).page :
                   view === "countries" ? ((r as NonNullable<GSCData["countries"]>[0]).country) :
                   ((r as NonNullable<GSCData["devices"]>[0]).device);
+                const label =
+                  view === "countries" ? formatCountry(rawKey) :
+                  view === "devices" ? formatDevice(rawKey) :
+                  rawKey;
                 return (
-                  <tr key={label} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  <tr key={rawKey} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
                     <td className="px-4 py-2 text-[#ccc] max-w-[300px] truncate">{label}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.clicks)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.impressions)}</td>
