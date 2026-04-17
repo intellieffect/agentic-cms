@@ -5,6 +5,11 @@ import type {
   Publication,
   Topic,
   Variant,
+  VariantBlogPost,
+  VariantCarousel,
+  VariantVideoProject,
+  VariantEmailLog,
+  VariantWithDerivatives,
   PipelineStats,
   ChannelCount,
   ActivityLog,
@@ -67,6 +72,62 @@ export async function getVariants(contentId: string): Promise<Variant[]> {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
+}
+
+// Content 에 연결된 variants + 각 variant 의 format 별 파생 레코드.
+// PostgREST nested select 대신 별도 쿼리 + 클라이언트 조인을 쓰는 이유:
+//   variant_id FK 를 최근 (#17) 추가했을 때 PostgREST schema cache 가 즉시
+//   반영되지 않아 nested select 가 PGRST200 으로 실패하는 경우가 있었음.
+//   테이블별 IN 쿼리는 언제나 안전.
+export async function getVariantsWithDerivatives(
+  contentId: string
+): Promise<VariantWithDerivatives[]> {
+  const sb = getSupabase();
+  const { data: variants, error } = await sb
+    .from("variants")
+    .select("*")
+    .eq("content_id", contentId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const variantList = (variants ?? []) as Variant[];
+  if (variantList.length === 0) return [];
+
+  const variantIds = variantList.map((v) => v.id);
+
+  const [blogsRes, carouselsRes, videosRes, emailsRes] = await Promise.all([
+    sb.from("blog_posts").select("id, title, slug, status, variant_id").in("variant_id", variantIds),
+    sb.from("carousels").select("id, title, caption, variant_id").in("variant_id", variantIds),
+    sb.from("video_projects").select("id, name, status, variant_id").in("variant_id", variantIds),
+    sb.from("email_logs").select("id, subject, status, sent_at, sent_to_count, variant_id").in("variant_id", variantIds),
+  ]);
+
+  const blogByVariant = new Map<string, VariantBlogPost>();
+  for (const b of (blogsRes.data ?? []) as (VariantBlogPost & { variant_id: string })[]) {
+    blogByVariant.set(b.variant_id, { id: b.id, title: b.title, slug: b.slug, status: b.status });
+  }
+  const carouselByVariant = new Map<string, VariantCarousel>();
+  for (const c of (carouselsRes.data ?? []) as (VariantCarousel & { variant_id: string })[]) {
+    carouselByVariant.set(c.variant_id, { id: c.id, title: c.title, caption: c.caption });
+  }
+  const videoByVariant = new Map<string, VariantVideoProject>();
+  for (const v of (videosRes.data ?? []) as (VariantVideoProject & { variant_id: string })[]) {
+    videoByVariant.set(v.variant_id, { id: v.id, name: v.name, status: v.status });
+  }
+  const emailsByVariant = new Map<string, VariantEmailLog[]>();
+  for (const e of (emailsRes.data ?? []) as (VariantEmailLog & { variant_id: string })[]) {
+    const arr = emailsByVariant.get(e.variant_id) ?? [];
+    arr.push({ id: e.id, subject: e.subject, status: e.status, sent_at: e.sent_at, sent_to_count: e.sent_to_count });
+    emailsByVariant.set(e.variant_id, arr);
+  }
+
+  return variantList.map((v) => ({
+    ...v,
+    blog_post: blogByVariant.get(v.id) ?? null,
+    carousel: carouselByVariant.get(v.id) ?? null,
+    video_project: videoByVariant.get(v.id) ?? null,
+    emails: emailsByVariant.get(v.id) ?? [],
+  }));
 }
 
 export async function getAllVariants(): Promise<Variant[]> {

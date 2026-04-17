@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Main } from "@/components/layout/main";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getContentById, getRevisions, getPublications } from "@/lib/queries";
+import { getContentById, getRevisions, getPublications, getVariantsWithDerivatives } from "@/lib/queries";
 import { ContentDetailView } from "./content-detail-view";
 
 interface PageProps {
@@ -12,10 +12,11 @@ interface PageProps {
 }
 
 async function ContentData({ id }: { id: string }) {
-  const [content, revisions, allPublications] = await Promise.all([
+  const [content, revisions, allPublications, variants] = await Promise.all([
     getContentById(id),
     getRevisions(id),
     getPublications(),
+    getVariantsWithDerivatives(id),
   ]);
 
   if (!content) notFound();
@@ -27,6 +28,7 @@ async function ContentData({ id }: { id: string }) {
       content={content}
       revisions={revisions}
       publications={publications}
+      variants={variants}
     />
   );
 }
