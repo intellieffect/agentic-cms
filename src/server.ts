@@ -13,6 +13,7 @@ import { registerActivityTools } from './tools/activity.js';
 import { registerRevisionTools } from './tools/revisions.js';
 import { registerMediaTools } from './tools/media.js';
 import { registerVideoTools } from './tools/video.js';
+import { registerBlogPostTools } from './tools/blog-posts.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -45,6 +46,9 @@ async function main(): Promise<void> {
 
   // Video editor tools
   registerVideoTools(server, editorApiUrl);
+
+  // Blog post tools (AWC blog — blog_posts table, markdown → PlateJS)
+  registerBlogPostTools(server, supabaseUrl, supabaseKey);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
