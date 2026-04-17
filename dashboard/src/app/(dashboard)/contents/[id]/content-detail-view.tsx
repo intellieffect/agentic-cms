@@ -366,9 +366,10 @@ export function ContentDetailView({ content, revisions, publications, variants }
                           </div>
                         </div>
                         {action.href ? (
-                          <Button asChild variant="ghost" size="sm">
+                          <Button asChild variant="ghost" size="sm" aria-label={`열기: ${action.label}`}>
                             <Link href={action.href}>
-                              <ArrowRightIcon className="h-3.5 w-3.5" />
+                              <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                              <span className="sr-only">{action.label}</span>
                             </Link>
                           </Button>
                         ) : (

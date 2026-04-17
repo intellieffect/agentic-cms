@@ -102,27 +102,39 @@ export async function getVariantsWithDerivatives(
     sb.from("email_logs").select("id, subject, status, sent_at, sent_to_count, variant_id").in("variant_id", variantIds),
   ]);
 
-  // 4개 파생 쿼리 에러는 각각 throw. RLS / 테이블명 오타 같은 장애를 silent ignore
-  // 하지 않기 위함 (Promise.all 은 reject 를 그대로 던지지 않고 data/error 객체만 반환).
-  if (blogsRes.error) throw blogsRes.error;
-  if (carouselsRes.error) throw carouselsRes.error;
-  if (videosRes.error) throw videosRes.error;
-  if (emailsRes.error) throw emailsRes.error;
+  // 파생 쿼리 에러 처리:
+  //   - "variant_id 컬럼이 존재하지 않음"(PG 42703) 은 #17 마이그레이션이 아직 실제 DB 에
+  //     적용되지 않은 transitional 상태로 간주하고 "파생 없음"으로 관대하게 처리.
+  //     (이 가드가 없으면 variants 는 있는데 FK 컬럼은 없는 배포 구간에 페이지가 깨진다)
+  //   - 그 외 에러(RLS, 테이블 누락, 타임아웃 등) 는 throw 해서 원인 파악 가능하게 남긴다.
+  const isColumnMissing = (err: { code?: string } | null | undefined) => err?.code === "42703";
+  const safeRows = <T,>(res: { data: T[] | null; error: { code?: string; message?: string } | null }, label: string): T[] => {
+    if (!res.error) return res.data ?? [];
+    if (isColumnMissing(res.error)) {
+      console.warn(`[getVariantsWithDerivatives] ${label}: variant_id column missing (migration pending) — treating as no derivatives.`);
+      return [];
+    }
+    throw res.error;
+  };
+  const blogRows = safeRows(blogsRes, "blog_posts");
+  const carouselRows = safeRows(carouselsRes, "carousels");
+  const videoRows = safeRows(videosRes, "video_projects");
+  const emailRows = safeRows(emailsRes, "email_logs");
 
   const blogByVariant = new Map<string, VariantBlogPost>();
-  for (const b of (blogsRes.data ?? []) as (VariantBlogPost & { variant_id: string })[]) {
+  for (const b of blogRows as (VariantBlogPost & { variant_id: string })[]) {
     blogByVariant.set(b.variant_id, { id: b.id, title: b.title, slug: b.slug, status: b.status });
   }
   const carouselByVariant = new Map<string, VariantCarousel>();
-  for (const c of (carouselsRes.data ?? []) as (VariantCarousel & { variant_id: string })[]) {
+  for (const c of carouselRows as (VariantCarousel & { variant_id: string })[]) {
     carouselByVariant.set(c.variant_id, { id: c.id, title: c.title, caption: c.caption });
   }
   const videoByVariant = new Map<string, VariantVideoProject>();
-  for (const v of (videosRes.data ?? []) as (VariantVideoProject & { variant_id: string })[]) {
+  for (const v of videoRows as (VariantVideoProject & { variant_id: string })[]) {
     videoByVariant.set(v.variant_id, { id: v.id, name: v.name, status: v.status });
   }
   const emailsByVariant = new Map<string, VariantEmailLog[]>();
-  for (const e of (emailsRes.data ?? []) as (VariantEmailLog & { variant_id: string })[]) {
+  for (const e of emailRows as (VariantEmailLog & { variant_id: string })[]) {
     const arr = emailsByVariant.get(e.variant_id) ?? [];
     arr.push({ id: e.id, subject: e.subject, status: e.status, sent_at: e.sent_at, sent_to_count: e.sent_to_count });
     emailsByVariant.set(e.variant_id, arr);
