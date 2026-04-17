@@ -33,35 +33,59 @@ interface BlogCategory {
   description: string | null;
 }
 
-const DEFAULT_CLI_PATH =
-  process.env.CONTENT_CORE_CLI_PATH ||
-  '/Users/jangdongjin/Projects/awc/packages/content-core/dist/cli.js';
+const CLI_PATH = process.env.CONTENT_CORE_CLI_PATH;
+const CLI_TIMEOUT_MS = Number(process.env.CONTENT_CORE_CLI_TIMEOUT_MS ?? 30_000);
 
 function convertMarkdownToPlate(markdown: string, topic: string, category: string): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
-    if (!existsSync(DEFAULT_CLI_PATH)) {
+    if (!CLI_PATH) {
       reject(
         new Error(
-          `content-core CLI not found at ${DEFAULT_CLI_PATH}. Build with 'pnpm --filter @awc/content-core build' or set CONTENT_CORE_CLI_PATH.`
+          `CONTENT_CORE_CLI_PATH is not set. Set the env var to the absolute path of @awc/content-core dist/cli.js before invoking this tool.`
         )
       );
       return;
     }
-    const args = [DEFAULT_CLI_PATH, 'convert-plate', '--topic', topic, '--category', category];
+    if (!existsSync(CLI_PATH)) {
+      reject(
+        new Error(
+          `content-core CLI not found at ${CLI_PATH}. Build with 'pnpm --filter @awc/content-core build' or fix CONTENT_CORE_CLI_PATH.`
+        )
+      );
+      return;
+    }
+    const args = [CLI_PATH, 'convert-plate', '--topic', topic, '--category', category];
     const child = spawn('node', args, { stdio: ['pipe', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
+    let settled = false;
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      fn();
+    };
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      settle(() =>
+        reject(new Error(`convert-plate CLI timed out after ${CLI_TIMEOUT_MS}ms (set CONTENT_CORE_CLI_TIMEOUT_MS to raise).`))
+      );
+    }, CLI_TIMEOUT_MS);
     child.stdout.on('data', (d) => (stdout += d.toString()));
     child.stderr.on('data', (d) => (stderr += d.toString()));
+    child.on('error', (e) => settle(() => reject(e)));
     child.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`convert-plate exited ${code}: ${stderr}`));
+        settle(() => reject(new Error(`convert-plate exited ${code}: ${stderr}`)));
         return;
       }
       try {
-        resolve(JSON.parse(stdout));
+        const parsed = JSON.parse(stdout);
+        settle(() => resolve(parsed));
       } catch (e) {
-        reject(new Error(`Failed to parse convert-plate output: ${e instanceof Error ? e.message : String(e)}`));
+        settle(() =>
+          reject(new Error(`Failed to parse convert-plate output: ${e instanceof Error ? e.message : String(e)}`))
+        );
       }
     });
     child.stdin.write(markdown);
@@ -277,15 +301,19 @@ export function registerBlogPostTools(
 
         const post = inserted as BlogPostRow;
 
-        // 6. Link category if provided
+        // 6. Link category if provided. Roll back the blog_post insert on failure
+        //    so we never leave an orphaned post (Supabase JS SDK has no multi-statement
+        //    transaction — manual compensation is the safest option here).
         if (categoryId) {
           const { error: linkErr } = await sb
             .from('blog_post_categories')
             .insert({ post_id: post.id, category_id: categoryId });
           if (linkErr) {
-            throw new Error(
-              `blog_post inserted (id=${post.id}) but category link failed: ${linkErr.message}`
-            );
+            const { error: delErr } = await sb.from('blog_posts').delete().eq('id', post.id);
+            const delNote = delErr
+              ? ` (rollback also failed: ${delErr.message} — manual cleanup required for blog_post id=${post.id})`
+              : ' (blog_post insert rolled back)';
+            throw new Error(`Failed to link category: ${linkErr.message}${delNote}`);
           }
         }
 
