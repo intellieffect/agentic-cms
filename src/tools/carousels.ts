@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { CMSAdapter } from '../adapters/interface.js';
 
 // ─── Types ────────────────────────────────────────────────
 interface CarouselSlide {
@@ -60,12 +61,34 @@ const slideInputSchema = z.object({
 });
 
 // ─── Registration ─────────────────────────────────────────
+// NOTE: SupabaseAdapter 에 carousel CRUD 메서드가 없어 여기서 raw Supabase
+// client 를 그대로 사용한다. adapter 는 logActivity() 를 통한 감사 추적 용도로만
+//주입. 중장기로는 CMSAdapter 에 carousel 메서드 추가해 adapter 일원화 권장.
 export function registerCarouselTools(
   server: McpServer,
+  adapter: CMSAdapter,
   supabaseUrl: string,
   supabaseKey: string
 ): void {
   const sb: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+
+  const logCarouselActivity = async (
+    action: 'create' | 'update',
+    itemId: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> => {
+    try {
+      await adapter.logActivity({
+        action,
+        collection: 'carousels',
+        item_id: itemId,
+        actor_type: 'agent',
+        payload,
+      });
+    } catch {
+      // activity 로깅 실패는 tool 실행을 막지 않는다 (best-effort).
+    }
+  };
 
   // ── list_carousels ─────────────────────────────────────
   server.tool(
@@ -168,6 +191,10 @@ export function registerCarouselTools(
         if (error) throw new Error(error.message);
 
         const row = data as CarouselRow;
+        await logCarouselActivity('create', row.id, {
+          title: row.title,
+          slide_count: row.slides.length,
+        });
         return ok({
           message: 'Carousel created',
           carousel: {
@@ -228,6 +255,12 @@ export function registerCarouselTools(
         if (error) throw new Error(error.message);
 
         const row = data as CarouselRow;
+        await logCarouselActivity('update', row.id, {
+          title_changed: params.title !== undefined,
+          caption_changed: params.caption !== undefined,
+          slides_replaced: Array.isArray(params.slides),
+          slide_count: row.slides.length,
+        });
         return ok({
           message: 'Carousel updated',
           carousel: {

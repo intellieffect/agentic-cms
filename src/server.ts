@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   registerBlogPostTools(server, supabaseUrl, supabaseKey);
 
   // Carousel tools (AWC carousels table — slide deck CRUD)
-  registerCarouselTools(server, supabaseUrl, supabaseKey);
+  registerCarouselTools(server, adapter, supabaseUrl, supabaseKey);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
