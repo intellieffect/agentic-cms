@@ -102,6 +102,13 @@ export async function getVariantsWithDerivatives(
     sb.from("email_logs").select("id, subject, status, sent_at, sent_to_count, variant_id").in("variant_id", variantIds),
   ]);
 
+  // 4개 파생 쿼리 에러는 각각 throw. RLS / 테이블명 오타 같은 장애를 silent ignore
+  // 하지 않기 위함 (Promise.all 은 reject 를 그대로 던지지 않고 data/error 객체만 반환).
+  if (blogsRes.error) throw blogsRes.error;
+  if (carouselsRes.error) throw carouselsRes.error;
+  if (videosRes.error) throw videosRes.error;
+  if (emailsRes.error) throw emailsRes.error;
+
   const blogByVariant = new Map<string, VariantBlogPost>();
   for (const b of (blogsRes.data ?? []) as (VariantBlogPost & { variant_id: string })[]) {
     blogByVariant.set(b.variant_id, { id: b.id, title: b.title, slug: b.slug, status: b.status });

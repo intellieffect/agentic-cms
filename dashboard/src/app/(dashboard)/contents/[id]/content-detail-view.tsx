@@ -49,12 +49,25 @@ interface ContentDetailViewProps {
 
 // 각 format 별 스튜디오/상세 페이지 링크 + 아이콘 구성.
 // 데이터 없으면 (variant 만 있고 파생 레코드 없으면) link 는 null 로 두고 "아직 제작 안 됨"으로 표기.
+//
+// 전제: blog_posts / carousels / video_projects 에 걸린 partial UNIQUE index 로
+// 한 variant 에는 최대 하나의 파생 레코드만 붙는다. 따라서 아래 if 체인은 우선순위가 아니라
+// "있으면 하나"의 분기 — 만약 둘 이상 연결되는 사례가 보인다면 DB 무결성을 먼저 점검할 것.
+// 진단 편의를 위해 그런 상황이면 개발 모드에서 console.warn.
 function getDerivativeAction(variant: VariantWithDerivatives): {
   icon: typeof PenSquareIcon;
   label: string;
   href: string | null;
   status: string | null;
 } {
+  if (process.env.NODE_ENV !== "production") {
+    const linked = [variant.blog_post, variant.carousel, variant.video_project].filter(Boolean).length;
+    if (linked > 1) {
+      console.warn(
+        `[Variant ${variant.id}] 하나의 variant 에 여러 파생 레코드가 연결됨 (${linked} 개). 1:1 UNIQUE 위반 가능.`
+      );
+    }
+  }
   if (variant.blog_post) {
     return {
       icon: PenSquareIcon,
