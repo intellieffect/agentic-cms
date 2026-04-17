@@ -14,6 +14,7 @@ import { registerRevisionTools } from './tools/revisions.js';
 import { registerMediaTools } from './tools/media.js';
 import { registerVideoTools } from './tools/video.js';
 import { registerBlogPostTools } from './tools/blog-posts.js';
+import { registerCarouselTools } from './tools/carousels.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -49,6 +50,9 @@ async function main(): Promise<void> {
 
   // Blog post tools (AWC blog — blog_posts table, markdown → PlateJS)
   registerBlogPostTools(server, supabaseUrl, supabaseKey);
+
+  // Carousel tools (AWC carousels table — slide deck CRUD)
+  registerCarouselTools(server, supabaseUrl, supabaseKey);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
