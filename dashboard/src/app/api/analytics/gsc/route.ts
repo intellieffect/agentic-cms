@@ -4,11 +4,18 @@ import { google } from "googleapis";
 const SITE_URL = "https://agenticworkflows.club";
 
 async function getClient() {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  if (!raw) {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY environment variable is not set");
   }
+  let credentials;
+  try {
+    credentials = JSON.parse(raw.replace(/\n/g, '\\n'));
+  } catch {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
+  }
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n')),
+    credentials,
     scopes: ["https://www.googleapis.com/auth/webmasters.readonly"],
   });
   return google.searchconsole({ version: "v1", auth });
@@ -28,7 +35,7 @@ export async function GET(req: NextRequest) {
   try {
     const client = await getClient();
 
-    const [queriesRes, pagesRes, dailyRes] = await Promise.all([
+    const [queriesRes, pagesRes, dailyRes, countriesRes, devicesRes] = await Promise.all([
       client.searchanalytics.query({
         siteUrl: SITE_URL,
         requestBody: {
@@ -53,6 +60,24 @@ export async function GET(req: NextRequest) {
           startDate: formatDate(startDate),
           endDate: formatDate(endDate),
           dimensions: ["date"],
+        },
+      }),
+      client.searchanalytics.query({
+        siteUrl: SITE_URL,
+        requestBody: {
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          dimensions: ["country"],
+          rowLimit: 20,
+        },
+      }),
+      client.searchanalytics.query({
+        siteUrl: SITE_URL,
+        requestBody: {
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+          dimensions: ["device"],
+          rowLimit: 10,
         },
       }),
     ]);
@@ -87,11 +112,29 @@ export async function GET(req: NextRequest) {
         ? queries.reduce((s, q) => s + q.position, 0) / queries.length
         : 0;
 
+    const countries = (countriesRes.data.rows || []).map((r) => ({
+      country: r.keys?.[0] || "",
+      clicks: r.clicks || 0,
+      impressions: r.impressions || 0,
+      ctr: r.ctr || 0,
+      position: r.position || 0,
+    }));
+
+    const devices = (devicesRes.data.rows || []).map((r) => ({
+      device: r.keys?.[0] || "",
+      clicks: r.clicks || 0,
+      impressions: r.impressions || 0,
+      ctr: r.ctr || 0,
+      position: r.position || 0,
+    }));
+
     return NextResponse.json({
       overview: { totalClicks, totalImpressions, avgCtr, avgPosition },
       queries,
       pages,
       daily,
+      countries,
+      devices,
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

@@ -4,11 +4,18 @@ import { google } from "googleapis";
 const PROPERTY_ID = "530816613";
 
 async function getClient() {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  if (!raw) {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY environment variable is not set");
   }
+  let credentials;
+  try {
+    credentials = JSON.parse(raw.replace(/\n/g, '\\n'));
+  } catch {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
+  }
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n')),
+    credentials,
     scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
   });
   return google.analyticsdata({ version: "v1beta", auth });
@@ -30,7 +37,7 @@ export async function GET(req: NextRequest) {
       "page_not_found", "outbound_click",
     ];
 
-    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes] = await Promise.all([
+    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes, ctaRes] = await Promise.all([
       client.properties.runReport({
         property: `properties/${PROPERTY_ID}`,
         requestBody: {
@@ -102,6 +109,22 @@ export async function GET(req: NextRequest) {
           orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
         },
       }),
+      // CTA별 클릭 수 (커스텀 차원 등록됨)
+      client.properties.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        requestBody: {
+          dateRanges: [{ startDate, endDate: "today" }],
+          dimensions: [{ name: "customEvent:cta_id" }],
+          metrics: [{ name: "eventCount" }],
+          dimensionFilter: {
+            filter: {
+              fieldName: "eventName",
+              stringFilter: { value: "cta_click" },
+            },
+          },
+          orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+        },
+      }),
     ]);
 
     const ov = overviewRes.data.rows?.[0]?.metricValues || [];
@@ -168,10 +191,11 @@ export async function GET(req: NextRequest) {
       logins: get("login"),
     };
 
-    // CTA 클릭 — cta_id별 분석은 GA4 커스텀 차원 등록 후 가능, 현재는 총 클릭수만
-    const ctaClicks: { ctaId: string; count: number }[] = [];
-    const ctaTotal = get("cta_click");
-    if (ctaTotal > 0) ctaClicks.push({ ctaId: "total", count: ctaTotal });
+    // CTA 클릭 — cta_id별 분석 (GA4 커스텀 차원 등록됨)
+    const ctaClicks = (ctaRes.data.rows || []).map((r) => ({
+      ctaId: r.dimensionValues?.[0]?.value || "",
+      count: Number(r.metricValues?.[0]?.value || 0),
+    }));
 
     return NextResponse.json({ overview, pages, sources, daily, events, conversions, ctaClicks });
   } catch (e: unknown) {

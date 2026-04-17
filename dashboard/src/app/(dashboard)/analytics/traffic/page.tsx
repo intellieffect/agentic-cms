@@ -392,11 +392,39 @@ function GA4Tab() {
 }
 
 /* ─── GSC Tab ─── */
+
+// GSC 는 country 를 ISO 3166 alpha-3 소문자 (예: "kor", "usa") 로 반환.
+// 자주 나올 만한 국가만 한국어로 매핑하고 그 외는 원본 코드 유지.
+const COUNTRY_NAME_KO: Record<string, string> = {
+  kor: "대한민국", usa: "미국", jpn: "일본", chn: "중국", hkg: "홍콩", twn: "대만",
+  vnm: "베트남", tha: "태국", idn: "인도네시아", phl: "필리핀", mys: "말레이시아",
+  sgp: "싱가포르", ind: "인도", gbr: "영국", deu: "독일", fra: "프랑스", ita: "이탈리아",
+  esp: "스페인", nld: "네덜란드", swe: "스웨덴", nor: "노르웨이", fin: "핀란드",
+  pol: "폴란드", ukr: "우크라이나", rus: "러시아", tur: "튀르키예", can: "캐나다",
+  mex: "멕시코", bra: "브라질", arg: "아르헨티나", aus: "호주", nzl: "뉴질랜드",
+  are: "아랍에미리트", sau: "사우디아라비아", zaf: "남아프리카공화국", egy: "이집트",
+};
+const formatCountry = (code: string): string => {
+  const key = code.toLowerCase();
+  const name = COUNTRY_NAME_KO[key];
+  return name ? `${name} (${key.toUpperCase()})` : key.toUpperCase();
+};
+
+// GSC 는 device 를 대문자 (DESKTOP / MOBILE / TABLET) 로 반환.
+const DEVICE_NAME_KO: Record<string, string> = {
+  DESKTOP: "데스크톱",
+  MOBILE: "모바일",
+  TABLET: "태블릿",
+};
+const formatDevice = (code: string): string => DEVICE_NAME_KO[code.toUpperCase()] ?? code;
+
 interface GSCData {
   overview: { totalClicks: number; totalImpressions: number; avgCtr: number; avgPosition: number };
   queries: { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
   pages: { page: string; clicks: number; impressions: number; ctr: number; position: number }[];
   daily: { date: string; clicks: number; impressions: number }[];
+  countries?: { country: string; clicks: number; impressions: number; ctr: number; position: number }[];
+  devices?: { device: string; clicks: number; impressions: number; ctr: number; position: number }[];
 }
 
 function GSCTab() {
@@ -404,7 +432,7 @@ function GSCTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<Period>(7);
-  const [view, setView] = useState<"queries" | "pages">("queries");
+  const [view, setView] = useState<"queries" | "pages" | "countries" | "devices">("queries");
 
   useEffect(() => {
     let cancelled = false;
@@ -478,7 +506,7 @@ function GSCTab() {
         )}
       </div>
       <div className="flex gap-1">
-        {([["queries", "검색어"], ["pages", "페이지"]] as const).map(([key, label]) => (
+        {([["queries", "검색어"], ["pages", "페이지"], ["countries", "국가"], ["devices", "기기"]] as const).map(([key, label]) => (
           <button key={key} onClick={() => setView(key)} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${view === key ? "bg-[#333] text-white" : "text-[#888] hover:text-white"}`}>{label}</button>
         ))}
       </div>
@@ -486,7 +514,7 @@ function GSCTab() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#222] text-[#888]">
-              <th className="px-4 py-3 text-left">{view === "queries" ? "검색어" : "페이지"}</th>
+              <th className="px-4 py-3 text-left">{view === "queries" ? "검색어" : view === "pages" ? "페이지" : view === "countries" ? "국가" : "기기"}</th>
               <th className="px-4 py-3 text-right">클릭</th>
               <th className="px-4 py-3 text-right">노출</th>
               <th className="px-4 py-3 text-right">CTR</th>
@@ -494,18 +522,33 @@ function GSCTab() {
             </tr>
           </thead>
           <tbody>
-            {(view === "queries" ? data.queries : data.pages).map((r) => {
-              const label = view === "queries" ? (r as GSCData["queries"][0]).query : (r as GSCData["pages"][0]).page;
-              return (
-                <tr key={label} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
-                  <td className="px-4 py-2 text-[#ccc] max-w-[300px] truncate">{label}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.clicks)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.impressions)}</td>
-                  <td className="px-4 py-2 text-right text-[#4ECDC4]">{(r.ctr * 100).toFixed(1)}%</td>
-                  <td className="px-4 py-2 text-right text-[#888]">{r.position.toFixed(1)}</td>
-                </tr>
-              );
-            })}
+            {(() => {
+              const rows =
+                view === "queries" ? data.queries :
+                view === "pages" ? data.pages :
+                view === "countries" ? (data.countries ?? []) :
+                (data.devices ?? []);
+              return rows.map((r) => {
+                const rawKey =
+                  view === "queries" ? (r as GSCData["queries"][0]).query :
+                  view === "pages" ? (r as GSCData["pages"][0]).page :
+                  view === "countries" ? ((r as NonNullable<GSCData["countries"]>[0]).country) :
+                  ((r as NonNullable<GSCData["devices"]>[0]).device);
+                const label =
+                  view === "countries" ? formatCountry(rawKey) :
+                  view === "devices" ? formatDevice(rawKey) :
+                  rawKey;
+                return (
+                  <tr key={rawKey} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                    <td className="px-4 py-2 text-[#ccc] max-w-[300px] truncate">{label}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.clicks)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.impressions)}</td>
+                    <td className="px-4 py-2 text-right text-[#4ECDC4]">{(r.ctr * 100).toFixed(1)}%</td>
+                    <td className="px-4 py-2 text-right text-[#888]">{r.position.toFixed(1)}</td>
+                  </tr>
+                );
+              });
+            })()}
           </tbody>
         </table>
       </div>
