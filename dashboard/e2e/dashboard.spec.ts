@@ -22,9 +22,11 @@ test.describe('Dashboard Home', () => {
     }
   });
 
-  test('4 stat cards are visible', async ({ page }) => {
+  test('5 stat cards are visible', async ({ page }) => {
     await page.goto('/');
-    const cardTitles = ['Ideas', 'Drafts', 'In Review', 'Published'];
+    // 대시보드 홈이 5개 카드로 리팩토링됨: Topics/Ideas/Contents/Variants/Published
+    // (이전 4개: Ideas/Drafts/In Review/Published)
+    const cardTitles = ['Topics', 'Ideas', 'Contents', 'Variants', 'Published'];
     for (const title of cardTitles) {
       await expect(page.locator(`text=${title}`).first()).toBeVisible();
     }
