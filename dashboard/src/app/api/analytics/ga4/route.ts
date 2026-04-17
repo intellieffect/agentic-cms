@@ -4,11 +4,18 @@ import { google } from "googleapis";
 const PROPERTY_ID = "530816613";
 
 async function getClient() {
-  if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  if (!raw) {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY environment variable is not set");
   }
+  let credentials;
+  try {
+    credentials = JSON.parse(raw.replace(/\n/g, '\\n'));
+  } catch {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
+  }
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\n/g, '\\n')),
+    credentials,
     scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
   });
   return google.analyticsdata({ version: "v1beta", auth });
