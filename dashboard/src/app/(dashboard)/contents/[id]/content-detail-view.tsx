@@ -180,13 +180,13 @@ export function ContentDetailView({ content, revisions, publications, variants }
     <div className="space-y-6">
       {/* Breadcrumb + Actions (Payload DocumentControls pattern) */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/contents" className="hover:text-foreground transition-colors">
             Contents
           </Link>
-          <ChevronRightIcon className="h-3 w-3" />
+          <ChevronRightIcon aria-hidden="true" className="h-3 w-3" />
           <span className="text-foreground font-medium truncate max-w-[300px]">{content.title}</span>
-        </div>
+        </nav>
 
         {/* Document Controls */}
         <div className="flex items-center gap-2">

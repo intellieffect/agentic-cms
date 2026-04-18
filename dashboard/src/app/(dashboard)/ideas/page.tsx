@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { Main } from "@/components/layout/main";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PipelineStepper } from "@/components/pipeline-stepper";
 import { getIdeas, getTopics } from "@/lib/queries";
 import { IdeasList } from "./ideas-list";
 
@@ -14,6 +15,7 @@ async function IdeasData() {
 export default function IdeasPage() {
   return (
     <Main>
+      <PipelineStepper currentStep="ideas" className="mb-4" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Ideas</h1>
         <p className="text-muted-foreground">Raw ideas waiting to become content.</p>

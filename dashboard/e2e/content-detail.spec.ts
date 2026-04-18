@@ -28,8 +28,11 @@ test.describe('Content Detail', () => {
     await page.locator('table tbody tr').first().click();
     await page.waitForURL(/\/contents\/[a-f0-9-]+/, { timeout: 5000 });
 
-    // Breadcrumb should show "Contents" link
-    await expect(page.locator('a', { hasText: 'Contents' })).toBeVisible();
+    // Breadcrumb nav (aria-label="Breadcrumb") 에 "Contents" 링크가 있는지.
+    // nav[aria-label="Pipeline progress"] 와 sidebar 의 Contents 링크들과 구분됨.
+    await expect(
+      page.getByLabel('Breadcrumb').getByRole('link', { name: 'Contents' })
+    ).toBeVisible();
   });
 
   test('all fields are visible', async ({ page }) => {
@@ -105,12 +108,23 @@ test.describe('Content Detail', () => {
   });
 
   test('status cannot be changed to published (no publish option)', async ({ page }) => {
+    // 이 테스트의 의도: 이미 published 상태인 content 상세 페이지에서는 "Publish" 버튼이
+    // 사라져야 한다 (중복 발행 방지). 따라서 "아무 content나 첫 번째" 가 아니라
+    // **published 상태의 row** 를 명시적으로 찾아 진입해야 한다.
     await page.goto('/contents');
     await page.locator('table').waitFor({ timeout: 10000 });
-    await page.locator('table tbody tr').first().click();
+
+    // status 컬럼 배지가 "Published" 로 된 row 만 추린다.
+    const publishedRow = page.locator('table tbody tr', { hasText: /Published/i }).first();
+    if ((await publishedRow.count()) === 0) {
+      test.skip(true, "published content not seeded — 로컬/CI 환경에 이미 발행된 content 가 없어 스킵.");
+      return;
+    }
+    await publishedRow.click();
     await page.waitForURL(/\/contents\/[a-f0-9-]+/, { timeout: 5000 });
 
-    // There should be no "publish" button or select option
+    // 이미 published 상태이므로 Publish 버튼은 없어야 한다.
+    // Pipeline stepper 의 "Publish" 는 <a> 이므로 'button' selector 에 안 잡힘 — 그대로 사용.
     const publishButton = page.locator('button', { hasText: /^publish$/i });
     await expect(publishButton).toHaveCount(0);
   });

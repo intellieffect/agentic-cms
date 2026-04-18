@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { Main } from "@/components/layout/main";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PipelineStepper } from "@/components/pipeline-stepper";
 import { getPublications } from "@/lib/queries";
 import { PublicationsTable } from "./publications-table";
 
@@ -14,6 +15,7 @@ async function PublicationsData() {
 export default function PublicationsPage() {
   return (
     <Main>
+      <PipelineStepper currentStep="publish" className="mb-4" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Publications</h1>
         <p className="text-muted-foreground">Track where your content has been published.</p>
