@@ -8,6 +8,14 @@ export function registerPublicationTools(server: McpServer, adapter: CMSAdapter)
     'Record a publication event — tracks where and when content was published, with optional metrics.',
     {
       content_id: z.string().uuid().describe('ID of the content that was published'),
+      variant_id: z
+        .string()
+        .uuid()
+        .optional()
+        .describe(
+          'Optional variant that was actually published (recommended when a specific platform ' +
+            'variant is being recorded — enables variant-level metric tracking).'
+        ),
       channel: z.string().describe('Publication channel (e.g., "blog", "twitter", "linkedin")'),
       channel_post_id: z.string().optional().describe('Platform-specific post ID'),
       url: z.string().url().optional().describe('URL where the content was published'),
