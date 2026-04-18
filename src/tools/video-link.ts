@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CMSAdapter } from '../adapters/interface.js';
+import { getSupabase } from '../shared/supabase.js';
 
 // video_projects 는 brxce-editor FastAPI(`/api/projects/save`) 경유로 만들어지므로
 // create 시점에 variant_id 를 바로 넣을 수 없다. 대신 기존 레코드의 variant_id 를
@@ -13,13 +13,8 @@ import type { CMSAdapter } from '../adapters/interface.js';
 //   3) link_video_project_to_variant(video_project_id=B, variant_id=A) → 연결
 //
 // 향후 brxce-editor 의 save 엔드포인트에 variant_id 가 추가되면 이 도구는 보조 유지.
-export function registerVideoLinkTools(
-  server: McpServer,
-  adapter: CMSAdapter,
-  supabaseUrl: string,
-  supabaseKey: string,
-): void {
-  const sb: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+export function registerVideoLinkTools(server: McpServer, adapter: CMSAdapter): void {
+  const sb = getSupabase();
 
   server.tool(
     'link_video_project_to_variant',
