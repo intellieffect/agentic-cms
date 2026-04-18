@@ -1,8 +1,11 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { Suspense } from "react";
+import { ArrowRightIcon, LightbulbIcon } from "lucide-react";
 import { Main } from "@/components/layout/main";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTopics } from "@/lib/queries";
@@ -61,10 +64,16 @@ async function TopicsData() {
               ))}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
               {topic.description ?? "No description provided."}
             </p>
+            <Button asChild variant="outline" size="sm" className="w-full">
+              <Link href={`/ideas?topic_id=${topic.id}`}>
+                <LightbulbIcon aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />이 토픽의 아이디어
+                <ArrowRightIcon aria-hidden="true" className="ml-auto h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ))}
