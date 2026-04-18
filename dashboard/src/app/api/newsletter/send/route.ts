@@ -63,13 +63,28 @@ async function sendWithRateLimit<T, R>(
 export async function POST(req: NextRequest) {
   try {
     // Shared-secret auth: 프로덕션에서 이 endpoint 가 외부 노출되면 누구나 뉴스레터를
-    // 발송할 수 있으므로 DASHBOARD_MCP_SECRET 이 설정돼 있으면 헤더 일치 요구.
-    // 미설정 시(dev/로컬) 는 기존 동작 유지 — backward compat.
+    // 발송할 수 있으므로 DASHBOARD_MCP_SECRET 이 설정돼 있으면 외부 호출은 헤더 일치 요구.
+    //
+    // 단, dashboard UI (newsletter page, blog-manage 상세) 도 같은 endpoint 를 호출하는데
+    // 브라우저에서 서버 env 값을 헤더에 넣을 방법이 없다. Origin 이 같은 호스트 (same-origin)
+    // 인 요청은 dashboard UI 로 간주해 통과시키고, 그 외(다른 origin / origin 없음, 예: MCP
+    // 서버 fetch) 만 secret 검증.
+    //
+    // 보안 한계: Origin 헤더는 비-브라우저 클라이언트가 위조 가능. 이 가드는 "정상 dashboard
+    // UI 보호 + 방화벽 밖 무단 호출 차단" 수준. 완전한 auth 는 dashboard 자체 세션/JWT 도입이
+    // 필요하며 별도 작업.
+    //
+    // DASHBOARD_MCP_SECRET 미설정 시에는 기존 동작 (다 열림) 유지 — backward compat.
     const expected = process.env.DASHBOARD_MCP_SECRET;
     if (expected) {
-      const provided = req.headers.get("x-mcp-secret");
-      if (provided !== expected) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const origin = req.headers.get("origin");
+      const host = req.headers.get("host");
+      const isSameOrigin = Boolean(origin && host && origin.endsWith(host));
+      if (!isSameOrigin) {
+        const provided = req.headers.get("x-mcp-secret");
+        if (provided !== expected) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
       }
     }
 
