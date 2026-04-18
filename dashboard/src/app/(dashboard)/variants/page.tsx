@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PipelineStepper } from "@/components/pipeline-stepper";
 import { getAllVariants } from "@/lib/queries";
 import type { Variant } from "@/lib/types";
 
@@ -133,6 +134,7 @@ async function VariantsData() {
 export default function VariantsPage() {
   return (
     <Main>
+      <PipelineStepper currentStep="variants" className="mb-4" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Variants</h1>
         <p className="text-muted-foreground">Platform-specific content adaptations</p>

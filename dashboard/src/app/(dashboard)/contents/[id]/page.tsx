@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Main } from "@/components/layout/main";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PipelineStepper } from "@/components/pipeline-stepper";
 import { getContentById, getRevisions, getPublications, getVariantsWithDerivatives } from "@/lib/queries";
 import { ContentDetailView } from "./content-detail-view";
 
@@ -38,6 +39,7 @@ export default async function ContentDetailPage({ params }: PageProps) {
 
   return (
     <Main>
+      <PipelineStepper currentStep="contents" className="mb-4" />
       <Suspense
         fallback={
           <div className="space-y-4">

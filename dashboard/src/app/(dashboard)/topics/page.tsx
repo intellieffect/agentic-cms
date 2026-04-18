@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PipelineStepper } from "@/components/pipeline-stepper";
 import { getTopics } from "@/lib/queries";
 
 function getIntentVariant(intent: string) {
@@ -84,6 +85,7 @@ async function TopicsData() {
 export default function TopicsPage() {
   return (
     <Main>
+      <PipelineStepper currentStep="topics" className="mb-4" />
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Topics</h1>
         <p className="text-muted-foreground">Content themes for keyword authority</p>
