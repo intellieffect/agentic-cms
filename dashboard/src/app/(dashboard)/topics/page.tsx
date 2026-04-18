@@ -70,8 +70,8 @@ async function TopicsData() {
             </p>
             <Button asChild variant="outline" size="sm" className="w-full">
               <Link href={`/ideas?topic_id=${topic.id}`}>
-                <LightbulbIcon className="mr-1.5 h-3.5 w-3.5" />이 토픽의 아이디어
-                <ArrowRightIcon className="ml-auto h-3.5 w-3.5" />
+                <LightbulbIcon aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />이 토픽의 아이디어
+                <ArrowRightIcon aria-hidden="true" className="ml-auto h-3.5 w-3.5" />
               </Link>
             </Button>
           </CardContent>

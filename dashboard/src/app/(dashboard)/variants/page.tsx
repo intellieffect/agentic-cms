@@ -117,9 +117,9 @@ async function VariantsData() {
               )}
               <Button asChild variant="outline" size="sm" className="w-full">
                 <Link href={studioHref}>
-                  <StudioIcon className="mr-1.5 h-3.5 w-3.5" />
+                  <StudioIcon aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
                   {studio.label}
-                  <ArrowRightIcon className="ml-auto h-3.5 w-3.5" />
+                  <ArrowRightIcon aria-hidden="true" className="ml-auto h-3.5 w-3.5" />
                 </Link>
               </Button>
             </CardContent>

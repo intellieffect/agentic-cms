@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpCircleIcon, CheckCircleIcon, SearchIcon } from "lucide-react";
 import type { Idea, Topic } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,14 +35,27 @@ function getIntentVariant(intent: string | null | undefined) {
 
 export function IdeasList({ ideas, topics }: IdeasListProps) {
   // 사이드바의 Topics → "이 토픽의 아이디어" 링크가 `?topic_id=<id>` 로 넘어오므로
-  // 첫 렌더에 URL 파라미터로 topic 필터를 초기화한다.
+  // 첫 렌더에 URL 파라미터로 topic 필터를 초기화한다. 다만 존재하지 않는 topic_id 는
+  // 무시 — 유효하지 않은 값으로 들어오면 "전체 없음" 처럼 보여 혼란스럽기 때문.
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const initialTopicId = searchParams.get("topic_id");
+  const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
+  const rawTopicId = searchParams.get("topic_id");
+  const initialTopicId = rawTopicId && topicsById.has(rawTopicId) ? rawTopicId : null;
 
   const [search, setSearch] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(initialTopicId);
 
-  const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
+  // topic 선택 시 state 와 URL 을 같이 업데이트해 공유 가능한 필터 URL 을 유지한다.
+  const selectTopic = (topicId: string | null) => {
+    setSelectedTopicId(topicId);
+    const params = new URLSearchParams(searchParams.toString());
+    if (topicId) params.set("topic_id", topicId);
+    else params.delete("topic_id");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   const filtered = ideas.filter((idea) => {
     const topic = idea.topic_id ? topicsById.get(idea.topic_id) : undefined;
@@ -74,7 +87,7 @@ export function IdeasList({ ideas, topics }: IdeasListProps) {
           type="button"
           size="sm"
           variant={selectedTopicId === null ? "secondary" : "outline"}
-          onClick={() => setSelectedTopicId(null)}
+          onClick={() => selectTopic(null)}
         >
           All Topics
         </Button>
@@ -84,7 +97,7 @@ export function IdeasList({ ideas, topics }: IdeasListProps) {
             type="button"
             size="sm"
             variant={selectedTopicId === topic.id ? "secondary" : "outline"}
-            onClick={() => setSelectedTopicId(topic.id)}
+            onClick={() => selectTopic(topic.id)}
           >
             {topic.name}
           </Button>
