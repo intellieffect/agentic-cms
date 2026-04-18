@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CMSAdapter } from '../adapters/interface.js';
+import { getSupabase } from '../shared/supabase.js';
 
 // ─── Types ────────────────────────────────────────────────
 interface CarouselSlide {
@@ -64,13 +64,8 @@ const slideInputSchema = z.object({
 // NOTE: SupabaseAdapter 에 carousel CRUD 메서드가 없어 여기서 raw Supabase
 // client 를 그대로 사용한다. adapter 는 logActivity() 를 통한 감사 추적 용도로만
 //주입. 중장기로는 CMSAdapter 에 carousel 메서드 추가해 adapter 일원화 권장.
-export function registerCarouselTools(
-  server: McpServer,
-  adapter: CMSAdapter,
-  supabaseUrl: string,
-  supabaseKey: string
-): void {
-  const sb: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+export function registerCarouselTools(server: McpServer, adapter: CMSAdapter): void {
+  const sb = getSupabase();
 
   const logCarouselActivity = async (
     action: 'create' | 'update',
