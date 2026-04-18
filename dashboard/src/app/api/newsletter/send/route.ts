@@ -62,6 +62,17 @@ async function sendWithRateLimit<T, R>(
 
 export async function POST(req: NextRequest) {
   try {
+    // Shared-secret auth: 프로덕션에서 이 endpoint 가 외부 노출되면 누구나 뉴스레터를
+    // 발송할 수 있으므로 DASHBOARD_MCP_SECRET 이 설정돼 있으면 헤더 일치 요구.
+    // 미설정 시(dev/로컬) 는 기존 동작 유지 — backward compat.
+    const expected = process.env.DASHBOARD_MCP_SECRET;
+    if (expected) {
+      const provided = req.headers.get("x-mcp-secret");
+      if (provided !== expected) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const sb = getSupabase();
 
     const { subject, bodyHtml, postId, preview, recipientIds, force } = await req.json();
