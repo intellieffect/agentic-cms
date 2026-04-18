@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ExternalLinkIcon } from "lucide-react";
 import type { Publication } from "@/lib/types";
@@ -21,10 +22,17 @@ const columns: ColumnDef<Publication, unknown>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Content" />,
     cell: ({ row }) => {
       const contents = row.original.contents;
+      const contentId = row.original.content_id;
+      if (!contents?.title) {
+        return <span className="font-medium text-muted-foreground">Unknown</span>;
+      }
       return (
-        <span className="font-medium">
-          {contents?.title ?? "Unknown"}
-        </span>
+        <Link
+          href={`/contents/${contentId}`}
+          className="font-medium transition-colors hover:text-info hover:underline"
+        >
+          {contents.title}
+        </Link>
       );
     },
     enableSorting: false,

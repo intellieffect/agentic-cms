@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowUpCircleIcon, CheckCircleIcon, SearchIcon } from "lucide-react";
 import type { Idea, Topic } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,8 +34,13 @@ function getIntentVariant(intent: string | null | undefined) {
 }
 
 export function IdeasList({ ideas, topics }: IdeasListProps) {
+  // 사이드바의 Topics → "이 토픽의 아이디어" 링크가 `?topic_id=<id>` 로 넘어오므로
+  // 첫 렌더에 URL 파라미터로 topic 필터를 초기화한다.
+  const searchParams = useSearchParams();
+  const initialTopicId = searchParams.get("topic_id");
+
   const [search, setSearch] = useState("");
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(initialTopicId);
 
   const topicsById = new Map(topics.map((topic) => [topic.id, topic]));
 
