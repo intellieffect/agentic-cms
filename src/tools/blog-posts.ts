@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { getSupabase } from '../shared/supabase.js';
 
 // Types for blog_posts table
 interface BlogPostRow {
@@ -105,12 +105,8 @@ function err(error: unknown) {
   };
 }
 
-export function registerBlogPostTools(
-  server: McpServer,
-  supabaseUrl: string,
-  supabaseKey: string
-): void {
-  const sb: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+export function registerBlogPostTools(server: McpServer): void {
+  const sb = getSupabase();
 
   // ─── list_blog_categories ────────────────────────────────
   server.tool(

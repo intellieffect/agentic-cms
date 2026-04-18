@@ -50,13 +50,13 @@ async function main(): Promise<void> {
   registerVideoTools(server, editorApiUrl);
 
   // Blog post tools (AWC blog — blog_posts table, markdown → PlateJS)
-  registerBlogPostTools(server, supabaseUrl, supabaseKey);
+  registerBlogPostTools(server);
 
   // Carousel tools (AWC carousels table — slide deck CRUD)
-  registerCarouselTools(server, adapter, supabaseUrl, supabaseKey);
+  registerCarouselTools(server, adapter);
 
   // Newsletter — HTTP wrap over dashboard send endpoint + email_logs.variant_id linking
-  registerNewsletterTools(server, adapter, supabaseUrl, supabaseKey);
+  registerNewsletterTools(server, adapter);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

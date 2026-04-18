@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CMSAdapter } from '../adapters/interface.js';
+import { getSupabase } from '../shared/supabase.js';
 
 // 뉴스레터 발송 MCP 도구.
 //
@@ -19,13 +19,8 @@ import type { CMSAdapter } from '../adapters/interface.js';
 // 전제:
 //   - DASHBOARD_API_URL 환경변수 (기본 http://localhost:3003) 에 dashboard 가 떠있어야 한다.
 //   - dashboard 는 service-role Supabase 키로 동작하므로 별도 auth 필요 없음 (같은 신뢰 경계).
-export function registerNewsletterTools(
-  server: McpServer,
-  adapter: CMSAdapter,
-  supabaseUrl: string,
-  supabaseKey: string,
-): void {
-  const sb: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+export function registerNewsletterTools(server: McpServer, adapter: CMSAdapter): void {
+  const sb = getSupabase();
   const dashboardUrl = (process.env.DASHBOARD_API_URL ?? 'http://localhost:3003').replace(/\/+$/, '');
 
   server.tool(
