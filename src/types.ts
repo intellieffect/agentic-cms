@@ -32,6 +32,22 @@ export interface Idea {
   created_at: string;
 }
 
+export interface IdeaCreateInput {
+  raw_text: string;
+  source?: string;
+  topic_id?: string;
+  angle?: string;
+  target_audience?: string;
+}
+
+export interface IdeaUpdateInput {
+  raw_text?: string;
+  source?: string;
+  topic_id?: string | null;
+  angle?: string | null;
+  target_audience?: string | null;
+}
+
 export interface Publication {
   id: string;
   content_id: string;

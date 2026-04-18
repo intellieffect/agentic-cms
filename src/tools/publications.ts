@@ -5,7 +5,7 @@ import type { CMSAdapter } from '../adapters/interface.js';
 export function registerPublicationTools(server: McpServer, adapter: CMSAdapter): void {
   server.tool(
     'create_publication',
-    'Record a publication event — tracks where and when content was published, with optional metrics.',
+    '[Pipeline step 6 — Publish tracking] Record a publication event (where/when the content went out). Include variant_id so the Content detail view traces which variant was published on which channel. Final pipeline step — after this use get_metrics + get_activity_logs for feedback loop.',
     {
       content_id: z.string().uuid().describe('ID of the content that was published'),
       variant_id: z
@@ -48,7 +48,7 @@ export function registerPublicationTools(server: McpServer, adapter: CMSAdapter)
 
   server.tool(
     'get_metrics',
-    'Get publication metrics for a specific content item — shows all publication events and their metrics.',
+    '[Feedback loop] Get publication metrics for a content item — all publish events across channels. Use to learn which variants performed best before creating the next round of variants.',
     {
       content_id: z.string().uuid().describe('Content ID to get metrics for'),
     },

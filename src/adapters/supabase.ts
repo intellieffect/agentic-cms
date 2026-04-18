@@ -6,6 +6,8 @@ import type {
   ContentFilter,
   ContentUpdateInput,
   Idea,
+  IdeaCreateInput,
+  IdeaUpdateInput,
   Topic,
   TopicCreateInput,
   Variant,
@@ -173,6 +175,64 @@ export class SupabaseAdapter implements CMSAdapter {
 
     if (error) throw new Error(`Failed to list ideas: ${error.message}`);
     return data as Idea[];
+  }
+
+  async getIdea(id: string): Promise<Idea> {
+    const { data, error } = await this.client
+      .from('ideas')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw new Error(`Idea not found: ${id} (${error.message})`);
+    return data as Idea;
+  }
+
+  async createIdea(input: IdeaCreateInput): Promise<Idea> {
+    const payload = {
+      raw_text: input.raw_text,
+      source: input.source ?? 'agent',
+      topic_id: input.topic_id ?? null,
+      angle: input.angle ?? null,
+      target_audience: input.target_audience ?? null,
+    };
+    const { data, error } = await this.client
+      .from('ideas')
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create idea: ${error.message}`);
+    const idea = data as Idea;
+
+    await this.logActivity({
+      action: 'create',
+      collection: 'ideas',
+      item_id: idea.id,
+      actor_type: 'agent',
+      payload: { source: idea.source, topic_id: idea.topic_id, angle: idea.angle },
+    }).catch((err) => console.error('Failed to log idea create activity:', err));
+
+    return idea;
+  }
+
+  async updateIdea(id: string, input: IdeaUpdateInput): Promise<Idea> {
+    const { data, error } = await this.client
+      .from('ideas')
+      .update(input)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to update idea ${id}: ${error.message}`);
+    const idea = data as Idea;
+
+    await this.logActivity({
+      action: 'update',
+      collection: 'ideas',
+      item_id: idea.id,
+      actor_type: 'agent',
+      payload: { updated_fields: Object.keys(input) },
+    }).catch((err) => console.error('Failed to log idea update activity:', err));
+
+    return idea;
   }
 
   async promoteIdea(ideaId: string, contentData: ContentCreateInput): Promise<Content> {
