@@ -22,6 +22,9 @@ import { getSupabase } from '../shared/supabase.js';
 export function registerNewsletterTools(server: McpServer, adapter: CMSAdapter): void {
   const sb = getSupabase();
   const dashboardUrl = (process.env.DASHBOARD_API_URL ?? 'http://localhost:3003').replace(/\/+$/, '');
+  // 선택적 shared-secret. dashboard 쪽에도 DASHBOARD_MCP_SECRET 이 같은 값으로 설정돼야 동작.
+  // 미설정 시에는 헤더 없이 호출 → dashboard 도 미설정이면 통과 (backward compat).
+  const dashboardSecret = process.env.DASHBOARD_MCP_SECRET ?? null;
 
   server.tool(
     'send_newsletter',
@@ -67,9 +70,11 @@ export function registerNewsletterTools(server: McpServer, adapter: CMSAdapter):
         }
 
         // 2. Call dashboard send endpoint
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (dashboardSecret) headers['x-mcp-secret'] = dashboardSecret;
         const res = await fetch(`${dashboardUrl}/api/newsletter/send`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             postId: params.post_id,
             preview: params.preview ?? false,
