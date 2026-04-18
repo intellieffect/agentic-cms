@@ -16,6 +16,7 @@ import { registerVideoTools } from './tools/video.js';
 import { registerBlogPostTools } from './tools/blog-posts.js';
 import { registerCarouselTools } from './tools/carousels.js';
 import { registerNewsletterTools } from './tools/newsletter.js';
+import { registerVideoLinkTools } from './tools/video-link.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -57,6 +58,9 @@ async function main(): Promise<void> {
 
   // Newsletter — HTTP wrap over dashboard send endpoint + email_logs.variant_id linking
   registerNewsletterTools(server, adapter, supabaseUrl, supabaseKey);
+
+  // video_projects 는 brxce-editor 경유 생성이라 variant_id 를 post-link 로 채우는 전용 도구.
+  registerVideoLinkTools(server, adapter, supabaseUrl, supabaseKey);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
