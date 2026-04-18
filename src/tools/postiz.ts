@@ -25,8 +25,27 @@ import { getSupabase } from '../shared/supabase.js';
 export function registerPostizTools(server: McpServer, adapter: CMSAdapter): void {
   const postizUrl = (process.env.POSTIZ_API_URL ?? '').replace(/\/+$/, '');
   const postizKey = process.env.POSTIZ_API_KEY ?? '';
+  // Postiz 배포 버전에 따라 인증 헤더 형식이 다르다:
+  //   - 'raw'        : Authorization: <key>            (기본, 대부분의 Postiz)
+  //   - 'bearer'     : Authorization: Bearer <key>
+  //   - 'x-api-key'  : x-api-key: <key>                (몇몇 커스텀 배포)
+  // env POSTIZ_AUTH_SCHEME 으로 명시. 미설정 시 raw.
+  const authScheme = (process.env.POSTIZ_AUTH_SCHEME ?? 'raw').toLowerCase();
 
   const postizConfigured = Boolean(postizUrl && postizKey);
+
+  // 소셜 채널 whitelist — variant.platform 이 아래 중 하나여야 Postiz 로 보낼 수 있다.
+  // blog / email / self 같은 자사 채널 variant 를 실수로 소셜에 발행하는 것 방지.
+  const POSTIZ_ALLOWED_PLATFORMS = new Set([
+    'instagram',
+    'linkedin',
+    'threads',
+    'tiktok',
+    'youtube',
+    'x',
+    'twitter',
+    'facebook',
+  ]);
 
   const postizFetch = async (path: string, init?: RequestInit): Promise<Response> => {
     if (!postizConfigured) {
@@ -34,11 +53,15 @@ export function registerPostizTools(server: McpServer, adapter: CMSAdapter): voi
         'Postiz not configured. Set POSTIZ_API_URL and POSTIZ_API_KEY env vars before using Postiz tools.',
       );
     }
+    const authHeaders: Record<string, string> =
+      authScheme === 'bearer'
+        ? { Authorization: `Bearer ${postizKey}` }
+        : authScheme === 'x-api-key'
+          ? { 'x-api-key': postizKey }
+          : { Authorization: postizKey };
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: postizKey,
-      // 일부 Postiz 버전은 x-api-key 를 기대함 — 둘 다 보내 호환성 확보.
-      'x-api-key': postizKey,
+      ...authHeaders,
       ...(init?.headers as Record<string, string> | undefined),
     };
     return fetch(`${postizUrl}${path}`, { ...init, headers });
@@ -101,6 +124,12 @@ export function registerPostizTools(server: McpServer, adapter: CMSAdapter): voi
         .boolean()
         .optional()
         .describe('If true, builds the payload but does NOT call Postiz — useful for agent debugging.'),
+      force: z
+        .boolean()
+        .optional()
+        .describe(
+          'If true, send even when variant.status is already "sent_to_postiz". Default false — prevents accidental double-post.',
+        ),
     },
     async (params) => {
       try {
@@ -113,6 +142,23 @@ export function registerPostizTools(server: McpServer, adapter: CMSAdapter): voi
           .eq('id', params.variant_id)
           .single();
         if (varErr || !variant) throw new Error(`Variant not found: ${params.variant_id}`);
+
+        // 1a. 소셜 채널 whitelist 검증 — blog/email/self variant 를 Postiz 로 보내는 실수 방지.
+        const platform = (variant.platform as string | null)?.toLowerCase() ?? '';
+        if (!POSTIZ_ALLOWED_PLATFORMS.has(platform)) {
+          throw new Error(
+            `variant.platform='${platform}' is not a Postiz-supported social channel. ` +
+              `Allowed: ${Array.from(POSTIZ_ALLOWED_PLATFORMS).join(', ')}. ` +
+              `For blog use send_newsletter, for email use send_newsletter, for self/other use create_publication manually.`,
+          );
+        }
+
+        // 1b. 중복 발행 방지 — 이미 보낸 variant 는 force=true 없이는 재발행 차단.
+        if (variant.status === 'sent_to_postiz' && !params.force) {
+          throw new Error(
+            `Variant already sent to Postiz (variant.status='sent_to_postiz'). Pass force=true to override (e.g. re-send after failure).`,
+          );
+        }
 
         // 2. Postiz payload 구성 (raw_payload 없으면 기본 DTO)
         //    기본 DTO 는 Postiz public API 공통 형식 — 배포 버전 차이 있을 수 있으니

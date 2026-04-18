@@ -64,25 +64,37 @@ list_contents, get_content, create_content, update_content, list_ideas, promote_
 Claude Code 는 `.mcp.json` (repo 루트) 또는 사용자 설정으로 MCP 서버를 등록한다.
 
 ### 프로젝트 루트 `.mcp.json` 예시
+
+`<...>` 부분은 **본인 환경에 맞게** 교체.
+
 ```json
 {
   "mcpServers": {
     "agentic-cms": {
       "command": "node",
-      "args": ["/Users/jangdongjin/Projects/agentic-cms/dist/server.js"],
+      "args": ["<repo 절대 경로>/agentic-cms/dist/server.js"],
       "env": {
-        "SUPABASE_URL": "https://<project>.supabase.co",
+        "SUPABASE_URL": "https://<project-ref>.supabase.co",
         "SUPABASE_SERVICE_ROLE_KEY": "<service-role-key>",
         "DASHBOARD_API_URL": "http://localhost:3003",
-        "DASHBOARD_MCP_SECRET": "<선택: newsletter send auth>",
+        "DASHBOARD_MCP_SECRET": "<optional: newsletter send auth — dashboard env 와 동일 값>",
         "POSTIZ_API_URL": "https://postiz.agenticworkflows.club",
-        "POSTIZ_API_KEY": "<postiz workspace api key>",
-        "CONTENT_CORE_CLI_PATH": "<awc @awc/content-core cli 경로>"
+        "POSTIZ_API_KEY": "<Postiz Settings → API 에서 발급>",
+        "POSTIZ_AUTH_SCHEME": "raw",
+        "CONTENT_CORE_CLI_PATH": "<awc repo 절대 경로>/awc/packages/content-core/dist/cli.js"
       }
     }
   }
 }
 ```
+
+**env 설명**
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`: **필수**. Supabase 프로젝트 접속.
+- `DASHBOARD_API_URL`: 뉴스레터 발송 시 dashboard `/api/newsletter/send` 호출에 사용. 기본 `http://localhost:3003`.
+- `DASHBOARD_MCP_SECRET`: 옵션. dashboard 쪽에도 동일 값 설정돼 있으면 외부 호출 검증용 secret.
+- `POSTIZ_API_URL` / `POSTIZ_API_KEY`: Postiz 소셜 발행에 **필수**. Postiz 사용 안 할 거면 생략 — send_to_postiz 도구만 기능 꺼짐.
+- `POSTIZ_AUTH_SCHEME`: `raw` (기본) / `bearer` / `x-api-key` 중 택 1. Postiz 배포 버전에 따라 다름. 400/401 나면 바꿔 시도.
+- `CONTENT_CORE_CLI_PATH`: AWC 의 `@awc/content-core` CLI 경로. create_blog_post_from_markdown 에서만 필요.
 
 ### 사전 빌드
 `npm install && npm run build` 로 `dist/server.js` 가 생성돼야 `node dist/server.js` 로 실행 가능. Claude Code 재시작하면 MCP 서버에 연결.
