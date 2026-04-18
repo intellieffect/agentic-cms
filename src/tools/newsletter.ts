@@ -98,9 +98,11 @@ export function registerNewsletterTools(
           );
         }
 
-        // 3. Link email_logs.variant_id after successful send
+        // 3. Link email_logs.variant_id after successful send.
+        //    preview 모드는 관리자 테스트 발송이므로 실제 독자 발송 이력으로 기록되면
+        //    Content 상세의 "📧 N명 발송" 배지에 가짜 이력이 섞인다. variant 링크 스킵.
         let linkedVariantId: string | null = null;
-        if (variantId && body.emailLogId) {
+        if (!params.preview && variantId && body.emailLogId) {
           const { error: linkErr } = await sb
             .from('email_logs')
             .update({ variant_id: variantId })
