@@ -5,7 +5,7 @@ import type { CMSAdapter } from '../adapters/interface.js';
 export function registerVariantTools(server: McpServer, adapter: CMSAdapter): void {
   server.tool(
     'list_variants',
-    'List all variants for a content item.',
+    '[Pipeline step 4 — Adapt] List variants derived from a master Content. Check here before create_variant to avoid duplicates.',
     {
       content_id: z.string().uuid().describe('Content ID to get variants for'),
     },
@@ -32,15 +32,20 @@ export function registerVariantTools(server: McpServer, adapter: CMSAdapter): vo
 
   server.tool(
     'create_variant',
-    'Create a platform-specific variant for a content item.',
+    [
+      '[Pipeline step 4 — Adapt] Create a platform/format-specific variant of a master Content.',
+      'Allowed platforms: instagram/linkedin/threads/tiktok/youtube/x (social) + blog/email/self (own channels).',
+      'Allowed formats: reel/carousel/single_post/article/thread/story/short + blog/video.',
+      'Use variant.id as the variant_id input for the next step — create_blog_post_from_markdown / create_carousel / send_newsletter / link_video_project_to_variant.',
+    ].join(' '),
     {
       content_id: z.string().uuid().describe('Content ID this variant belongs to'),
-      platform: z.string().describe('Target platform'),
-      format: z.string().describe('Target format'),
-      body_text: z.string().optional().describe('Variant body text'),
+      platform: z.string().describe('Target platform (see description for allowed values).'),
+      format: z.string().describe('Target format (see description for allowed values).'),
+      body_text: z.string().optional().describe('Variant body text (platform-adapted copy).'),
       hashtags: z.array(z.string()).optional().describe('Variant hashtags'),
-      character_count: z.number().optional().describe('Character count for the variant'),
-      platform_settings: z.record(z.unknown()).optional().describe('Platform-specific settings'),
+      character_count: z.number().optional().describe('Character count (validate against platform limits).'),
+      platform_settings: z.record(z.unknown()).optional().describe('Platform-specific settings (Postiz DTO pattern).'),
     },
     async (params) => {
       try {

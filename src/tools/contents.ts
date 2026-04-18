@@ -5,7 +5,7 @@ import type { CMSAdapter } from '../adapters/interface.js';
 export function registerContentTools(server: McpServer, adapter: CMSAdapter): void {
   server.tool(
     'list_contents',
-    'List content items with optional filters for status, category, and tags.',
+    '[Pipeline step 3 — Create (master)] List master content items. Agents typically reach this after promote_idea (step 2→3). Use filters to find drafts pending derivation.',
     {
       status: z.enum(['draft', 'review', 'published']).optional().describe('Filter by content status'),
       category: z.string().optional().describe('Filter by category'),
@@ -36,7 +36,7 @@ export function registerContentTools(server: McpServer, adapter: CMSAdapter): vo
 
   server.tool(
     'get_content',
-    'Get a single content item by its ID (UUID) or slug.',
+    '[Pipeline step 3 — Create (master)] Get a single master content item by id or slug. Use before update_content or create_variant to read the current body/hook/cta.',
     {
       id_or_slug: z.string().describe('Content ID (UUID) or slug'),
     },
@@ -58,7 +58,7 @@ export function registerContentTools(server: McpServer, adapter: CMSAdapter): vo
 
   server.tool(
     'create_content',
-    'Create a new content item. Status is always set to "draft" regardless of input — agents cannot publish directly.',
+    '[Pipeline step 3 — Create (master)] Create a new master content item directly (without an Idea). Prefer promote_idea when the content came from an idea (keeps provenance). Status is always "draft". Next step: create_variant (step 4).',
     {
       title: z.string().describe('Content title'),
       slug: z.string().describe('URL-friendly slug (must be unique)'),
@@ -100,7 +100,7 @@ export function registerContentTools(server: McpServer, adapter: CMSAdapter): vo
 
   server.tool(
     'update_content',
-    'Update an existing content item. Cannot set status to "published" — that requires human approval.',
+    '[Pipeline step 3 — Create (master)] Edit master content fields (hook/body/cta/core_message/tags). Use after promote_idea to fill in the draft body. Cannot set status=published (requires human). Next step: create_variant once body is solid.',
     {
       id: z.string().uuid().describe('Content ID (UUID)'),
       title: z.string().optional().describe('Updated title'),

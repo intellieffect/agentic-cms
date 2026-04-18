@@ -5,7 +5,7 @@ import type { CMSAdapter } from '../adapters/interface.js';
 export function registerTopicTools(server: McpServer, adapter: CMSAdapter): void {
   server.tool(
     'list_topics',
-    'List all topics, ordered by sort order.',
+    '[Pipeline step 1 — Strategy] List all topics (long-lived content themes). Start here: the agent picks which topic an idea belongs to. Typical next step: create_idea (step 2) under the chosen topic.',
     {},
     async () => {
       try {
@@ -30,7 +30,7 @@ export function registerTopicTools(server: McpServer, adapter: CMSAdapter): void
 
   server.tool(
     'create_topic',
-    'Create a new topic with optional keywords, intent, and description.',
+    '[Pipeline step 1 — Strategy] Create a new topic. Topics are long-lived (3~5 total, rarely changed). Only add when a genuinely new content theme emerges.',
     {
       name: z.string().describe('Topic name'),
       keywords: z.array(z.string()).optional().describe('Topic keywords'),

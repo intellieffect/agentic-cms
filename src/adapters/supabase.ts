@@ -6,6 +6,9 @@ import type {
   ContentFilter,
   ContentUpdateInput,
   Idea,
+  IdeaCreateInput,
+  IdeaUpdateInput,
+  IdeaFilter,
   Topic,
   TopicCreateInput,
   Variant,
@@ -165,14 +168,91 @@ export class SupabaseAdapter implements CMSAdapter {
 
   // ─── Ideas ─────────────────────────────────────────────────
 
-  async listIdeas(): Promise<Idea[]> {
+  async listIdeas(filter?: IdeaFilter): Promise<Idea[]> {
+    let query = this.client.from('ideas').select('*');
+    if (filter?.topic_id) query = query.eq('topic_id', filter.topic_id);
+    if (filter?.promoted === true) query = query.not('promoted_to', 'is', null);
+    if (filter?.promoted === false) query = query.is('promoted_to', null);
+    if (filter?.limit) query = query.limit(filter.limit);
+    query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+    if (error) throw new Error(`Failed to list ideas: ${error.message}`);
+    return data as Idea[];
+  }
+
+  async getIdea(id: string): Promise<Idea> {
     const { data, error } = await this.client
       .from('ideas')
       .select('*')
-      .order('created_at', { ascending: false });
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(`Failed to fetch idea ${id}`);
+    if (!data) throw new Error(`Idea not found: ${id}`);
+    return data as Idea;
+  }
 
-    if (error) throw new Error(`Failed to list ideas: ${error.message}`);
-    return data as Idea[];
+  async createIdea(input: IdeaCreateInput): Promise<Idea> {
+    // topic_id 가 넘어온 경우 존재 여부 먼저 확인 — FK 위반 에러 대신 친절한 메시지.
+    if (input.topic_id) {
+      const { data: topic, error: topicErr } = await this.client
+        .from('topics')
+        .select('id')
+        .eq('id', input.topic_id)
+        .maybeSingle();
+      if (topicErr) throw new Error('Failed to verify topic_id');
+      if (!topic) {
+        throw new Error(
+          `Topic not found: ${input.topic_id}. Use list_topics to discover valid ids.`,
+        );
+      }
+    }
+
+    const payload = {
+      raw_text: input.raw_text,
+      source: input.source ?? 'agent',
+      topic_id: input.topic_id ?? null,
+      angle: input.angle ?? null,
+      target_audience: input.target_audience ?? null,
+    };
+    const { data, error } = await this.client
+      .from('ideas')
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create idea: ${error.message}`);
+    const idea = data as Idea;
+
+    await this.logActivity({
+      action: 'create',
+      collection: 'ideas',
+      item_id: idea.id,
+      actor_type: 'agent',
+      payload: { source: idea.source, topic_id: idea.topic_id, angle: idea.angle },
+    }).catch((err) => console.error('Failed to log idea create activity:', err));
+
+    return idea;
+  }
+
+  async updateIdea(id: string, input: IdeaUpdateInput): Promise<Idea> {
+    const { data, error } = await this.client
+      .from('ideas')
+      .update(input)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to update idea ${id}: ${error.message}`);
+    const idea = data as Idea;
+
+    await this.logActivity({
+      action: 'update',
+      collection: 'ideas',
+      item_id: idea.id,
+      actor_type: 'agent',
+      payload: { updated_fields: Object.keys(input) },
+    }).catch((err) => console.error('Failed to log idea update activity:', err));
+
+    return idea;
   }
 
   async promoteIdea(ideaId: string, contentData: ContentCreateInput): Promise<Content> {
