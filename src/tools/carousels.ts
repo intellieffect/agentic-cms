@@ -163,6 +163,14 @@ export function registerCarouselTools(
         .min(1)
         .max(20)
         .describe('Ordered list of slides (at least 1, max 20)'),
+      variant_id: z
+        .string()
+        .uuid()
+        .optional()
+        .describe(
+          'Optional variant(id) to link this carousel to (1:1). Use the id returned by ' +
+            'create_variant with format=carousel.'
+        ),
     },
     async (params) => {
       try {
@@ -176,19 +184,27 @@ export function registerCarouselTools(
           overrides: s.overrides ?? {},
         }));
 
-        const payload = {
+        const payload: Record<string, unknown> = {
           id: carouselId,
           title: params.title,
           caption: params.caption ?? null,
           slides,
         };
+        if (params.variant_id) payload.variant_id = params.variant_id;
 
         const { data, error } = await sb
           .from('carousels')
           .insert(payload)
           .select()
           .single();
-        if (error) throw new Error(error.message);
+        if (error) {
+          if ((error as { code?: string }).code === '23505' && params.variant_id) {
+            throw new Error(
+              `variant_id ${params.variant_id} is already linked to another carousel (1:1 constraint).`
+            );
+          }
+          throw new Error(error.message);
+        }
 
         const row = data as CarouselRow;
         await logCarouselActivity('create', row.id, {
@@ -227,6 +243,12 @@ export function registerCarouselTools(
         .array(slideInputSchema.extend({ id: z.string().optional() }))
         .optional()
         .describe('New slides array (replaces existing slides entirely)'),
+      variant_id: z
+        .string()
+        .uuid()
+        .nullable()
+        .optional()
+        .describe('Link (or re-link) this carousel to a variant. Pass null to unlink. 1:1 constraint.'),
     },
     async (params) => {
       try {
@@ -235,6 +257,7 @@ export function registerCarouselTools(
         };
         if (params.title !== undefined) update.title = params.title;
         if (params.caption !== undefined) update.caption = params.caption;
+        if (params.variant_id !== undefined) update.variant_id = params.variant_id;
         if (params.slides) {
           update.slides = params.slides.map((s: any) => ({
             id: s.id || uid('slide'),
@@ -252,7 +275,14 @@ export function registerCarouselTools(
           .eq('id', params.id)
           .select()
           .single();
-        if (error) throw new Error(error.message);
+        if (error) {
+          if ((error as { code?: string }).code === '23505' && params.variant_id) {
+            throw new Error(
+              `variant_id ${params.variant_id} is already linked to another carousel (1:1 constraint).`
+            );
+          }
+          throw new Error(error.message);
+        }
 
         const row = data as CarouselRow;
         await logCarouselActivity('update', row.id, {

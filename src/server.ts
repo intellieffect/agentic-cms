@@ -15,6 +15,7 @@ import { registerMediaTools } from './tools/media.js';
 import { registerVideoTools } from './tools/video.js';
 import { registerBlogPostTools } from './tools/blog-posts.js';
 import { registerCarouselTools } from './tools/carousels.js';
+import { registerNewsletterTools } from './tools/newsletter.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -53,6 +54,9 @@ async function main(): Promise<void> {
 
   // Carousel tools (AWC carousels table — slide deck CRUD)
   registerCarouselTools(server, adapter, supabaseUrl, supabaseKey);
+
+  // Newsletter — HTTP wrap over dashboard send endpoint + email_logs.variant_id linking
+  registerNewsletterTools(server, adapter, supabaseUrl, supabaseKey);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

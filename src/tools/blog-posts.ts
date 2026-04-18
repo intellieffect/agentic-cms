@@ -237,6 +237,14 @@ export function registerBlogPostTools(
         .optional()
         .describe('true if the agent generated the full text; false if human-written content'),
       thumbnail_url: z.string().url().optional().describe('Optional thumbnail image URL'),
+      variant_id: z
+        .string()
+        .uuid()
+        .optional()
+        .describe(
+          'Optional variant(id) to link this blog_post to (1:1). Use the id returned by create_variant with format=blog. ' +
+            'When set, the derivative appears on the Content detail Variants card automatically.'
+        ),
     },
     async (params) => {
       try {
@@ -274,8 +282,10 @@ export function registerBlogPostTools(
           params.reading_time ??
           Math.max(1, Math.round(params.markdown_body.replace(/\s+/g, '').length / 500));
 
-        // 5. Insert blog_posts row (always draft)
-        const insertPayload = {
+        // 5. Insert blog_posts row (always draft).
+        //    variant_id 는 1:1 UNIQUE index 가 걸려있어 이미 다른 post 에 연결된 variant 를 재사용하면
+        //    PostgreSQL 이 23505 (unique violation) 을 뱉는다. 그 경우는 친절한 메시지로 변환.
+        const insertPayload: Record<string, unknown> = {
           title: params.title,
           slug: params.slug,
           excerpt: params.excerpt ?? null,
@@ -288,6 +298,7 @@ export function registerBlogPostTools(
           ai_generated: params.ai_generated ?? false,
           thumbnail_url: params.thumbnail_url ?? null,
         };
+        if (params.variant_id) insertPayload.variant_id = params.variant_id;
 
         const { data: inserted, error: insErr } = await sb
           .from('blog_posts')
@@ -296,6 +307,12 @@ export function registerBlogPostTools(
           .single();
 
         if (insErr || !inserted) {
+          if (insErr && (insErr as { code?: string }).code === '23505' && params.variant_id) {
+            throw new Error(
+              `variant_id ${params.variant_id} is already linked to another blog_post (1:1 constraint). ` +
+                `Create a new variant first, or use update_blog_post to re-link.`
+            );
+          }
           throw new Error(`Failed to insert blog_post: ${insErr?.message || 'unknown error'}`);
         }
 
@@ -326,6 +343,7 @@ export function registerBlogPostTools(
             status: post.status,
             reading_time: post.reading_time,
             category_slug: params.category_slug ?? null,
+            variant_id: params.variant_id ?? null,
             plate_nodes: plateContent.length,
           },
         });
@@ -360,6 +378,15 @@ export function registerBlogPostTools(
         .string()
         .optional()
         .describe('If provided, replaces content by converting markdown → PlateJS'),
+      variant_id: z
+        .string()
+        .uuid()
+        .nullable()
+        .optional()
+        .describe(
+          'Link (or re-link) this blog_post to a variant. Pass null to explicitly unlink. ' +
+            '1:1 — the target variant must not already be linked to another blog_post.'
+        ),
     },
     async (params) => {
       try {
@@ -387,7 +414,14 @@ export function registerBlogPostTools(
           .eq('id', id)
           .select()
           .single();
-        if (upErr) throw new Error(upErr.message);
+        if (upErr) {
+          if ((upErr as { code?: string }).code === '23505' && params.variant_id) {
+            throw new Error(
+              `variant_id ${params.variant_id} is already linked to another blog_post (1:1 constraint).`
+            );
+          }
+          throw new Error(upErr.message);
+        }
 
         return ok({ message: 'Blog post updated', post: data });
       } catch (e) {
