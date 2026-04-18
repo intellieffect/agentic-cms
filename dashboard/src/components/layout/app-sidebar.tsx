@@ -35,8 +35,8 @@ import {
 
 // 파이프라인 플로우 기준 재구성:
 //   Overview → Strategy → Pipeline(Ideas→Contents→Variants)
-//     → Production(Media) → Carousel Studio → Video Studio
-//     → Distribution(Blog/Newsletter/Publications) → Intelligence(Analytics/Activity)
+//     → Production(Media) → Carousel → Video
+//     → Distribution(Blog/Newsletter/Publications) → Intelligence(Traffic/Activity)
 //
 // 기존 URL 경로는 모두 유지 — 그룹명과 순서만 재배치.
 
