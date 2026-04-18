@@ -59,6 +59,37 @@ export interface Variant {
   contents?: { title: string } | null;
 }
 
+// Variant 에 연결된 format 별 파생 레코드. Contents 상세의 "Derivatives" 섹션용.
+export interface VariantBlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+}
+export interface VariantCarousel {
+  id: string;
+  title: string;
+  caption: string | null;
+}
+export interface VariantVideoProject {
+  id: string;
+  name: string;
+  status: string;
+}
+export interface VariantEmailLog {
+  id: string;
+  subject: string;
+  status: string;
+  sent_at: string | null;
+  sent_to_count: number | null;
+}
+export interface VariantWithDerivatives extends Variant {
+  blog_post: VariantBlogPost | null;
+  carousel: VariantCarousel | null;
+  video_project: VariantVideoProject | null;
+  emails: VariantEmailLog[];
+}
+
 export interface Publication {
   id: string;
   content_id: string;

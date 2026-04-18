@@ -12,8 +12,14 @@ import {
   SendIcon,
   FileTextIcon,
   Loader2Icon,
+  PenSquareIcon,
+  LayersIcon,
+  VideoIcon,
+  MailIcon,
+  SplitIcon,
+  ArrowRightIcon,
 } from "lucide-react";
-import type { Content, Revision, Publication } from "@/lib/types";
+import type { Content, Revision, Publication, VariantWithDerivatives } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,9 +44,75 @@ interface ContentDetailViewProps {
   content: Content;
   revisions: Revision[];
   publications: Publication[];
+  variants: VariantWithDerivatives[];
 }
 
-export function ContentDetailView({ content, revisions, publications }: ContentDetailViewProps) {
+// 각 format 별 스튜디오/상세 페이지 링크 + 아이콘 구성.
+// 데이터 없으면 (variant 만 있고 파생 레코드 없으면) link 는 null 로 두고 "아직 제작 안 됨"으로 표기.
+//
+// 전제: blog_posts / carousels / video_projects 에 걸린 partial UNIQUE index 로
+// 한 variant 에는 최대 하나의 파생 레코드만 붙는다. 따라서 아래 if 체인은 우선순위가 아니라
+// "있으면 하나"의 분기 — 만약 둘 이상 연결되는 사례가 보인다면 DB 무결성을 먼저 점검할 것.
+// 진단 편의를 위해 그런 상황이면 개발 모드에서 console.warn.
+function getDerivativeAction(variant: VariantWithDerivatives): {
+  icon: typeof PenSquareIcon;
+  label: string;
+  href: string | null;
+  status: string | null;
+} {
+  if (process.env.NODE_ENV !== "production") {
+    const linked = [variant.blog_post, variant.carousel, variant.video_project].filter(Boolean).length;
+    if (linked > 1) {
+      console.warn(
+        `[Variant ${variant.id}] 하나의 variant 에 여러 파생 레코드가 연결됨 (${linked} 개). 1:1 UNIQUE 위반 가능.`
+      );
+    }
+  }
+  if (variant.blog_post) {
+    return {
+      icon: PenSquareIcon,
+      label: `Blog: ${variant.blog_post.title}`,
+      href: `/blog-manage/${variant.blog_post.id}`,
+      status: variant.blog_post.status,
+    };
+  }
+  if (variant.carousel) {
+    return {
+      icon: LayersIcon,
+      label: `Carousel: ${variant.carousel.title}`,
+      href: `/carousel/${variant.carousel.id}`,
+      status: null,
+    };
+  }
+  if (variant.video_project) {
+    return {
+      icon: VideoIcon,
+      label: `Video: ${variant.video_project.name}`,
+      href: `/video/projects`,
+      status: variant.video_project.status,
+    };
+  }
+  // 파생 레코드 아직 없음 — format 기반 fallback
+  const fallbackByFormat: Record<string, { icon: typeof PenSquareIcon; label: string; href: string | null }> = {
+    blog: { icon: PenSquareIcon, label: "Blog (아직 생성 안 됨)", href: "/blog-manage" },
+    carousel: { icon: LayersIcon, label: "Carousel (아직 생성 안 됨)", href: "/carousel" },
+    video: { icon: VideoIcon, label: "Video (아직 생성 안 됨)", href: "/video/projects" },
+    reel: { icon: VideoIcon, label: "Reel (아직 생성 안 됨)", href: "/video/projects" },
+    short: { icon: VideoIcon, label: "Short (아직 생성 안 됨)", href: "/video/projects" },
+  };
+  const fb = fallbackByFormat[variant.format];
+  if (fb) {
+    return { ...fb, status: null };
+  }
+  return {
+    icon: SplitIcon,
+    label: `${variant.platform} ${variant.format}`,
+    href: null,
+    status: null,
+  };
+}
+
+export function ContentDetailView({ content, revisions, publications, variants }: ContentDetailViewProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [selectedRevision, setSelectedRevision] = useState<string | null>(null);
@@ -228,6 +300,85 @@ export function ContentDetailView({ content, revisions, publications }: ContentD
                   rows={16}
                   className="font-mono text-sm"
                 />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Variants & Derivatives — 이 마스터에서 파생된 모든 포맷 */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">
+                Variants & Derivatives
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {variants.length}
+                </span>
+              </CardTitle>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/variants?content_id=${content.id}`}>
+                  <SplitIcon className="mr-1.5 h-3.5 w-3.5" />
+                  Manage Variants
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {variants.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  아직 파생물이 없습니다. 상단의{" "}
+                  <Link href={`/variants?content_id=${content.id}`} className="text-info underline">
+                    → Generate Variants
+                  </Link>{" "}
+                  로 포맷별 파생을 시작하세요.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {variants.map((variant) => {
+                    const action = getDerivativeAction(variant);
+                    const Icon = action.icon;
+                    return (
+                      <div
+                        key={variant.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs uppercase">
+                                {variant.platform}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {variant.format}
+                              </Badge>
+                              <Badge
+                                variant={variant.status === "published" ? "success" : variant.status === "ready" ? "info" : "secondary"}
+                                className="text-xs"
+                              >
+                                {variant.status}
+                              </Badge>
+                              {variant.emails.length > 0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  <MailIcon className="mr-1 h-3 w-3" />
+                                  {variant.emails.length} 발송
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="mt-1 text-sm truncate text-foreground">{action.label}</p>
+                          </div>
+                        </div>
+                        {action.href ? (
+                          <Button asChild variant="ghost" size="sm" aria-label={`열기: ${action.label}`}>
+                            <Link href={action.href}>
+                              <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                              <span className="sr-only">{action.label}</span>
+                            </Link>
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">파생 링크 없음</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </CardContent>
           </Card>
