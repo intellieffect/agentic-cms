@@ -90,8 +90,9 @@ export function AppSidebar() {
 
   const isActive = (url: string) => {
     if (url === "/") return pathname === "/";
+    // /carousel 은 list 페이지, /carousel/references / /carousel/templates 는 별도 항목이라
+    // startsWith 대신 정확 일치로 active 판정해야 올바른 아이템만 하이라이트된다.
     if (url === "/carousel") return pathname === "/carousel";
-    if (url === "/analytics") return pathname === "/analytics";
     return pathname.startsWith(url);
   };
 
@@ -131,8 +132,8 @@ export function AppSidebar() {
         {renderNavGroup("Strategy", strategyNavItems)}
         {renderNavGroup("Pipeline", pipelineNavItems)}
         {renderNavGroup("Production", productionNavItems)}
-        {renderNavGroup("Carousel Studio", carouselNavItems)}
-        {renderNavGroup("Video Studio", videoNavItems)}
+        {renderNavGroup("Carousel", carouselNavItems)}
+        {renderNavGroup("Video", videoNavItems)}
         {renderNavGroup("Distribution", distributionNavItems)}
         {renderNavGroup("Intelligence", intelligenceNavItems)}
       </SidebarContent>
