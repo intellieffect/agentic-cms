@@ -8,6 +8,7 @@ import type {
   Idea,
   IdeaCreateInput,
   IdeaUpdateInput,
+  IdeaFilter,
   Topic,
   TopicCreateInput,
   Variant,
@@ -167,12 +168,15 @@ export class SupabaseAdapter implements CMSAdapter {
 
   // ─── Ideas ─────────────────────────────────────────────────
 
-  async listIdeas(): Promise<Idea[]> {
-    const { data, error } = await this.client
-      .from('ideas')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async listIdeas(filter?: IdeaFilter): Promise<Idea[]> {
+    let query = this.client.from('ideas').select('*');
+    if (filter?.topic_id) query = query.eq('topic_id', filter.topic_id);
+    if (filter?.promoted === true) query = query.not('promoted_to', 'is', null);
+    if (filter?.promoted === false) query = query.is('promoted_to', null);
+    if (filter?.limit) query = query.limit(filter.limit);
+    query = query.order('created_at', { ascending: false });
 
+    const { data, error } = await query;
     if (error) throw new Error(`Failed to list ideas: ${error.message}`);
     return data as Idea[];
   }
@@ -182,12 +186,28 @@ export class SupabaseAdapter implements CMSAdapter {
       .from('ideas')
       .select('*')
       .eq('id', id)
-      .single();
-    if (error) throw new Error(`Idea not found: ${id} (${error.message})`);
+      .maybeSingle();
+    if (error) throw new Error(`Failed to fetch idea ${id}`);
+    if (!data) throw new Error(`Idea not found: ${id}`);
     return data as Idea;
   }
 
   async createIdea(input: IdeaCreateInput): Promise<Idea> {
+    // topic_id 가 넘어온 경우 존재 여부 먼저 확인 — FK 위반 에러 대신 친절한 메시지.
+    if (input.topic_id) {
+      const { data: topic, error: topicErr } = await this.client
+        .from('topics')
+        .select('id')
+        .eq('id', input.topic_id)
+        .maybeSingle();
+      if (topicErr) throw new Error('Failed to verify topic_id');
+      if (!topic) {
+        throw new Error(
+          `Topic not found: ${input.topic_id}. Use list_topics to discover valid ids.`,
+        );
+      }
+    }
+
     const payload = {
       raw_text: input.raw_text,
       source: input.source ?? 'agent',

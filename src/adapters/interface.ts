@@ -6,6 +6,7 @@ import type {
   Idea,
   IdeaCreateInput,
   IdeaUpdateInput,
+  IdeaFilter,
   Topic,
   TopicCreateInput,
   Variant,
@@ -30,7 +31,7 @@ export interface CMSAdapter {
   updateContent(id: string, input: ContentUpdateInput): Promise<Content>;
 
   // Ideas
-  listIdeas(): Promise<Idea[]>;
+  listIdeas(filter?: IdeaFilter): Promise<Idea[]>;
   getIdea(id: string): Promise<Idea>;
   createIdea(input: IdeaCreateInput): Promise<Idea>;
   updateIdea(id: string, input: IdeaUpdateInput): Promise<Idea>;

@@ -48,6 +48,12 @@ export interface IdeaUpdateInput {
   target_audience?: string | null;
 }
 
+export interface IdeaFilter {
+  topic_id?: string;
+  promoted?: boolean; // true = only promoted, false = only unpromoted, undefined = both
+  limit?: number;
+}
+
 export interface Publication {
   id: string;
   content_id: string;

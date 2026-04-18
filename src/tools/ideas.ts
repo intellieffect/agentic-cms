@@ -15,19 +15,33 @@ export function registerIdeaTools(server: McpServer, adapter: CMSAdapter): void 
   server.tool(
     'list_ideas',
     [
-      '[Pipeline step 2 — Discover] List all content ideas, ordered by most recent first.',
+      '[Pipeline step 2 — Discover] List content ideas with optional filters.',
       'Use this first to see what ideas already exist before creating new ones.',
+      'Filter by topic_id to narrow to a single theme, or promoted=false to see ideas not yet turned into Content.',
       'Typical next step: create_idea (register new angle) or promote_idea (turn existing idea into draft Content).',
     ].join(' '),
-    {},
-    async () => {
+    {
+      topic_id: z
+        .string()
+        .uuid()
+        .optional()
+        .describe('Filter to ideas under a specific topic.'),
+      promoted: z
+        .boolean()
+        .optional()
+        .describe(
+          'true = only ideas already promoted to Content. false = only un-promoted (backlog). Omit for both.',
+        ),
+      limit: z.number().int().min(1).max(200).optional().describe('Max results.'),
+    },
+    async (params) => {
       try {
-        const ideas = await adapter.listIdeas();
+        const ideas = await adapter.listIdeas(params);
         return {
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify({ ideas, count: ideas.length }, null, 2),
+              text: JSON.stringify({ ideas, count: ideas.length, filter: params }, null, 2),
             },
           ],
         };
