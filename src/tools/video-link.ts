@@ -39,6 +39,19 @@ export function registerVideoLinkTools(
     },
     async (params) => {
       try {
+        // 사전 조회: 없는 video_project_id 가 넘어오면 .single() 이 "JSON object
+        // requested, multiple (or no) rows returned" 같은 불친절한 메시지를 뱉는다.
+        // id 존재 여부를 먼저 확인해 clear 메시지로 치환.
+        const { data: existing, error: existErr } = await sb
+          .from('video_projects')
+          .select('id')
+          .eq('id', params.video_project_id)
+          .maybeSingle();
+        if (existErr) throw new Error(existErr.message);
+        if (!existing) {
+          throw new Error(`video_project not found: ${params.video_project_id}`);
+        }
+
         const { data, error } = await sb
           .from('video_projects')
           .update({ variant_id: params.variant_id })
