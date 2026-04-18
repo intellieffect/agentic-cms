@@ -58,3 +58,82 @@ list_contents, get_content, create_content, update_content, list_ideas, promote_
 - URL: 환경변수 SUPABASE_URL (또는 NEXT_PUBLIC_SUPABASE_URL)
 - Key: 환경변수 SUPABASE_SERVICE_ROLE_KEY
 - .env.local (dashboard)에 설정됨
+
+## Claude Code 에서 MCP 사용법
+
+Claude Code 는 `.mcp.json` (repo 루트) 또는 사용자 설정으로 MCP 서버를 등록한다.
+
+### 프로젝트 루트 `.mcp.json` 예시
+```json
+{
+  "mcpServers": {
+    "agentic-cms": {
+      "command": "node",
+      "args": ["/Users/jangdongjin/Projects/agentic-cms/dist/server.js"],
+      "env": {
+        "SUPABASE_URL": "https://<project>.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "<service-role-key>",
+        "DASHBOARD_API_URL": "http://localhost:3003",
+        "DASHBOARD_MCP_SECRET": "<선택: newsletter send auth>",
+        "POSTIZ_API_URL": "https://postiz.agenticworkflows.club",
+        "POSTIZ_API_KEY": "<postiz workspace api key>",
+        "CONTENT_CORE_CLI_PATH": "<awc @awc/content-core cli 경로>"
+      }
+    }
+  }
+}
+```
+
+### 사전 빌드
+`npm install && npm run build` 로 `dist/server.js` 가 생성돼야 `node dist/server.js` 로 실행 가능. Claude Code 재시작하면 MCP 서버에 연결.
+
+### 연결 검증
+Claude Code 에서 새 세션 시작 후: "agentic-cms 의 MCP 도구 목록 알려줘" → `list_topics` / `create_idea` / ... 등 도구 이름이 보이면 성공.
+
+## Postiz 연동
+
+소셜 채널 실제 발행은 Postiz 를 통한다.
+
+### 사전 설정 (Postiz 쪽)
+1. https://postiz.agenticworkflows.club 또는 자가 호스팅 Postiz 인스턴스
+2. Settings → API → API Key 생성
+3. 각 소셜 채널(Instagram/LinkedIn/Threads/X/YouTube) 을 Integrations 에서 OAuth 연결
+
+### 에이전트 사용 흐름
+```
+1. list_postiz_integrations()             → 연결된 채널 id 확인
+2. send_to_postiz({
+     variant_id,                          → 발행할 variant
+     integration_id,                      → 위에서 확보한 id
+     scheduled_at?                        → 즉시 발행이면 생략
+   })
+→ variant.status = 'sent_to_postiz'
+→ variant.platform_settings.postiz_post_id 기록
+→ publications 테이블에 자동 기록 (content_id + variant_id + channel)
+```
+
+### 발행 실패 시
+- DTO 형식 불일치가 Postiz 버전에 따라 발생 가능. 기본 DTO 가 안 맞으면 `raw_payload` 파라미터로 에이전트가 직접 body 구성 후 전달.
+- `dry_run: true` 로 실 호출 없이 payload 만 미리 확인 가능.
+
+## 에이전트 e2e 파이프라인 (Postiz 포함)
+
+**시나리오**: "AX 전환 토픽으로 블로그 + LinkedIn + 뉴스레터 + Instagram 발행"
+
+```
+1. list_topics()                                    → AX 전환 id
+2. create_idea({topic_id, raw_text, angle})         → idea.id
+3. promote_idea({idea_id, title, slug, hook, cta})  → content (draft)
+4. update_content({id, body_md, core_message})      → 본문
+5. create_variant(blog) → variant_blog
+6. create_blog_post_from_markdown(variant_id=blog.id) → blog_post
+7. send_newsletter(post_id, variant_id=blog.id)     → 뉴스레터 발송
+8. create_variant(linkedin thread) → variant_linkedin
+9. create_variant(instagram carousel) → variant_ig
+10. create_carousel(variant_id=ig.id, slides)       → carousel 레코드
+11. list_postiz_integrations()                      → linkedin_id, ig_id
+12. send_to_postiz(variant_id=linkedin.id, integration_id=linkedin_id) → LinkedIn 발행
+13. send_to_postiz(variant_id=ig.id, integration_id=ig_id)              → Instagram 발행
+```
+
+→ Contents 상세에 blog/carousel/newsletter/publications 전부 variant 트리로 연결 표시.

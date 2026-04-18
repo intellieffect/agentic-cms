@@ -17,6 +17,7 @@ import { registerBlogPostTools } from './tools/blog-posts.js';
 import { registerCarouselTools } from './tools/carousels.js';
 import { registerNewsletterTools } from './tools/newsletter.js';
 import { registerVideoLinkTools } from './tools/video-link.js';
+import { registerPostizTools } from './tools/postiz.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -61,6 +62,9 @@ async function main(): Promise<void> {
 
   // video_projects 는 brxce-editor 경유 생성이라 variant_id 를 post-link 로 채우는 전용 도구.
   registerVideoLinkTools(server, adapter);
+
+  // Postiz — 소셜 채널 실제 발행 (POSTIZ_API_URL + POSTIZ_API_KEY 필요).
+  registerPostizTools(server, adapter);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
