@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve as resolvePath } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getSupabase } from '../shared/supabase.js';
 
@@ -10,6 +12,16 @@ import { getSupabase } from '../shared/supabase.js';
 function buildMetaTitle(title: string): string {
   const suffix = process.env.META_TITLE_SUFFIX?.trim();
   return suffix ? `${title} | ${suffix}` : title;
+}
+
+// content-core CLI 경로 결정 — env override > repo 내 vendored 경로
+// repo 에 `tools/content-core/dist/cli.js` 를 내장해서 별도 설치 없이 동작.
+function resolveContentCoreCliPath(): string {
+  const override = process.env.CONTENT_CORE_CLI_PATH?.trim();
+  if (override) return override;
+  // dist/tools/blog-posts.js 에서 3단계 상위 = agentic-cms repo root
+  const here = dirname(fileURLToPath(import.meta.url));
+  return resolvePath(here, '..', '..', 'tools', 'content-core', 'dist', 'cli.js');
 }
 
 // Types for blog_posts table
@@ -41,24 +53,19 @@ interface BlogCategory {
   description: string | null;
 }
 
-const CLI_PATH = process.env.CONTENT_CORE_CLI_PATH;
+const CLI_PATH = resolveContentCoreCliPath();
 const CLI_TIMEOUT_MS = Number(process.env.CONTENT_CORE_CLI_TIMEOUT_MS ?? 30_000);
 
 function convertMarkdownToPlate(markdown: string, topic: string, category: string): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
-    if (!CLI_PATH) {
-      reject(
-        new Error(
-          `CONTENT_CORE_CLI_PATH is not set. Set the env var to the absolute path of @awc/content-core dist/cli.js before invoking this tool.`
-        )
-      );
-      return;
-    }
     if (!existsSync(CLI_PATH)) {
       reject(
         new Error(
-          `content-core CLI not found at ${CLI_PATH}. Build with 'pnpm --filter @awc/content-core build' or fix CONTENT_CORE_CLI_PATH.`
-        )
+          `content-core CLI not found at ${CLI_PATH}. ` +
+            `Expected vendored path at tools/content-core/dist/cli.js. ` +
+            `If you set CONTENT_CORE_CLI_PATH env override, check that path; ` +
+            `otherwise ensure the tools/content-core directory is present in this repo.`,
+        ),
       );
       return;
     }

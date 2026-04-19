@@ -20,38 +20,52 @@
 -- 1. video_projects 에 workspace_id 추가 (brxce-editor 호환)
 ALTER TABLE video_projects ADD COLUMN IF NOT EXISTS workspace_id TEXT;
 
--- 2. 137개 projects → video_projects UPSERT (variant_id 는 건드리지 않음)
-INSERT INTO video_projects (
-  id, name, orientation, status, project_data, thumbnail_url,
-  duration, clip_count, source_files, workspace_id, created_by,
-  created_at, updated_at, deleted_at
-)
-SELECT
-  id, name, orientation, status, project_data, thumbnail_url,
-  duration, clip_count, source_files, workspace_id, created_by,
-  created_at, updated_at, deleted_at
-FROM projects
-ON CONFLICT (id) DO UPDATE SET
-  name          = EXCLUDED.name,
-  orientation   = EXCLUDED.orientation,
-  status        = EXCLUDED.status,
-  project_data  = EXCLUDED.project_data,
-  thumbnail_url = EXCLUDED.thumbnail_url,
-  duration      = EXCLUDED.duration,
-  clip_count    = EXCLUDED.clip_count,
-  source_files  = EXCLUDED.source_files,
-  workspace_id  = EXCLUDED.workspace_id,
-  created_by    = EXCLUDED.created_by,
-  updated_at    = EXCLUDED.updated_at,
-  deleted_at    = EXCLUDED.deleted_at;
-  -- created_at, variant_id 는 의도적으로 업데이트 제외 (기존 값 보존)
-
--- 3. finished_videos / render_jobs FK 를 projects → video_projects 로 재지정
---    기존 FK 이름은 DB 마다 달라서 조회 후 drop.
+-- ── Fresh install 보호 ─────────────────────────────────────
+-- 2026-04-19: 새 고객 환경(fresh install)에서는 `projects` 테이블 자체가 없다.
+-- 아래 모든 블록을 `projects` 존재 시에만 실행하도록 가드.
+-- 프로덕션 환경은 Phase 4 당시 이미 적용됐으므로 멱등 동작.
 DO $$
 DECLARE
+  has_projects boolean;
   fk_name text;
 BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'projects'
+  ) INTO has_projects;
+
+  IF NOT has_projects THEN
+    RAISE NOTICE 'phase4 migration: `projects` 테이블 없음 (fresh install) — 아래 단계 skip';
+    RETURN;
+  END IF;
+
+  -- 2. 137개 projects → video_projects UPSERT
+  INSERT INTO video_projects (
+    id, name, orientation, status, project_data, thumbnail_url,
+    duration, clip_count, source_files, workspace_id, created_by,
+    created_at, updated_at, deleted_at
+  )
+  SELECT
+    id, name, orientation, status, project_data, thumbnail_url,
+    duration, clip_count, source_files, workspace_id, created_by,
+    created_at, updated_at, deleted_at
+  FROM projects
+  ON CONFLICT (id) DO UPDATE SET
+    name          = EXCLUDED.name,
+    orientation   = EXCLUDED.orientation,
+    status        = EXCLUDED.status,
+    project_data  = EXCLUDED.project_data,
+    thumbnail_url = EXCLUDED.thumbnail_url,
+    duration      = EXCLUDED.duration,
+    clip_count    = EXCLUDED.clip_count,
+    source_files  = EXCLUDED.source_files,
+    workspace_id  = EXCLUDED.workspace_id,
+    created_by    = EXCLUDED.created_by,
+    updated_at    = EXCLUDED.updated_at,
+    deleted_at    = EXCLUDED.deleted_at;
+  -- created_at, variant_id 는 의도적으로 업데이트 제외 (기존 값 보존)
+
+  -- 3. finished_videos / render_jobs FK 를 projects → video_projects 로 재지정
   -- finished_videos.project_id
   SELECT conname INTO fk_name
   FROM pg_constraint
@@ -73,21 +87,28 @@ BEGIN
   IF fk_name IS NOT NULL THEN
     EXECUTE format('ALTER TABLE render_jobs DROP CONSTRAINT %I', fk_name);
   END IF;
+
+  -- 4. 새 FK 생성 (video_projects 기준) — IF NOT EXISTS 보호
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'finished_videos_project_id_fkey'
+  ) THEN
+    ALTER TABLE finished_videos
+      ADD CONSTRAINT finished_videos_project_id_fkey
+      FOREIGN KEY (project_id) REFERENCES video_projects(id);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'render_jobs_project_id_fkey'
+  ) THEN
+    ALTER TABLE render_jobs
+      ADD CONSTRAINT render_jobs_project_id_fkey
+      FOREIGN KEY (project_id) REFERENCES video_projects(id);
+  END IF;
+
+  -- 5. projects 테이블은 남겨둔다 (당장 drop 하면 롤백 불가).
+  --    이름만 변경해서 "더 이상 쓰지 않음" 을 명시.
+  ALTER TABLE projects RENAME TO projects_legacy_pre_phase4_20260418;
 END $$;
-
--- 4. 새 FK 생성 (video_projects 기준)
-ALTER TABLE finished_videos
-  ADD CONSTRAINT finished_videos_project_id_fkey
-  FOREIGN KEY (project_id) REFERENCES video_projects(id);
-
-ALTER TABLE render_jobs
-  ADD CONSTRAINT render_jobs_project_id_fkey
-  FOREIGN KEY (project_id) REFERENCES video_projects(id);
-
--- 5. projects 테이블은 남겨둔다 (당장 drop 하면 롤백 불가).
---    Phase 6/7 에서 회귀 테스트 통과하면 수동으로 drop 하거나 별도 migration 에서 정리.
---    여기서는 이름만 변경해서 "더 이상 쓰지 않음" 을 명시.
-ALTER TABLE projects RENAME TO projects_legacy_pre_phase4_20260418;
 
 -- ============================================================
 -- 검증 SQL (실행 후 확인용):

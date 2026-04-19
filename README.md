@@ -202,11 +202,28 @@ create table publications (
 
 agentic-cms 는 **env 기반 multi-tenant** 구조입니다. 같은 코드베이스로 여러 고객을 각자의 Supabase · Storage · 브랜딩으로 서비스할 수 있습니다.
 
+### 시스템 prerequisites (모든 tenant 공통)
+
+```bash
+# macOS
+brew install ffmpeg yt-dlp node pnpm python@3.12
+
+# Ubuntu/Debian
+sudo apt install ffmpeg python3.12 python3.12-venv
+pip install yt-dlp
+npm install -g pnpm
+# Node.js 22+: https://nodejs.org/
+```
+
 ### 새 고객 onboarding 체크리스트
 
 1. **Supabase 프로젝트 생성** (고객 전용)
    - Free/Pro plan, project_ref 기록
-   - `supabase/migrations/*.sql` 전부 적용 (Studio SQL Editor)
+   - `supabase/migrations/*.sql` 전부 적용 (Studio SQL Editor, 파일명 오름차순 순서대로)
+   - 자동 적용 항목:
+     - 14+ 테이블 생성 (contents/ideas/variants/blog_posts/carousels/video_projects 등)
+     - 5 storage bucket 생성 (content-media, studio-renders, references, finished, blog-images) — migration `20260419000000` 이 자동 처리
+     - RLS policies 공개 읽기 + service_role 관리
 2. **`.env` 파일 3개 작성** (각 프로젝트 루트의 `.env.example` 기준)
    - `./.env` — MCP 서버용
    - `./dashboard/.env.local` — Next.js dashboard
@@ -215,21 +232,39 @@ agentic-cms 는 **env 기반 multi-tenant** 구조입니다. 같은 코드베이
    - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` (혹은 `SUPABASE_SERVICE_KEY`)
    - `NEXT_PUBLIC_SITE_URL` — 고객 웹사이트 URL
    - `NEXT_PUBLIC_BRAND_NAME` — 뉴스레터 헤더 · meta title suffix 에 노출
+   - `NEXT_PUBLIC_BRAND_HANDLE` / `NEXT_PUBLIC_BRAND_EMOJI` / `NEXT_PUBLIC_BRAND_AVATAR_URL` — 캐러셀 워터마크/아바타
    - `NEXT_PUBLIC_CONTACT_EMAIL` / `NEXT_PUBLIC_CONTACT_DOMAIN` — 캐러셀 CTA 슬라이드
    - `ANALYTICS_OWN_DOMAINS` — self-referrer whitelist (쉼표 구분)
+   - `ANALYTICS_VERCEL_KEYWORDS` — vercel preview 도메인 자사 식별
+   - `NEWSLETTER_FROM` — 뉴스레터 발신인 `"Display Name <addr@domain>"`
    - `META_TITLE_SUFFIX` — blog post meta_title 꼬리
-4. **Storage bucket 준비**
-   - `content-media`, `references`, `finished`, `studio-renders` (public)
-   - 필요 시 `blog-images` (public) — 블로그 썸네일/본문 이미지
-5. **외부 API Key** (선택)
+   - `TABLE_PROJECTS=video_projects` (editor/.env, 필수)
+   - `STORAGE_MODE=cloud` (editor/.env, 권장)
+4. **외부 API Key** (선택 기능)
    - `RESEND_API_KEY` — 뉴스레터 발송
    - `GOOGLE_SERVICE_ACCOUNT_KEY` — GA4/GSC analytics
    - `POSTIZ_API_URL` + `POSTIZ_API_KEY` — 소셜 채널 발행
-6. **기동**
+5. **로컬 개발 기동**
    ```bash
-   cd dashboard && npm install && npm run dev:all
-   # Next 3003 + Python editor 8092 동시 기동
+   # MCP 서버용 의존성
+   npm install && npm run build
+
+   # dashboard 의존성
+   cd dashboard && npm install && cd ..
+
+   # editor Python 가상환경
+   cd editor && python3 -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt && cd ..
+
+   # editor Remotion 의존성
+   cd editor/remotion && pnpm install && cd ../..
+
+   # Next.js dashboard + Python editor 동시 기동
+   cd dashboard && npm run dev:all
    ```
+6. **Claude Code 에서 MCP 서버 연결**
+   - `.mcp.json` 을 repo 루트에 생성 (`AGENTS.md` 예시 참고)
+   - Claude Code 재시작 → 43+ MCP 도구 자동 노출
 
 ### 고객 분리 원칙
 
