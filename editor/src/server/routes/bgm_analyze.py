@@ -1,4 +1,5 @@
 """BGM auto-segment finder — analyzes audio to find best matching segments for video."""
+import logging
 import os
 import subprocess
 import tempfile
@@ -8,6 +9,8 @@ from pathlib import Path
 import numpy as np
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/bgm", tags=["bgm"])
 
@@ -315,10 +318,12 @@ def _get_chorus_starts(audio_path, total_dur):
                     if rounded not in seen:
                         chorus_starts.append(rounded)
                         seen.add(rounded)
-            except Exception:
-                pass
-    except (ImportError, Exception):
-        pass
+            except Exception as e:
+                # 특정 clip_length 분석 실패 — 다른 길이로 계속 시도. 보조 fallback.
+                logger.debug("chorus detection failed at clip_length=%s: %s", cl, e)
+    except (ImportError, Exception) as e:
+        # librosa / chroma 파이프라인 import 실패 또는 오류 — chorus 추출 전체 스킵.
+        logger.debug("chorus pipeline unavailable (skipping): %s", e)
     return chorus_starts
 
 
@@ -640,6 +645,7 @@ async def extract_beats(request: Request):
             "mode": mode,
         }
     except Exception as e:
+        logger.exception("bgm_analyze endpoint failed: %s", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -677,6 +683,7 @@ async def detect_bgm_sections(request: Request):
             "noveltyCurve": novelty_data,
         }
     except Exception as e:
+        logger.exception("bgm_analyze endpoint failed: %s", e)
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -1058,4 +1065,5 @@ async def analyze_bgm(request: Request):
         }
 
     except Exception as e:
+        logger.exception("bgm_analyze endpoint failed: %s", e)
         return JSONResponse({"error": str(e)}, status_code=500)

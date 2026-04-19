@@ -1,5 +1,6 @@
 """Media serving routes — thumbnails, video list, upload, resolver, external upload."""
 import json
+import logging
 import os
 import subprocess
 import urllib.parse
@@ -7,6 +8,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse, Response
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["media"])
 
@@ -25,8 +28,8 @@ def _load_resolver_config():
     if _resolver_config_path.exists():
         try:
             return json.loads(_resolver_config_path.read_text())
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to read resolver config: %s", e)
     return {"sourceDirectories": [], "pathMappings": {}}
 
 
@@ -178,8 +181,8 @@ async def list_videos():
             for f in search_dir.iterdir():
                 if f.name not in all_files and f.exists():
                     all_files[f.name] = f
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Directory walk failed: %s", e)
     for f in sorted(all_files.values(), key=lambda x: x.name):
         stem = f.stem.split("_v")[0] if "_v" in f.stem else f.stem
         if (

@@ -1,8 +1,11 @@
 """Video source analysis — orientation, scene detection, motion, best clip selection."""
+import logging
 import os
 import subprocess
 import json
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 import numpy as np
 import cv2
@@ -150,7 +153,9 @@ async def find_best_clips(request: Request):
             if not scenes:
                 # Whole video as one scene
                 scenes = [(video.base_timecode, video.base_timecode + dur)]
-        except Exception:
+        except Exception as e:
+            # PySceneDetect 실패 — 전체 영상을 한 scene 으로 fallback. 알고리즘 정확도만 떨어짐.
+            logger.debug("PySceneDetect failed for %s (using whole-video fallback): %s", fname, e)
             scenes = [(0, dur)]
 
         # 2. Motion + brightness analysis with OpenCV (sample frames)

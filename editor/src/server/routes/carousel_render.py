@@ -1,5 +1,6 @@
 """Server-side carousel rendering — PNG ZIP & PDF via Playwright."""
 import io
+import logging
 import os
 import zipfile
 from urllib.parse import quote
@@ -7,6 +8,8 @@ from urllib.parse import quote
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, StreamingResponse
 from playwright.async_api import async_playwright
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/carousels", tags=["carousel-render"])
 
@@ -71,6 +74,7 @@ async def render_carousel_png(carousel_id: str):
             headers={"Content-Disposition": f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{utf8_name}"},
         )
     except Exception as e:
+        logger.exception("render_carousel_png failed for %s", carousel_id)
         return JSONResponse({"error": f"렌더링 실패: {e}"}, status_code=500)
 
 
@@ -118,4 +122,5 @@ async def render_carousel_pdf(carousel_id: str):
             headers={"Content-Disposition": f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{utf8_name}"},
         )
     except Exception as e:
+        logger.exception("render_carousel_pdf failed for %s", carousel_id)
         return JSONResponse({"error": f"PDF 렌더링 실패: {e}"}, status_code=500)
