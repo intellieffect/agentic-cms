@@ -1,6 +1,11 @@
-"""Supabase client initialization and CRUD helpers."""
+"""Supabase client initialization and CRUD helpers.
+
+프로젝트 테이블 이름은 TABLE_PROJECTS env 로 오버라이드 가능 (Phase 4 이후 권장: video_projects).
+table_config.py 의 상수를 그대로 사용해 agentic-cms 쪽 MCP/dashboard 와 같은 이름으로 맞춘다.
+"""
 import os
 from supabase import create_client, Client
+from src.server.table_config import TABLE_PROJECTS
 
 _client: Client | None = None
 
@@ -21,7 +26,7 @@ def get_client() -> Client:
 
 def list_projects(*, status: str | None = None, limit: int = 50, offset: int = 0):
     sb = get_client()
-    q = sb.table("projects").select(
+    q = sb.table(TABLE_PROJECTS).select(
         "id, name, orientation, status, thumbnail_url, duration, clip_count, "
         "source_files, created_by, created_at, updated_at, project_data"
     ).is_("deleted_at", "null").order("updated_at", desc=True)
@@ -35,7 +40,7 @@ def list_projects(*, status: str | None = None, limit: int = 50, offset: int = 0
 def get_project(project_id: str):
     sb = get_client()
     resp = (
-        sb.table("projects")
+        sb.table(TABLE_PROJECTS)
         .select("*")
         .eq("id", project_id)
         .is_("deleted_at", "null")
@@ -56,7 +61,7 @@ def create_project(data: dict):
         "clip_count": data.get("clipCount", 0),
         "source_files": data.get("sourceFiles"),
     }
-    resp = sb.table("projects").insert(row).execute()
+    resp = sb.table(TABLE_PROJECTS).insert(row).execute()
     return resp.data[0] if resp.data else None
 
 
@@ -89,7 +94,7 @@ def update_project(project_id: str, patch: dict):
     if not row:
         return get_project(project_id)
     resp = (
-        sb.table("projects")
+        sb.table(TABLE_PROJECTS)
         .update(row)
         .eq("id", project_id)
         .is_("deleted_at", "null")
@@ -102,7 +107,7 @@ def delete_project(project_id: str):
     """Soft delete."""
     from datetime import datetime, timezone
     sb = get_client()
-    sb.table("projects").update(
+    sb.table(TABLE_PROJECTS).update(
         {"deleted_at": datetime.now(timezone.utc).isoformat()}
     ).eq("id", project_id).execute()
     return True
