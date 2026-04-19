@@ -1,0 +1,27 @@
+{
+  "id": "talking-head",
+  "name": "Talking Head + B-roll",
+  "description": "45~90초 토킹 헤드 + B-roll",
+  "traits": ["1 메인 + 3~5 B-roll", "큰 자막"],
+  "clipCount": "4~6",
+  "duration": "45~90초",
+  "editStyle": "메인 카메라 + 인서트 B-roll",
+  "subtitleStyle": "큰 자막 필수",
+  "bgmStyle": "subtle background / none",
+  "icon": "🎙️",
+  "color": "#8b5cf6",
+  "references": ["Kyle", "Andrew"],
+  "defaultProject": {
+    "name": "Talking Head + B-roll",
+    "clips": [
+      {"source": "", "start": 0, "end": 15, "subtitle": "메인 토킹"},
+      {"source": "", "start": 0, "end": 5, "subtitle": "B-roll 1"},
+      {"source": "", "start": 0, "end": 15, "subtitle": "메인 토킹"},
+      {"source": "", "start": 0, "end": 5, "subtitle": "B-roll 2"},
+      {"source": "", "start": 0, "end": 15, "subtitle": "메인 토킹"},
+      {"source": "", "start": 0, "end": 5, "subtitle": "B-roll 3"}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "Kyle, Andrew 스타일 토킹 헤드"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "motivational-text",
+  "name": "Motivational Text",
+  "description": "11~17초 동기부여 텍스트 오버레이",
+  "traits": ["3~5 클립", "텍스트 중심", "후킹→전개→펀치라인"],
+  "clipCount": "3~5",
+  "duration": "11~17초",
+  "editStyle": "B-roll 위 텍스트 중심",
+  "subtitleStyle": "큰 굵은 텍스트 3~5문장",
+  "bgmStyle": "motivational / dark piano",
+  "icon": "💬",
+  "color": "#ef4444",
+  "references": ["alex", "Aryan", "Toktorov", "Angelo", "Dovydas"],
+  "defaultProject": {
+    "name": "Motivational Text",
+    "clips": [
+      {"source": "", "start": 0, "end": 3.5, "subtitle": ""},
+      {"source": "", "start": 0, "end": 3.5, "subtitle": ""},
+      {"source": "", "start": 0, "end": 3.5, "subtitle": ""},
+      {"source": "", "start": 0, "end": 3.5, "subtitle": ""},
+      {"source": "", "start": 0, "end": 3.5, "subtitle": ""}
+    ],
+    "globalSubs": [
+      {"text": "후킹 문장", "start": 0, "end": 3.5, "style": {"size": 22, "x": 50, "y": 50, "font": "'GmarketSans',sans-serif", "color": "#ffffff", "stroke": true, "strokeWidth": 3, "strokeColor": "#000000", "bg": false}},
+      {"text": "전개 문장", "start": 3.5, "end": 7, "style": {"size": 22, "x": 50, "y": 50, "font": "'GmarketSans',sans-serif", "color": "#ffffff", "stroke": true, "strokeWidth": 3, "strokeColor": "#000000", "bg": false}},
+      {"text": "전환 문장", "start": 7, "end": 10.5, "style": {"size": 22, "x": 50, "y": 50, "font": "'GmarketSans',sans-serif", "color": "#ffffff", "stroke": true, "strokeWidth": 3, "strokeColor": "#000000", "bg": false}},
+      {"text": "펀치라인", "start": 10.5, "end": 14, "style": {"size": 26, "x": 50, "y": 50, "font": "'GmarketSans',sans-serif", "color": "#ffffff", "stroke": true, "strokeWidth": 4, "strokeColor": "#000000", "bg": false}},
+      {"text": "마무리", "start": 14, "end": 17.5, "style": {"size": 20, "x": 50, "y": 50, "font": "'GmarketSans',sans-serif", "color": "#ffffff", "stroke": true, "strokeWidth": 3, "strokeColor": "#000000", "bg": false}}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "alex, Aryan 스타일 동기부여 텍스트"
+}

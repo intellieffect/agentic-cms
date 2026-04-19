@@ -1,0 +1,5 @@
+export { CardNews } from './CardNews'
+export { StepByStep } from './StepByStep'
+export { BeforeAfter } from './BeforeAfter'
+export { ListCarousel } from './ListCarousel'
+export { QuoteCarousel } from './QuoteCarousel'

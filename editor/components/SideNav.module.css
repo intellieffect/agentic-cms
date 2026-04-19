@@ -1,0 +1,89 @@
+.sidenav {
+  width: 140px;
+  background: var(--be-bg, #0a0a0a);
+  border-right: 1px solid var(--be-border-light, #1e1e1e);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.logo {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--be-accent, #60a5fa);
+  border-bottom: 1px solid var(--be-border-light, #1e1e1e);
+  letter-spacing: 2px;
+}
+
+.navItems {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  gap: 2px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--be-text-muted, #888);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  text-decoration: none;
+}
+
+.navLink:hover {
+  background: var(--be-bg-input, #1a1a1a);
+  color: #ddd;
+}
+
+.active {
+  background: #1e3a5f;
+  color: var(--be-accent, #60a5fa);
+}
+
+.navIcon {
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subItems {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0 2px 12px;
+  gap: 1px;
+}
+
+.subLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  color: var(--be-text-dim, #666);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  text-decoration: none;
+}
+
+.subLink:hover {
+  background: var(--be-bg-input, #1a1a1a);
+  color: #ccc;
+}

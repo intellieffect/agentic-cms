@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thread Video Cutter — Timeline Editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f0f;color:#e0e0e0;font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* Locked project: block all editing interactions except playback and copy */
+body.project-locked .tl-clip,
+body.project-locked .bgm-clip,
+body.project-locked .detail,
+body.project-locked .crop-overlay,
+body.project-locked #subOv,
+body.project-locked .sub-item {
+  pointer-events: none !important;
+  opacity: 0.7;
+}
+body.project-locked .tl-clip { cursor: default !important; }
+/* Keep playback controls and project copy clickable */
+body.project-locked #playBtn,
+body.project-locked #ruler,
+body.project-locked .transport,
+body.project-locked [onclick="saveProjectAs()"] { pointer-events: auto !important; opacity: 1 !important; }
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:8px;padding:5px 12px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-shrink:0}
+.top h1{font-size:13px;font-weight:600;color:#666}
+.btn{padding:4px 10px;border:1px solid #3a3a3a;background:#222;color:#ccc;border-radius:5px;cursor:pointer;font-size:10px;transition:.15s;white-space:nowrap}
+.btn:hover{background:#333;border-color:#555}
+.btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.on{background:#374151;border-color:#60a5fa;color:#60a5fa}
+.top .sep{width:1px;height:20px;background:#2a2a2a}
+.top .info{font-size:10px;color:#555}
+
+/* Tool buttons */
+.tools{display:flex;gap:2px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:2px}
+.tool-btn{padding:4px 8px;border:none;background:transparent;color:#888;border-radius:4px;cursor:pointer;font-size:11px;transition:.1s}
+.tool-btn:hover{background:#333;color:#ccc}
+.tool-btn.active{background:#2563eb;color:#fff}
+
+/* Transport */
+.transport{display:flex;align-items:center;gap:4px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:2px 6px}
+.transport .tbtn{width:26px;height:24px;border:none;background:transparent;color:#888;border-radius:3px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.transport .tbtn:hover{background:#333;color:#fff}
+.transport .tbtn.playing{color:#22c55e}
+.tc{font-size:12px;font-variant-numeric:tabular-nums;color:#ccc;font-weight:600;min-width:70px;text-align:center;font-family:'SF Mono',monospace}
+.speed-badge{font-size:9px;color:#fbbf24;padding:1px 5px;background:#422006;border-radius:3px;display:none}
+.speed-badge.show{display:inline}
+
+/* Upper */
+.upper{display:flex;flex:1;min-height:0;position:relative}
+.resizer-h{width:5px;cursor:col-resize;background:transparent;flex-shrink:0;z-index:20}
+.resizer-h:hover,.resizer-h.drag{background:#2563eb}
+.resizer-v{height:5px;cursor:row-resize;background:transparent;flex-shrink:0;z-index:20}
+.resizer-v:hover,.resizer-v.drag{background:#2563eb}
+
+/* Preview */
+.ref-panel{background:#0a0a0a;border-right:1px solid #1e1e1e;flex-shrink:0;display:flex;flex-direction:row}
+.ref-list{width:240px;display:flex;flex-direction:column;border-right:1px solid #1a1a1a;padding:6px}
+.ref-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ref-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:min-content;gap:6px;align-content:start;padding-right:2px}
+.ref-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;min-width:200px}
+.ref-phone-frame{border:2px solid #2a2a2a}
+.ref-phone-frame video{width:100%;height:100%;object-fit:cover}
+.ref-controls{display:flex;align-items:center;gap:6px;margin-top:6px;width:100%}
+.pv{width:600px;min-width:180px;max-width:600px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080808;flex-shrink:0;position:relative}
+.phone{width:432px;height:768px;background:#000;border-radius:12px;overflow:hidden;position:relative;border:2px solid #2a2a2a}
+.phone video{will-change:transform;transition:none}
+.phone video{width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
+.phone .vid-blur-bg{display:none!important}
+.phone.letterbox video{object-fit:contain;z-index:1;background:#000}
+/* Crop overlay */
+.crop-overlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:5;display:none}
+.crop-overlay.active{display:block;pointer-events:auto;cursor:crosshair}
+.crop-dim{position:absolute;background:rgba(0,0,0,.55)}
+.crop-rect{position:absolute;border:2px dashed #fbbf24;z-index:1}
+.crop-handle{position:absolute;width:10px;height:10px;background:#fbbf24;border-radius:2px;z-index:2;cursor:nwse-resize}
+.crop-handle.tl{top:-5px;left:-5px;cursor:nwse-resize}
+.crop-handle.tr{top:-5px;right:-5px;cursor:nesw-resize}
+.crop-handle.bl{bottom:-5px;left:-5px;cursor:nesw-resize}
+.crop-handle.br{bottom:-5px;right:-5px;cursor:nwse-resize}
+.sub-ov{position:absolute;left:0;top:0;width:432px;height:768px;transform-origin:0 0;pointer-events:none;transition:opacity .2s;z-index:3}
+.sub-ov.h{opacity:0}
+.sub-tx{position:absolute;background:rgba(0,0,0,.6);color:#fff;font-weight:700;padding:10px 14px 8px;border-radius:4px;letter-spacing:.5px;max-width:90%;word-break:keep-all;pointer-events:auto;cursor:grab;white-space:pre-line;will-change:left,top;text-align:center;line-height:120%}
+.sub-align-text-btn{padding:3px 6px;border:1px solid #3a3a3a;background:#222;color:#888;border-radius:4px;cursor:pointer;font-size:10px;transition:.15s;min-width:24px;text-align:center}
+.sub-align-text-btn:hover{background:#333;color:#ddd}
+.sub-align-text-btn.active{background:#3a3a3a;color:#fbbf24;border-color:#fbbf24}
+.sub-tx:active{cursor:grabbing}
+.sub-tx.sub-active{outline:2px solid #4ade80;outline-offset:2px}
+/* In/Out marks */
+.mark-badge{position:absolute;top:8px;font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600}
+.mark-in{left:8px;background:#059669;color:#fff}
+.mark-out{right:8px;background:#dc2626;color:#fff}
+
+/* Detail */
+.detail{flex:1;display:flex;flex-direction:column;border-left:1px solid #2a2a2a;min-width:0}
+.detail-head{padding:6px 12px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;font-size:11px;color:#666;display:flex;align-items:center;gap:6px}
+.detail-body{flex:1;overflow-y:auto;padding:10px 12px;font-size:11px}
+.d-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.d-row label{font-size:10px;color:#555;width:46px;flex-shrink:0}
+.d-row span{color:#aaa}
+.d-row input[type=number]{width:64px;background:#222;border:1px solid #3a3a3a;color:#ddd;padding:3px 5px;border-radius:4px;font-size:10px;text-align:center}
+.d-row input:focus{outline:none;border-color:#2563eb}
+.d-row select{background:#222;border:1px solid #3a3a3a;color:#ddd;padding:3px 5px;border-radius:4px;font-size:10px}
+.sub-input{width:100%;background:#222;border:1px solid #3a3a3a;color:#ddd;padding:5px 8px;border-radius:5px;font-size:11px;resize:vertical;min-height:28px;line-height:1.4;font-family:inherit}
+.sub-input:focus{outline:none;border-color:#2563eb}
+.d-section{margin-top:4px;padding-top:4px;border-top:1px solid #1e1e1e}
+.d-section h4{font-size:10px;color:#555;margin-bottom:0;font-weight:500;cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px;padding:4px 0}
+.d-section h4::before{content:'▸';font-size:8px;color:#444;transition:transform .15s}
+.d-section.open h4::before{transform:rotate(90deg)}
+.d-section .d-section-body{display:none;padding-top:6px}
+.d-section.open .d-section-body{display:block}
+
+/* ─── Timeline (Remotion-inspired) ─── */
+.tl-panel{height:280px;min-height:120px;max-height:500px;background:#0c0c0c;flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid #222}
+
+.tl-toolbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:#141414;border-bottom:1px solid #1e1e1e;flex-shrink:0}
+.tl-toolbar label{font-size:10px;color:#666}
+.tl-toolbar input[type=range]{width:90px;accent-color:#0a84ff;height:3px}
+.tl-toolbar .snap-btn{font-size:10px}
+.tl-toolbar .btn{font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid #333;background:#1a1a1a;color:#aaa;transition:all .15s}
+.tl-toolbar .btn:hover{background:#222;color:#ddd;border-color:#444}
+.tl-toolbar .btn.active,.tl-toolbar .fmt-btn[style*="border-color:#60a5fa"]{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
+
+/* Ruler — Remotion style */
+.tl-ruler{height:26px;background:#111;border-bottom:1px solid #1e1e1e;position:relative;overflow:hidden;cursor:pointer;flex-shrink:0}
+.tl-ruler-tick{position:absolute;bottom:0;border-left:1px solid #282828}
+.tl-ruler-label{position:absolute;top:5px;font-size:9px;color:#555;transform:translateX(3px);font-variant-numeric:tabular-nums;font-family:'SF Mono',Menlo,monospace;letter-spacing:-0.3px}
+
+/* Scroll area */
+.tl-scroll{flex:1;overflow-x:auto;overflow-y:hidden;position:relative}
+.tl-track-area{position:relative;min-height:100%}
+
+/* Track headers — Remotion sidebar */
+.tl-headers{position:absolute;left:0;top:0;bottom:0;width:64px;background:#111;border-right:1px solid #1e1e1e;z-index:10;display:flex;flex-direction:column}
+.tl-h-item{padding:0 8px;border-bottom:1px solid #1a1a1a;font-size:10px;color:#666;display:flex;align-items:center;gap:5px;font-weight:500;letter-spacing:0.2px}
+.tl-h-item:hover{color:#999}
+
+/* Playhead — Remotion red pointer */
+.tl-playhead{position:absolute;top:0;width:2px;background:#ff3b30;z-index:20;height:100%;cursor:col-resize;filter:drop-shadow(0 0 4px rgba(255,59,48,.4))}
+.tl-playhead::before{content:'';position:absolute;top:-2px;left:-6px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:8px solid #ff3b30;filter:drop-shadow(0 1px 3px rgba(255,59,48,.5))}
+.tl-playhead::after{content:'';position:absolute;top:0;bottom:0;left:-8px;width:18px;cursor:col-resize}
+
+/* Skim indicator */
+.tl-skim{position:absolute;top:0;width:1px;background:rgba(255,255,255,.2);z-index:15;pointer-events:none;height:100%;display:none}
+
+/* Tracks — Remotion spacing */
+.tl-track{position:relative;margin-left:64px;border-bottom:1px solid #161616}
+.tl-track.v1{height:56px}
+.tl-track.sub{min-height:26px}
+.tl-track.audio{height:36px}
+
+/* Clips — Remotion rounded blocks */
+.tl-clip{position:absolute;top:4px;bottom:4px;border-radius:6px;cursor:pointer;overflow:hidden;transition:box-shadow .1s,transform .15s,opacity .15s;min-width:8px;border:1px solid rgba(255,255,255,.08);opacity:.85}
+.tl-clip.active{opacity:1}
+.tl-clip:hover{box-shadow:0 0 0 1px rgba(255,255,255,.2);border-color:rgba(255,255,255,.15)}
+.tl-clip.active{box-shadow:0 0 0 2px rgba(255,255,255,.9);border-color:transparent}
+.tl-clip.dragging{opacity:.4;transform:scale(.97);z-index:30}
+.tl-clip.drag-over-left{border-left:3px solid #0a84ff!important;border-radius:0 6px 6px 0}
+.tl-clip.drag-over-right{border-right:3px solid #0a84ff!important;border-radius:6px 0 0 6px}
+.tl-drop-indicator{position:absolute;top:0;bottom:0;width:3px;background:#0a84ff;border-radius:2px;z-index:25;pointer-events:none;display:none;box-shadow:0 0 10px rgba(10,132,255,.5)}
+.tl-clip.blade-hover{box-shadow:none!important}
+.tl-clip-inner{padding:0 8px;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;overflow:hidden;position:relative;z-index:1}
+.tl-clip-name{font-size:10px;color:rgba(255,255,255,.9);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.tl-clip-sub{font-size:9px;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.tl-clip-dur{font-size:9px;color:rgba(255,255,255,.4);position:absolute;right:6px;top:4px;font-family:'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums}
+/* Trim handles — Remotion style rounded edges */
+.tl-trim{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:5;transition:background .1s}
+.tl-trim:hover{background:rgba(255,255,255,.15)}
+.tl-trim.left{left:0;border-radius:6px 0 0 6px}
+.tl-trim.left::after{content:'';position:absolute;top:50%;left:2px;transform:translateY(-50%);width:3px;height:14px;border-left:1px solid rgba(255,255,255,.3);border-right:1px solid rgba(255,255,255,.3)}
+.tl-trim.right{right:0;border-radius:0 6px 6px 0}
+.tl-trim.right::after{content:'';position:absolute;top:50%;right:2px;transform:translateY(-50%);width:3px;height:14px;border-left:1px solid rgba(255,255,255,.3);border-right:1px solid rgba(255,255,255,.3)}
+/* Blade cursor */
+.blade-cursor .tl-clip{cursor:crosshair!important}
+/* Blade line */
+.blade-line{position:absolute;top:0;bottom:0;width:2px;background:#fbbf24;z-index:6;pointer-events:none;display:none;box-shadow:0 0 8px rgba(251,191,36,.4)}
+
+/* Audio waveform track */
+.tl-audio-clip{position:absolute;top:3px;bottom:3px;border-radius:5px;overflow:hidden;opacity:.45}
+.tl-audio-clip canvas{width:100%;height:100%}
+
+/* Subtitle clips — Remotion caption style */
+.tl-sub-clip{position:absolute;top:1px;height:22px;background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.2);border-radius:5px;display:flex;align-items:center;padding:0 7px;font-size:9px;color:#c9960f;overflow:hidden;white-space:nowrap;cursor:grab;transition:background .1s}
+.tl-sub-clip:hover{background:rgba(250,204,21,.18)}
+.tl-sub-clip.sel{background:rgba(250,204,21,.3);border-color:rgba(250,204,21,.6);box-shadow:0 0 4px rgba(250,204,21,.3)}
+.tl-sub-clip:active{cursor:grabbing}
+.tl-sub-clip .sub-trim{position:absolute;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:2}
+.tl-sub-clip .sub-trim.left{left:0;border-radius:5px 0 0 5px}
+.tl-sub-clip .sub-trim.right{right:0;border-radius:0 5px 5px 0}
+.tl-sub-clip .sub-trim:hover{background:rgba(250,204,21,.3)}
+
+/* Ken Burns track clips */
+.tl-kb-clip{position:absolute;top:1px;height:22px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);border-radius:5px;display:flex;align-items:center;padding:0 7px;font-size:9px;color:#4ade80;overflow:hidden;white-space:nowrap;cursor:grab;transition:background .1s}
+.tl-kb-clip:hover{background:rgba(74,222,128,.18)}
+.tl-kb-clip.sel{background:rgba(74,222,128,.3);border-color:rgba(74,222,128,.6);box-shadow:0 0 4px rgba(74,222,128,.3)}
+.tl-kb-clip:active{cursor:grabbing}
+.tl-kb-clip .kb-trim{position:absolute;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:2}
+.tl-kb-clip .kb-trim.left{left:0;border-radius:5px 0 0 5px}
+.tl-kb-clip .kb-trim.right{right:0;border-radius:0 5px 5px 0}
+.tl-kb-clip .kb-trim:hover{background:rgba(74,222,128,.3)}
+
+/* Snap line */
+.snap-line{position:absolute;top:0;bottom:0;width:1px;background:#fbbf24;z-index:18;pointer-events:none;display:none}
+
+/* Colors — high-contrast Remotion-style palette */
+.s0{background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)}
+.s1{background:linear-gradient(135deg,#a855f7 0%,#7c3aed 100%)}
+.s2{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
+.s3{background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%)}
+.s4{background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%)}
+.s5{background:linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)}
+
+/* Transition zone between clips */
+.tl-trans-zone{position:absolute;top:2px;bottom:2px;width:20px;cursor:pointer;z-index:25;display:flex;align-items:center;justify-content:center;transform:translateX(-50%);border-radius:4px;border:1px dashed #444;background:rgba(255,255,255,.03);transition:background .15s}
+.tl-trans-zone:hover{background:rgba(255,255,255,.12);border-color:#888}
+.tl-trans-zone .tz-icon{font-size:10px;color:#666;pointer-events:none}
+.tl-trans-zone.has-trans .tz-icon{color:#60a5fa;font-size:10px}
+.tl-trans-zone.has-trans{background:rgba(37,99,235,.2);border:1px solid rgba(96,165,250,.5)}
+/* Transition overlap visual on clips */
+.tl-trans-overlap{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(96,165,250,.08) 2px,rgba(96,165,250,.08) 4px);border-radius:5px;pointer-events:none;z-index:2}
+/* Transition popup */
+.trans-popup{position:fixed;background:#1e1e1e;border:1px solid #3a3a3a;border-radius:10px;padding:14px;z-index:500;box-shadow:0 12px 40px rgba(0,0,0,.6);min-width:200px}
+.trans-popup h5{font-size:11px;color:#888;margin:0 0 10px;font-weight:500}
+.trans-popup .tp-grid{display:flex;gap:4px;margin-bottom:10px}
+.trans-popup .tp-opt{padding:5px 8px;background:#222;border:1px solid #333;border-radius:5px;color:#aaa;font-size:10px;cursor:pointer;text-align:center;transition:.15s}
+.trans-popup .tp-opt:hover{background:#2a2a2a;color:#ddd;border-color:#444}
+.trans-popup .tp-opt.sel{background:#1e3a5f;border-color:#2563eb;color:#60a5fa}
+.trans-popup .tp-dur{display:flex;align-items:center;gap:8px}
+.trans-popup .tp-dur label{font-size:10px;color:#666;flex-shrink:0}
+.trans-popup .tp-dur input{flex:1;accent-color:#2563eb}
+.trans-popup .tp-dur span{font-size:10px;color:#888;min-width:30px;text-align:right}
+
+/* Format guide */
+.fmt-guide{position:absolute;top:0;bottom:0;border-right:2px dashed rgba(245,158,11,.6);z-index:16;pointer-events:none}
+.fmt-guide-label{position:absolute;top:4px;right:6px;font-size:9px;color:#f59e0b;background:#1a1a1a;padding:2px 6px;border-radius:4px;white-space:nowrap;font-family:'SF Mono',Menlo,monospace}
+.fmt-overflow{position:absolute;top:0;bottom:0;background:rgba(239,68,68,.06);z-index:1;pointer-events:none}
+.tl-clip.overflow{opacity:.3}
+
+/* Effects UI */
+.fx-list{max-height:120px;overflow-y:auto;margin-bottom:6px}
+.fx-item{display:flex;align-items:center;gap:6px;padding:4px 6px;background:#161616;border-radius:5px;margin-bottom:3px;font-size:10px}
+.fx-item .fx-name{flex:1;color:#ddd;font-weight:500}
+.fx-item .fx-val{color:#888;font-size:9px;min-width:28px;text-align:right}
+.fx-item .fx-del{color:#666;cursor:pointer;font-size:11px;padding:0 2px}
+.fx-item .fx-del:hover{color:#f87171}
+.fx-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:600;margin-right:3px}
+.fx-badge.grain{background:#422006;color:#fbbf24}
+.fx-badge.vhs{background:#3b0764;color:#c084fc}
+.fx-badge.glitch{background:#7f1d1d;color:#fca5a5}
+.fx-badge.blur{background:#1e3a5f;color:#93c5fd}
+.fx-badge.sharpen{background:#14532d;color:#86efac}
+.fx-badge.vignette{background:#1c1917;color:#a8a29e}
+.fx-badge.bw{background:#27272a;color:#d4d4d8}
+.fx-badge.sepia{background:#451a03;color:#fdba74}
+.fx-badge.fadeIn,.fx-badge.fadeOut{background:#172554;color:#60a5fa}
+.fx-badge.blackFlash{background:#000;color:#fff;border:1px solid #333}
+
+/* Global effects panel */
+.gfx-panel{padding:6px;background:#111;border:1px solid #1e1e1e;border-radius:6px;margin-top:4px}
+.gfx-panel .fx-list{max-height:80px}
+
+/* Render dialog */
+.render-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:300;display:none;align-items:center;justify-content:center}
+.render-overlay.show{display:flex}
+.render-dialog{background:#1e1e1e;border:1px solid #3a3a3a;border-radius:12px;padding:24px 32px;min-width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.render-dialog h3{font-size:14px;color:#e0e0e0;margin-bottom:16px}
+.render-progress{width:100%;height:6px;background:#333;border-radius:3px;overflow:hidden;margin-bottom:10px}
+.render-progress-bar{height:100%;background:#2563eb;border-radius:3px;transition:width .3s ease}
+.render-status{font-size:11px;color:#888;margin-bottom:4px}
+.render-detail{font-size:10px;color:#555;margin-bottom:16px}
+.render-dialog .btn{min-width:80px}
+.render-spinner{display:inline-block;width:20px;height:20px;border:2px solid #333;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.render-done-icon{font-size:32px;margin-bottom:8px}
+
+/* Source selector overlay */
+.src-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0f0f0f;z-index:200;display:flex;flex-direction:row}
+.src-overlay.hidden{display:none}
+.src-overlay-main{flex:1;display:flex;align-items:center;justify-content:center;overflow-y:auto}
+.src-sidenav{width:48px;background:#0a0a0a;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0}
+.editor-sidenav{width:48px;background:#0a0a0a;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;z-index:10}
+.editor-sidepanel{width:0;overflow:hidden;background:#111;border-right:1px solid #1e1e1e;transition:width .2s ease;flex-shrink:0;display:flex;flex-direction:column;z-index:10}
+.editor-sidepanel.open{width:420px}
+.src-sidenav-btn{width:36px;height:36px;border-radius:8px;border:1px solid #2a2a2a;background:#141414;color:#888;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.src-sidenav-btn:hover{background:#1e1e1e;color:#ddd;border-color:#444}
+.src-sidenav-btn.active{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
+.src-sidenav-label{font-size:7px;color:#555;text-align:center}
+.src-sidepanel{width:0;overflow:hidden;background:#111;border-right:1px solid #1e1e1e;transition:width .2s ease;flex-shrink:0;display:flex;flex-direction:column}
+.src-sidepanel.open{width:420px}
+.src-panel{width:640px;max-height:80vh;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:24px;overflow-y:auto}
+.src-panel h2{font-size:16px;color:#e0e0e0;margin-bottom:4px}
+.src-panel p{font-size:11px;color:#666;margin-bottom:16px}
+.src-list{display:flex;flex-direction:column;gap:4px;margin-bottom:16px;min-height:60px;border:2px dashed transparent;border-radius:8px;padding:4px;transition:border-color .2s}
+.src-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#222;border:1px solid #333;border-radius:6px;cursor:grab;transition:.1s}
+.src-item:hover{border-color:#555}
+.src-item.selected{border-color:#2563eb;background:#1e293b}
+.src-item .src-thumb{width:40px;height:70px;object-fit:cover;border-radius:4px;background:#111;flex-shrink:0}
+.src-item .src-check{width:16px;height:16px;accent-color:#2563eb}
+.src-item .src-idx{font-size:10px;color:#555;width:20px;text-align:center}
+.src-item .src-name{flex:1;font-size:12px;color:#ccc;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-item .src-meta{font-size:10px;color:#666}
+.src-item .src-drag{color:#444;cursor:grab;font-size:14px}
+.src-dropzone{border:2px dashed #444;border-radius:8px;padding:24px;text-align:center;color:#666;font-size:12px;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:16px}
+.src-dropzone:hover{border-color:#2563eb;background:#1a1a2e}
+.src-dropzone.dragover{border-color:#2563eb;background:#1a1a2e}
+.src-options{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;padding:12px;background:#161616;border-radius:8px}
+.src-options label{font-size:10px;color:#888;display:flex;flex-direction:column;gap:4px}
+.src-options input,.src-options select{background:#222;border:1px solid #3a3a3a;color:#ddd;padding:4px 8px;border-radius:4px;font-size:11px}
+.src-actions{display:flex;gap:8px;justify-content:flex-end}
+.src-actions .btn{padding:8px 20px;font-size:12px}
+.src-loading{text-align:center;padding:20px;color:#888;font-size:12px}
+.proj-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#222;border:1px solid #333;border-radius:6px;cursor:pointer;transition:.15s}
+.proj-item:hover{border-color:#2563eb;background:#1e293b}
+.proj-item .proj-info{flex:1}
+.proj-item .proj-name{font-size:12px;color:#e0e0e0;font-weight:600}
+.proj-item .proj-meta{font-size:10px;color:#666;margin-top:2px}
+.proj-item .proj-del{color:#666;font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer}
+.proj-item .proj-del:hover{color:#f87171;background:#2a1a1a}
+
+::-webkit-scrollbar{height:8px;width:6px}::-webkit-scrollbar-track{background:#0c0c0c}::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#3a3a3a}
+/* Ken Burns: JS-driven per frame, no CSS animations needed */
+@font-face{font-family:'Montserrat';src:local('Montserrat ExtraBold'),local('Montserrat-ExtraBold'),local('Montserrat Bold'),local('Montserrat-Bold');font-weight:700}
+@font-face{font-family:'Jost';src:local('Jost ExtraBold'),local('Jost-ExtraBold'),local('Jost Bold'),local('Jost-Bold');font-weight:700}
+@font-face{font-family:'Oswald';src:local('Oswald Bold'),local('Oswald-Bold');font-weight:700}
+@font-face{font-family:'Anton';src:local('Anton Regular'),local('Anton-Regular');font-weight:400}
+@font-face{font-family:'Inter';src:local('Inter ExtraBold'),local('Inter-ExtraBold'),local('Inter Bold'),local('Inter-Bold');font-weight:700}
+@font-face{font-family:'Nunito';src:local('Nunito ExtraBold'),local('Nunito-ExtraBold'),local('Nunito Bold'),local('Nunito-Bold');font-weight:700}
+@font-face{font-family:'Bebas Neue';src:local('Bebas Neue Regular'),local('BebasNeue-Regular');font-weight:400}
+@font-face{font-family:'Coming Soon';src:url('./_fonts/ComingSoon-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Indie Flower';src:url('./_fonts/IndieFlower-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Caveat';src:url('./_fonts/Caveat-Regular.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'BMDOHYEON';src:url('./_fonts/BMDOHYEON.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'BMHANNAPro';src:url('./_fonts/BMHANNAPro.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'BMJUA';src:url('./_fonts/BMJUA.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'Cafe24 Ssurround';src:url('./_fonts/Cafe24Ssurround.ttf') format('truetype');font-weight:700}
+@font-face{font-family:'Cafe24 Ssurround Air';src:url('./_fonts/Cafe24SsurroundAir.ttf') format('truetype');font-weight:300}
+@font-face{font-family:'GmarketSans';src:url('./_fonts/GmarketSansBold.ttf') format('truetype');font-weight:700}
+@font-face{font-family:'CookieRun';src:url('./_fonts/CookieRun-Bold.ttf') format('truetype');font-weight:700}
+@font-face{font-family:'Jalnan';src:url('./_fonts/Jalnan.ttf') format('truetype');font-weight:400}
+@font-face{font-family:'LINESeedKR';src:url('./_fonts/LINESeedKR-Bold.woff2') format('woff2');font-weight:700}
+@font-face{font-family:'MaruBuri';src:url('./_fonts/MaruBuri-Bold.ttf') format('truetype');font-weight:700}
+@font-face{font-family:'Paperlogy';src:url('./_fonts/Paperlogy-ExtraBold.ttf') format('truetype');font-weight:800}
+@font-face{font-family:'SUITE';src:url('./_fonts/SUITE-Bold.ttf') format('truetype');font-weight:700}
+@font-face{font-family:'MapoBackpacking';src:local('MapoBackpacking');font-weight:400}
+@font-face{font-family:'MapoPeacefull';src:local('MapoPeacefull');font-weight:400}
+@font-face{font-family:'MapoDPP';src:local('MapoDPP');font-weight:400}
+@font-face{font-family:'Pretendard';src:local('Pretendard ExtraBold'),local('Pretendard-ExtraBold');font-weight:800}
+@font-face{font-family:'양진체';src:local('양진체');font-weight:400}
+@font-face{font-family:'Moneygraphy';src:local('Moneygraphy Rounded'),local('Moneygraphy-Rounded');font-weight:400}
+</style>
+</head>
+<body>
+
+<script>if(new URLSearchParams(window.location.search).get('project'))document.write('<style>#srcOverlay.hidden{display:none!important}</style>')</script>
+<div class="src-overlay" id="srcOverlay">
+  <div class="src-overlay-main" style="flex:1;display:flex;align-items:center;justify-content:center">
+  <div class="src-panel">
+    <h2 style="font-size:16px;color:#e0e0e0;margin-bottom:4px">📁 프로젝트</h2>
+    <p style="font-size:11px;color:#555;margin-bottom:16px">텔레그램으로 영상 경로 + 컨셉을 보내면 새 프로젝트가 생성됩니다</p>
+    <div class="src-list" id="projectList"><div class="src-loading">프로젝트 불러오는 중...</div></div>
+    <div class="src-actions" style="margin-top:12px">
+      <button class="btn" onclick="skipToEditor()">기존 편집 유지 →</button>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #2a2a2a;margin:20px 0">
+    <h2 style="font-size:16px;color:#e0e0e0;margin-bottom:4px">➕ 새 프로젝트</h2>
+    <p style="font-size:11px;color:#555;margin-bottom:12px">영상을 선택하고 분석을 시작하세요</p>
+    <div class="src-list" id="srcList"></div>
+    <div class="src-dropzone" id="srcDropzone" onclick="document.getElementById('fileUpload').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="this.classList.remove('dragover');handleFileDrop(event)">
+      📂 영상/이미지 파일을 드래그하거나 클릭하여 추가
+    </div>
+    <input type="file" id="fileUpload" multiple accept="video/*,image/*" style="display:none" onchange="uploadFiles(this.files)">
+    <div class="src-options">
+      <label>프로젝트명<input type="text" id="projName" placeholder="새 프로젝트"></label>
+      <label>최대 길이(초)<input type="number" id="optMaxDur" value="60" min="10" max="300"></label>
+      <label>클립 최소(초)<input type="number" id="optClipMin" value="1.5" step="0.5" min="0.5"></label>
+      <label>클립 최대(초)<input type="number" id="optClipMax" value="8" step="0.5" min="1"></label>
+      <label>장면 감지<input type="range" id="optScene" value="30" min="10" max="80"></label>
+      <label>자막<select id="optAutoSub"><option value="none">없음</option><option value="auto" selected>자동 생성</option><option value="srt">SRT 파일</option></select></label>
+      <label>API Key<input type="text" id="optApiKey" placeholder="선택사항"></label>
+      <label>자막 컨텍스트<input type="text" id="subContext" placeholder="영상 주제/분위기"></label>
+    </div>
+    <div class="src-actions">
+      <button class="btn" onclick="loadVideoList()">🔄 서버 영상 불러오기</button>
+      <button class="btn" style="background:#22c55e;border-color:#22c55e;color:#fff" onclick="quickAddToTimeline()">⚡ 바로 타임라인에 추가</button>
+      <button class="btn" style="background:#2563eb" onclick="startAnalyze()">🚀 분석 시작 (AI 컷편집)</button>
+    </div>
+  </div>
+  </div><!-- /src-overlay-main -->
+</div><!-- /src-overlay -->
+
+<div id="editorWrapper" style="display:flex;flex-direction:column;height:100vh;overflow:hidden">
+<div class="top">
+  <h1>✂️</h1>
+  <!-- Tools -->
+  <div class="tools">
+    <button class="tool-btn active" id="toolSelect" onclick="setTool('select')" title="선택 (V)">↖ 선택 <kbd style="font-size:8px;color:#999;margin-left:2px">V</kbd></button>
+    <button class="tool-btn" id="toolBlade" onclick="setTool('blade')" title="블레이드 (C)">✂ 블레이드 <kbd style="font-size:8px;color:#999;margin-left:2px">C</kbd></button>
+    <button class="tool-btn" id="toolCrop" onclick="setTool('crop')" title="크롭 (P)">⬔ 크롭 <kbd style="font-size:8px;color:#999;margin-left:2px">P</kbd></button>
+  </div>
+  <div class="sep"></div>
+  <!-- Transport -->
+  <div class="transport">
+    <button class="tbtn" onclick="seekStart()" title="처음 (Home)">⏮</button>
+    <button class="tbtn" onclick="jkl('j')" title="뒤로 (J)">⏪</button>
+    <button class="tbtn" id="playBtn" onclick="togglePlay()" title="재생/정지 (Space)">▶</button>
+    <button class="tbtn" onclick="jkl('l')" title="앞으로 (L)">⏩</button>
+    <button class="tbtn" onclick="seekEnd()" title="끝 (End)">⏭</button>
+    <span class="tc" id="tcDisp">00:00.0</span>
+    <span class="speed-badge" id="speedBadge">1x</span>
+  </div>
+  <div class="sep"></div>
+  <button class="btn" onclick="undo()" title="Cmd+Z">↩</button>
+  <span class="info" id="totalInfo">--</span>
+  <div style="margin-left:auto;display:flex;gap:4px">
+    <input type="file" id="extVideoUpload" accept="video/*,image/*" multiple style="display:none" onchange="handleExtUpload(this.files)">
+    <button class="btn" onclick="toggleRefPanel()" id="refToggleBtn" title="레퍼런스 영상">🎬 레퍼런스</button>
+    <button class="btn" onclick="goToProjects()">📂 프로젝트</button>
+    <button class="btn" onclick="saveProject()">💾 저장</button>
+    <button class="btn" onclick="saveProjectAs()" title="다른 이름으로 저장 (복사)">📋 복사</button>
+    <button class="btn" onclick="exportSrt()">📝 SRT</button>
+    <button class="btn" onclick="exportJson()">📋 JSON</button>
+    <button class="btn pri" onclick="renderVideo()" id="renderBtn">🎬 영상 추출</button>
+  </div>
+</div>
+
+<div class="upper">
+  <!-- Reference video panel: list(left) + preview(right) -->
+  <div class="ref-panel" id="refPanel" style="display:none">
+    <div class="ref-list">
+      <div class="ref-header">
+        <span style="font-size:10px;color:#888">레퍼런스</span>
+        <button class="btn" onclick="closeRefPanel()" style="font-size:9px;padding:2px 6px">✕</button>
+      </div>
+      <div id="refGrid" class="ref-grid"></div>
+    </div>
+    <div class="ref-preview">
+      <div class="phone ref-phone-frame" id="refPhoneFrame">
+        <video id="refVid" playsinline></video>
+      </div>
+      <div class="ref-controls">
+        <button class="btn" onclick="refPlayPause()" id="refPlayBtn" style="font-size:10px">▶</button>
+        <span id="refTC" style="font-size:10px;color:#888;font-family:monospace">00:00</span>
+        <input type="range" id="refSeek" min="0" max="100" value="0" step="0.1" style="flex:1" oninput="refSeekTo(this.value)">
+      </div>
+    </div>
+  </div>
+  <div class="pv" id="pvPanel">
+    <div class="phone" id="phoneFrame">
+      <video class="vid-blur-bg" id="vidBlur" muted playsinline></video>
+      <canvas id="vidFreeze" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;display:none;pointer-events:none"></canvas>
+      <div id="vidLoader" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;display:none;pointer-events:none;background:rgba(0,0,0,0.4)"><div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.2);border-top-color:#a78bfa;border-radius:50%;animation:spin .8s linear infinite"></div></div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+      <video id="vid" muted playsinline></video>
+      <div class="sub-ov" id="subOv"></div>
+      <div class="crop-overlay" id="cropOverlay">
+        <div class="crop-dim" id="cropDimT"></div>
+        <div class="crop-dim" id="cropDimB"></div>
+        <div class="crop-dim" id="cropDimL"></div>
+        <div class="crop-dim" id="cropDimR"></div>
+        <div class="crop-rect" id="cropRect">
+          <div class="crop-handle tl" data-corner="tl"></div>
+          <div class="crop-handle tr" data-corner="tr"></div>
+          <div class="crop-handle bl" data-corner="bl"></div>
+          <div class="crop-handle br" data-corner="br"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="resizer-h" id="resizerH"></div>
+  <div class="detail">
+    <div class="detail-head">📋 <span id="clipLabel">#1</span></div>
+    <div class="detail-body">
+      <div class="d-row"><label>소스</label><span id="dSrc" style="flex:1">-</span><button class="btn" onclick="changeClipSource()" title="이 클립의 소스 변경" style="font-size:9px">변경</button></div>
+      <div class="d-row"><label>시작</label><input type="number" id="dStart" step="0.1" onchange="onDetailChange()" oninput="debouncedDetailChange()"><label style="width:auto;margin-left:4px">끝</label><input type="number" id="dEnd" step="0.1" onchange="onDetailChange()" oninput="debouncedDetailChange()"></div>
+      <!-- Visual Trim Bar -->
+      <div class="d-row" style="flex-direction:column;gap:4px;padding:4px 0">
+        <!-- Minimap (always shows full source, visible window highlighted) -->
+        <div id="trimMinimap" style="position:relative;width:100%;height:10px;background:#111;border-radius:3px;overflow:hidden;cursor:pointer;margin-bottom:2px;display:none">
+          <div id="trimMiniRange" style="position:absolute;top:0;height:100%;background:rgba(255,107,53,0.3)"></div>
+          <div id="trimMiniWindow" style="position:absolute;top:0;height:100%;background:rgba(37,99,235,0.3);border:1px solid rgba(96,165,250,0.5);border-radius:2px"></div>
+        </div>
+        <div id="trimBar" style="position:relative;width:100%;height:32px;background:#1a1a1a;border-radius:6px;overflow:hidden;cursor:pointer;user-select:none">
+          <canvas id="trimWaveform" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.3"></canvas>
+          <div id="trimRange" style="position:absolute;top:0;height:100%;background:rgba(255,107,53,0.25);border-left:3px solid #ff6b35;border-right:3px solid #ff6b35;border-radius:2px"></div>
+          <div id="trimPlayhead" style="position:absolute;top:0;width:2px;height:100%;background:#fff;pointer-events:none;z-index:2"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#666">
+          <span id="trimStartLabel">0:00</span>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="btn" onclick="trimZoomOut()" style="font-size:9px;padding:1px 5px">−</button>
+            <span id="trimZoomInfo" style="font-size:8px;color:#555">1x</span>
+            <button class="btn" onclick="trimZoomIn()" style="font-size:9px;padding:1px 5px">+</button>
+            <button class="btn" onclick="trimZoomReset()" style="font-size:8px;padding:1px 5px">맞춤</button>
+          </div>
+          <span id="trimEndLabel">0:00</span>
+        </div>
+      </div>
+      <div class="d-row"><label>길이</label><span id="dDur">-</span></div>
+      <div class="d-section">
+        <h4 onclick="this.parentElement.classList.toggle('open')">⚡ 속도</h4>
+        <div class="d-section-body">
+        <div class="d-row">
+          <select id="dSpeed" onchange="onSpeedChange()">
+            <option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option><option value="1.5">1.5x</option>
+            <option value="2">2x</option><option value="4">4x</option>
+          </select>
+          <span id="dSpeedDur" style="color:#666;font-size:10px">-</span>
+        </div>
+        </div>
+      </div>
+      <!-- 전환 효과는 타임라인에서 관리 -->
+      <div class="d-section">
+        <h4 onclick="this.parentElement.classList.toggle('open')">🖼 크롭</h4>
+        <div class="d-section-body">
+        <div class="d-row">
+          <button class="btn" id="cropToggle" onclick="toggleCropMode()" style="flex:1">크롭 편집</button>
+          <button class="btn" onclick="resetCrop()">초기화</button>
+          <button class="btn" onclick="applyCropToAll()" style="color:#fbbf24;border-color:#fbbf24">전체 적용</button>
+        </div>
+        <div class="d-row"><label>영역</label><span id="cropInfo" style="color:#888;font-size:9px">전체</span></div>
+        </div>
+      </div>
+      <div class="d-section">
+        <h4 onclick="this.parentElement.classList.toggle('open')">🔍 줌</h4>
+        <div class="d-section-body">
+        <div class="d-row"><label>배율</label><input type="range" id="zoomScale" min="100" max="400" value="100" oninput="onZoomChange()" style="flex:1"><span id="zoomScaleVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">1.0x</span></div>
+        <div class="d-row"><label>가로</label><input type="range" id="zoomPanX" min="-50" max="50" value="0" oninput="onZoomChange()" style="flex:1"><span id="zoomPanXVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">0%</span></div>
+        <div class="d-row"><label>세로</label><input type="range" id="zoomPanY" min="-50" max="50" value="0" oninput="onZoomChange()" style="flex:1"><span id="zoomPanYVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">0%</span></div>
+        <div class="d-row">
+          <button class="btn" onclick="resetZoom()">초기화</button>
+          <button class="btn" id="zoomAllBtn" onclick="toggleZoomAll()" style="font-size:9px">전체 적용: OFF</button>
+        </div>
+        <div style="margin-top:6px;padding:6px;background:#161616;border-radius:6px">
+          <div class="d-row" style="margin-bottom:4px;white-space:nowrap"><label style="font-size:10px;color:#4ade80">🎬 자동줌</label><button class="btn" onclick="addKBEffect()" title="자동줌 추가" style="font-size:9px;margin-left:auto;color:#4ade80;border-color:#4ade80">＋ 추가</button></div>
+          <div id="kbList" style="max-height:100px;overflow-y:auto;margin-bottom:6px"></div>
+          <div id="kbEditPanel" style="display:none">
+            <div class="d-row"><label>효과</label>
+              <select id="kbEffect" onchange="onKBEffectChange()" style="flex:1;background:#222;border:1px solid #3a3a3a;color:#ddd;padding:3px 5px;border-radius:4px;font-size:10px">
+                <option value="none">없음</option>
+                <option value="zoom-in">줌 인 (서서히 확대)</option>
+                <option value="zoom-out">줌 아웃 (서서히 축소)</option>
+                <option value="pan-left">좌로 패닝</option>
+                <option value="pan-right">우로 패닝</option>
+              </select>
+            </div>
+            <div class="d-row"><label>강도</label><input type="range" id="kbIntensity" min="5" max="100" value="15" oninput="onKBEffectChange()" style="flex:1"><span id="kbIntensityVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">15%</span></div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="d-section">
+        <h4 onclick="this.parentElement.classList.toggle('open')">🎨 이펙트 <button class="btn" onclick="event.stopPropagation();showAddEffectMenu(event,'clip')" title="선택한 클립에 이펙트 추가" style="font-size:9px;margin-left:8px;color:#c084fc;border-color:#c084fc">＋ 추가</button></h4>
+        <div class="d-section-body">
+          <div id="fxList" class="fx-list"></div>
+          <div id="fxEditPanel" style="display:none">
+            <div class="d-row"><label>강도</label><input type="range" id="fxIntensity" min="0" max="100" value="50" oninput="onFxIntensityChange()" style="flex:1"><span id="fxIntensityVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">50%</span></div>
+            <div class="d-row" id="fxDurRow" style="display:none"><label>시간</label><input type="number" id="fxDuration" value="1.0" step="0.1" min="0.1" max="10" style="width:64px" onchange="onFxDurationChange()"><span style="color:#555;font-size:9px">초</span></div>
+          </div>
+          <div class="gfx-panel">
+            <div class="d-row" style="margin-bottom:4px"><label style="color:#c084fc;font-size:10px" title="전체 영상에 공통 적용되는 이펙트">전체 적용</label><button class="btn" onclick="event.stopPropagation();showAddEffectMenu(event,'global')" title="전체 영상에 이펙트 추가" style="font-size:9px;margin-left:auto;color:#c084fc;border-color:#c084fc">＋ 추가</button></div>
+            <div id="gfxList" class="fx-list"></div>
+            <div id="gfxEditPanel" style="display:none">
+              <div class="d-row"><label>강도</label><input type="range" id="gfxIntensity" min="0" max="100" value="50" oninput="onGfxIntensityChange()" style="flex:1"><span id="gfxIntensityVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">50%</span></div>
+              <div class="d-row" id="gfxDurRow" style="display:none"><label>시간</label><input type="number" id="gfxDuration" value="1.0" step="0.1" min="0.1" max="10" style="width:64px" onchange="onGfxDurationChange()"><span style="color:#555;font-size:9px">초</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="d-section open">
+        <h4 onclick="this.parentElement.classList.toggle('open')">💬 자막 <button class="btn" onclick="event.stopPropagation();addSubToClip()" title="자막 추가" style="font-size:9px;margin-left:8px;color:#4ade80;border-color:#4ade80">＋ 추가</button></h4>
+        <div class="d-section-body">
+        <div id="subList" style="max-height:140px;overflow-y:auto;margin-bottom:6px"></div>
+        <div id="subEditPanel" style="display:none">
+          <textarea class="sub-input" id="subIn" rows="2" placeholder="자막 입력... (Shift+Enter로 줄바꿈)" oninput="onSubEdit(this.value)"></textarea>
+          <div style="margin-top:6px">
+            <div class="d-row"><label>글꼴</label>
+              <select id="subFont" onchange="onSubStyleChange()" style="flex:1;background:#222;border:1px solid #3a3a3a;color:#ddd;padding:3px 5px;border-radius:4px;font-size:10px">
+                <optgroup label="고딕 (sans-serif)">
+                  <option value="'Apple SD Gothic Neo',sans-serif">Apple SD 고딕</option>
+                  <option value="'Noto Sans KR',sans-serif">Noto Sans KR</option>
+                  <option value="'Pretendard',sans-serif">프리텐다드</option>
+                  <option value="'GmarketSans',sans-serif">G마켓 산스</option>
+                  <option value="'SUITE',sans-serif">SUITE</option>
+                  <option value="'Paperlogy',sans-serif">페이퍼로지</option>
+                  <option value="'LINESeedKR',sans-serif">LINE Seed</option>
+                  <option value="'ONE Mobile OTF',sans-serif">ONE 모바일고딕</option>
+                  <option value="'HDharmony',sans-serif">현대하모니</option>
+                </optgroup>
+                <optgroup label="강조/임팩트">
+                  <option value="'BMDOHYEON',sans-serif">배민 도현체</option>
+                  <option value="'BMHANNAPro',sans-serif">배민 한나Pro</option>
+                  <option value="'BMJUA',sans-serif">배민 주아체</option>
+                  <option value="'Jalnan',sans-serif">잘난체</option>
+                  <option value="'CookieRun',sans-serif">쿠키런</option>
+                  <option value="'Cafe24 Ssurround',sans-serif">카페24 써라운드</option>
+                  <option value="'Cafe24 Ssurround Air',sans-serif">카페24 써라운드Air</option>
+                  <option value="'Moneygraphy',sans-serif">머니그라피</option>
+                </optgroup>
+                <optgroup label="명조/바탕 (serif)">
+                  <option value="'AppleMyungjo',serif">명조체</option>
+                  <option value="'Gowun Batang',serif">고운바탕</option>
+                  <option value="'MaruBuri',serif">마루부리</option>
+                  <option value="'Batang',serif">바탕</option>
+                </optgroup>
+                <optgroup label="손글씨/감성">
+                  <option value="'HSYuji',sans-serif">HS유지체</option>
+                  <option value="'MapoBackpacking',sans-serif">마포 배낭여행</option>
+                  <option value="'MapoPeacefull',sans-serif">마포 평화</option>
+                  <option value="'MapoDPP',sans-serif">마포 꽃</option>
+                  <option value="'양진체',sans-serif">양진체</option>
+                  <option value="'Binggrae',sans-serif">빙그레체</option>
+                  <option value="'Binggrae Samanco',sans-serif">빙그레 싸만코</option>
+                  <option value="'SANGJU Gotgam',sans-serif">상주곶감체</option>
+                  <option value="'SANGJU Dajungdagam',sans-serif">상주다정다감</option>
+                  <option value="'SANGJU Gyeongcheon Island',sans-serif">상주경천섬</option>
+                  <option value="'RecipekoreaOTF',sans-serif">레시피코리아</option>
+                  <option value="'MBC 1961 OTF',sans-serif">MBC 1961</option>
+                </optgroup>
+                <optgroup label="영문 손글씨">
+                  <option value="'Coming Soon',cursive">Coming Soon ✏️</option>
+                  <option value="'Indie Flower',cursive">Indie Flower</option>
+                  <option value="'Caveat',cursive">Caveat</option>
+                </optgroup>
+                <optgroup label="영문">
+                  <option value="Arial,Helvetica,sans-serif">Arial</option>
+                  <option value="'Courier New',monospace">Courier New</option>
+                  <option value="Georgia,serif">Georgia</option>
+                  <option value="Impact,sans-serif">Impact</option>
+                  <option value="Montserrat,sans-serif">Montserrat</option>
+                  <option value="Jost,sans-serif">Jost</option>
+                  <option value="Nunito,sans-serif">Nunito</option>
+                  <option value="Inter,sans-serif">Inter</option>
+                  <option value="Oswald,sans-serif">Oswald</option>
+                  <option value="Anton,sans-serif">Anton</option>
+                  <option value="'Bebas Neue',sans-serif">Bebas Neue</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="d-row"><label>효과</label>
+              <select id="subEffect" onchange="onSubStyleChange()" style="flex:1;background:#222;border:1px solid #3a3a3a;color:#ddd;padding:3px 5px;border-radius:4px;font-size:10px">
+                <option value="none">없음</option>
+                <option value="typewriter">타이핑</option>
+                <option value="slideUp">슬라이드 업</option>
+                <option value="fadeIn">페이드 인</option>
+              </select>
+            </div>
+            <div class="d-row"><label>크기</label><input type="range" id="subSize" min="8" max="100" value="16" oninput="onSubStyleChange()" style="flex:1"><span id="subSizeVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">16px</span></div>
+            <div class="d-row"><label>배경</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#ccc"><input type="checkbox" id="subBg" checked onchange="onSubStyleChange()"> 표시</label>
+              <input type="color" id="subBgColor" value="#000000" onchange="onSubStyleChange()" style="width:24px;height:20px;border:none;background:none;cursor:pointer;margin-left:4px">
+              <label style="font-size:9px;color:#888;margin-left:4px">투명도</label>
+              <input type="range" id="subBgAlpha" min="0" max="100" value="60" oninput="onSubStyleChange()" style="width:50px">
+            </div>
+            <div class="d-row"><label>글자색</label>
+              <input type="color" id="subColor" value="#ffffff" onchange="onSubStyleChange()" style="width:24px;height:20px;border:none;background:none;cursor:pointer">
+            </div>
+            <div class="d-row"><label>외곽선</label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#ccc"><input type="checkbox" id="subStroke" onchange="onSubStyleChange()"> 표시</label>
+              <input type="color" id="subStrokeColor" value="#000000" onchange="onSubStyleChange()" style="width:24px;height:20px;border:none;background:none;cursor:pointer;margin-left:4px">
+              <label style="font-size:9px;color:#888;margin-left:4px">두께</label>
+              <input type="range" id="subStrokeWidth" min="1" max="6" value="2" oninput="onSubStyleChange()" style="width:40px">
+              <span id="subStrokeWidthVal" style="color:#888;font-size:9px;min-width:20px">2px</span>
+            </div>
+            <div class="d-row"><label>행간</label><input type="range" id="subLineHeight" min="80" max="250" value="140" oninput="onSubStyleChange()" style="flex:1"><span id="subLineHeightVal" style="color:#888;font-size:9px;min-width:32px;text-align:right">140%</span></div>
+            <div class="d-row"><label>너비</label><input type="range" id="subBoxWidth" min="10" max="100" value="0" oninput="onSubStyleChange()" style="flex:1"><span id="subBoxWidthVal" style="color:#888;font-size:9px;min-width:32px;text-align:right">자동</span></div>
+            <div class="d-row"><label>정렬</label>
+              <button class="sub-align-text-btn active" id="alignLeft" onclick="setSubTextAlign('left')" title="왼쪽 정렬">◧</button>
+              <button class="sub-align-text-btn" id="alignCenter" onclick="setSubTextAlign('center')" title="가운데 정렬">◫</button>
+              <button class="sub-align-text-btn" id="alignRight" onclick="setSubTextAlign('right')" title="오른쪽 정렬">◨</button>
+              <span style="color:#555;margin:0 4px">│</span>
+              <button class="btn sub-align-btn" onclick="alignSub(50,null)" title="가로 가운데">⫠ 가로중앙</button>
+              <button class="btn sub-align-btn" onclick="alignSub(null,50)" title="세로 가운데">⫟ 세로중앙</button>
+            </div>
+            <div class="d-row"><label>위치</label><span id="subPosInfo" style="color:#888;font-size:9px">50%, 80%</span>
+              <button class="btn" onclick="applyToAll()" title="현재 클립 자막 스타일을 전체 클립에 적용" style="margin-left:auto;color:#fbbf24;border-color:#fbbf24">📐 전체 적용</button>
+            </div>
+            <div class="d-row" style="margin-top:6px"><label>프리셋</label>
+              <button class="btn" onclick="saveSubPreset()" title="현재 스타일 저장">💾 저장</button>
+              <button class="btn" onclick="loadSubPreset()" title="저장된 스타일 불러오기">📂 불러오기</button>
+              <select id="presetSelect" style="flex:1;background:#222;border:1px solid #3a3a3a;color:#ddd;padding:3px 5px;border-radius:4px;font-size:10px">
+                <option value="">-- 프리셋 선택 --</option>
+              </select>
+              <button class="btn" onclick="deleteSubPreset()" title="선택된 프리셋 삭제" style="color:#f87171">✕</button>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+    <!-- BGM Detail Panel (shown when BGM clip is selected) -->
+    <div id="bgmDetailPanel" style="display:none;border-top:1px solid #2a2a2a;padding:8px 12px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <span style="font-size:11px;color:#a78bfa;font-weight:bold">🎵 BGM</span>
+        <span id="bgmFileName" style="font-size:10px;color:#888;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <button class="btn" onclick="removeBgmSelected()" style="font-size:9px;color:#f87171;border-color:#f87171">삭제</button>
+      </div>
+      <div class="d-row"><label>볼륨</label><input type="range" id="bgmVolume" min="0" max="100" value="100" oninput="onBgmVolChange()" style="flex:1"><span id="bgmVolVal" style="color:#888;font-size:9px;min-width:28px;text-align:right">100%</span></div>
+      <div class="d-row"><label>음원 구간</label></div>
+      <div style="position:relative;width:100%;height:40px;background:#1a1a1a;border-radius:6px;overflow:hidden;margin-bottom:4px">
+        <canvas id="bgmDetailWaveform" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.4"></canvas>
+        <div id="bgmDetailRange" style="position:absolute;top:0;height:100%;background:rgba(124,58,237,0.3);border-left:3px solid #a78bfa;border-right:3px solid #a78bfa;border-radius:2px;cursor:pointer"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:#666;margin-bottom:6px">
+        <span>0:00</span>
+        <span id="bgmTotalDurLabel">0:00</span>
+      </div>
+      <div class="d-row"><label>시작</label><input type="number" id="bgmInPoint" step="0.1" min="0" onchange="onBgmInOutChange()" style="width:64px"><label style="width:auto;margin-left:4px">끝</label><input type="number" id="bgmOutPoint" step="0.1" min="0" onchange="onBgmInOutChange()" style="width:64px"></div>
+      <div class="d-row"><label>길이</label><span id="bgmDurLabel" style="color:#aaa">-</span></div>
+      <div class="d-row"><label>위치</label><input type="number" id="bgmTlStart" step="0.1" min="0" onchange="onBgmTlStartChange()" style="width:64px"><span style="color:#555;font-size:9px;margin-left:4px">초</span></div>
+      <div style="margin-top:8px;border-top:1px solid #2a2a2a;padding-top:8px">
+        <button class="btn" id="bgmAutoFindBtn" onclick="bgmAutoFind()" style="width:100%;background:#7c3aed;border-color:#7c3aed;color:#fff;font-size:11px;padding:6px">🪄 자동 구간 찾기</button>
+        <div id="bgmAutoResults" style="margin-top:6px;display:none">
+          <div style="font-size:9px;color:#666;margin-bottom:4px">추천 구간 (클릭하여 적용)</div>
+          <div id="bgmAutoList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="resizer-v" id="resizerV"></div>
+
+<div class="tl-panel" id="tlPanel">
+  <div class="tl-toolbar">
+    <label>🔍</label>
+    <button class="btn" onclick="zoomOut()" title="축소" style="font-size:10px;padding:3px 6px">−</button>
+    <input type="range" id="zoomSlider" min="4" max="200" value="40" oninput="onZoom()">
+    <button class="btn" onclick="zoomIn()" title="확대" style="font-size:10px;padding:3px 6px">+</button>
+    <button class="btn" onclick="zoomFit()" title="맞춤 (Shift+Z)" style="font-size:9px">맞춤</button>
+    <div class="sep" style="height:14px"></div>
+    <div style="display:flex;gap:2px;align-items:center">
+      <span style="font-size:9px;color:#555">포맷:</span>
+      <button class="btn fmt-btn" data-dur="0" onclick="setFormat(0)" style="border-color:#60a5fa;color:#60a5fa;font-size:9px">전체</button>
+      <button class="btn fmt-btn" data-dur="15" onclick="setFormat(15)" style="font-size:9px">15s</button>
+      <button class="btn fmt-btn" data-dur="30" onclick="setFormat(30)" style="font-size:9px">30s</button>
+      <button class="btn fmt-btn" data-dur="60" onclick="setFormat(60)" style="font-size:9px">60s</button>
+    </div>
+    <div class="sep" style="height:14px"></div>
+    <button class="btn snap-btn" id="snapBtn" onclick="toggleSnap()">🧲 스냅</button>
+    <div class="sep" style="height:14px"></div>
+    <button class="btn on" id="subToggleBtn" onclick="toggleSubtitleDisplay()" title="자막 표시 on/off" style="font-size:10px">💬 자막</button>
+    <button class="btn" id="mediaBtn" onclick="uploadExternalVideo()" title="미디어 추가/수정" style="font-size:10px">📎 미디어 추가</button>
+    <button class="btn" onclick="addBGM()" title="BGM/음원 추가" style="font-size:10px">🎵 BGM</button>
+    <input type="file" id="bgmFileInput" accept=".mp3,.wav,.m4a,.aac,.ogg,.flac,audio/*" style="display:none" onchange="handleBGMUpload(this.files)">
+    <span class="info" id="zoomInfo" style="margin-left:auto">14px/s</span>
+  </div>
+  <div class="tl-ruler" id="ruler" onmousedown="onRulerDown(event)"></div>
+  <div class="tl-scroll" id="tlScroll" onmousemove="onSkim(event)" onmouseleave="skimHide()" onclick="onTrackAreaClick(event)">
+    <div class="tl-track-area" id="trackArea">
+      <div class="tl-headers">
+        <div class="tl-h-item" style="height:56px"><span style="font-size:12px">🎬</span> V1</div>
+        <div class="tl-h-item" id="subTrackHeader" style="min-height:26px"><span style="font-size:11px">💬</span> 자막</div>
+        <div class="tl-h-item" id="kbTrackHeader" style="min-height:26px"><span style="font-size:11px">🎬</span> 자동줌</div>
+        <div class="tl-h-item" style="height:36px"><span style="font-size:11px">🔊</span> 오디오</div>
+        <div class="tl-h-item" style="height:36px"><span style="font-size:11px">🎵</span> BGM</div>
+      </div>
+      <div class="tl-track v1" id="videoTrack"></div>
+      <div class="tl-track sub" id="subTrack"></div>
+      <div class="tl-track kb" id="kbTrack"></div>
+      <div class="tl-track audio" id="audioTrack"></div>
+      <div class="tl-track audio" id="bgmTrack"></div>
+      <div class="snap-line" id="snapLine"></div>
+      <div class="blade-line" id="bladeLine"></div>
+      <div class="tl-drop-indicator" id="dropIndicator"></div>
+    </div>
+    <div class="tl-playhead" id="tlPlayhead" style="left:56px"></div>
+    <div class="tl-skim" id="tlSkim"></div>
+  </div>
+</div>
+
+<div class="render-overlay" id="analyzeOverlay">
+  <div class="render-dialog">
+    <div class="render-spinner" id="analyzeSpinner"></div>
+    <div class="render-done-icon" id="analyzeDoneIcon" style="display:none"></div>
+    <h3 id="analyzeTitle">영상 분석 중...</h3>
+    <div class="render-progress"><div class="render-progress-bar" id="analyzeBar" style="width:10%"></div></div>
+    <div class="render-status" id="analyzeStatusText">준비 중...</div>
+    <div class="render-detail" id="analyzeDetailText"></div>
+    <button class="btn pri" id="analyzeDoneBtn" style="display:none">확인</button>
+  </div>
+</div>
+
+<div class="render-overlay" id="renderOverlay">
+  <div class="render-dialog" id="renderDialog">
+    <div class="render-spinner" id="renderSpinner"></div>
+    <h3 id="renderTitle">영상 추출 중...</h3>
+    <div class="render-progress"><div class="render-progress-bar" id="renderBar" style="width:0"></div></div>
+    <div class="render-status" id="renderStatusText">준비 중...</div>
+    <div class="render-detail" id="renderDetailText"></div>
+    <div id="renderSaveRow" style="display:none;margin:8px 0;text-align:left">
+      <label style="font-size:11px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="saveToFinished" checked style="accent-color:#2563eb;width:14px;height:14px">
+        완료 영상에 저장
+      </label>
+    </div>
+    <button class="btn" id="renderCancelBtn" onclick="cancelRender()" style="display:none">취소</button>
+    <button class="btn pri" id="renderDoneBtn" onclick="closeRenderDialog()" style="display:none">확인</button>
+  </div>
+</div>
+
+</div><!-- /editorWrapper -->
+<script src="js/state.js"></script>
+<script src="js/kenburns.js"></script>
+<script src="js/crop-zoom.js"></script>
+<script src="js/subtitles.js"></script>
+<!-- Locked project banner -->
+<div id="lockedBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;letter-spacing:0.5px">
+  🔒 잠금된 프로젝트 — 보기 전용
+  <button onclick="saveProjectAs()" style="margin-left:12px;background:#fff;color:#7c3aed;border:none;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">📋 복사하여 편집</button>
+</div>
+
+<!-- Locked modal -->
+<div id="lockedModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center">
+  <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px 32px;text-align:center;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div style="font-size:36px;margin-bottom:8px">🔒</div>
+    <div style="font-size:15px;font-weight:600;color:#fff;margin-bottom:6px">잠금된 프로젝트</div>
+    <div id="lockedModalMsg" style="font-size:12px;color:#999;margin-bottom:16px">이 프로젝트는 잠금 상태입니다.<br>수정하려면 프로젝트 리스트에서 잠금을 해제하세요.</div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button onclick="saveProjectAs()" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer">📋 복사하여 편집</button>
+      <button onclick="document.getElementById('lockedModal').style.display='none'" style="background:#333;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;cursor:pointer">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/playback.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/projects.js"></script>
+<script src="js/reference.js"></script>
+<script src="js/interaction.js"></script>
+<script src="js/bgm.js"></script>
+<script src="js/init.js"></script>
+</body>
+</html>

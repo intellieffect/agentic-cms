@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+.next/
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Media files (too large for git)
+src/editor/*.mp4
+src/editor/*.mov
+src/editor/*.MOV
+src/editor/*.avi
+src/editor/*.mkv
+src/editor/*.webm
+src/editor/*.m4v
+src/editor/*.HEIC
+
+# Temp files
+src/editor/_render_tmp/
+src/editor/_thumbs/
+src/editor/_projects/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.venv/
+__pycache__/
+.env
+_thumbs/
+_projects/
+*.pyc
+node_modules/
+node_modules/
+.next/
+scripts/.ig_session.json
+scripts/.ig_cookies.json
+*.mp3
+
+# Remotion
+remotion/out/
+remotion/node_modules/
+~/Desktop/_미디어/
+src/editor/_proxy/
+data/
+
+# Proxy & media files
+src/editor/_proxy*/
+src/editor/*.mp4
+src/editor/*.MP4
+src/editor/*.MOV
+src/editor/*.mov
+src/editor/*.MP4
+src/editor/*.mp4
+.vercel
+remotion/public/fonts

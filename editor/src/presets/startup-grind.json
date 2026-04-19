@@ -1,0 +1,27 @@
+{
+  "id": "startup-grind",
+  "name": "Startup Grind",
+  "description": "11~20초 스타트업 그라인드",
+  "traits": ["4~8 클립", "클로즈업", "야간 분위기"],
+  "clipCount": "4~8",
+  "duration": "11~20초",
+  "editStyle": "화면 클로즈업 + 빠른 컷",
+  "subtitleStyle": "간결한 액션 텍스트",
+  "bgmStyle": "dark trap / phonk",
+  "icon": "🔥",
+  "color": "#f97316",
+  "references": ["Aryan", "Net Kohen", "Koen"],
+  "defaultProject": {
+    "name": "Startup Grind",
+    "clips": [
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "밤 11시"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "코딩"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "디버깅"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "배포"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "새벽 2시"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "완료"}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "Aryan, Net Kohen 스타일 스타트업 그라인드"
+}

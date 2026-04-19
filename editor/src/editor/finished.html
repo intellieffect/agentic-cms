@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>완료 영상 — brxce editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f0f;color:#e0e0e0;font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;height:100vh;display:flex;flex-direction:row;overflow:hidden}
+.page-sidenav{width:48px;background:#0a0a0a;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0}
+.page-sidenav-btn{width:36px;height:36px;border-radius:8px;border:1px solid #2a2a2a;background:#141414;color:#888;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;text-decoration:none}
+.page-sidenav-btn:hover{background:#1e1e1e;color:#ddd;border-color:#444}
+.page-sidenav-btn.active{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
+.page-sidenav-label{font-size:7px;color:#555;text-align:center}
+.page-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:8px;padding:5px 12px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-shrink:0}
+.top h1{font-size:13px;font-weight:600;color:#888;cursor:pointer;text-decoration:none}
+.top h1:hover{color:#ccc}
+.btn{padding:4px 10px;border:1px solid #3a3a3a;background:#222;color:#ccc;border-radius:5px;cursor:pointer;font-size:10px;transition:.15s;white-space:nowrap}
+.btn:hover{background:#333;border-color:#555}
+.btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.pri:hover{background:#3b82f6}
+.btn.danger{background:#dc2626;border-color:#dc2626;color:#fff}
+.btn.danger:hover{background:#ef4444}
+.top .sep{width:1px;height:20px;background:#2a2a2a}
+
+/* Content area */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Filters bar */
+.filters{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1a1a1a;flex-shrink:0;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:4px}
+.filter-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.3px}
+.filter-select{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 6px;font-size:10px;cursor:pointer;font-family:inherit}
+.filter-select:focus{outline:none;border-color:#2563eb}
+.search-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 8px;font-size:10px;font-family:inherit;width:180px}
+.search-input:focus{outline:none;border-color:#2563eb}
+.count-label{font-size:10px;color:#555;margin-left:auto}
+
+/* Video grid */
+.grid-wrap{flex:1;overflow-y:auto;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-content:start}
+.card{background:#141414;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;cursor:pointer;transition:.15s}
+.card:hover{border-color:#333;transform:scale(1.02)}
+.card-thumb{position:relative;aspect-ratio:9/16;background:#0a0a0a;overflow:hidden}
+.card-thumb img{width:100%;height:100%;object-fit:cover}
+.card-thumb video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+.card:hover .card-thumb video{opacity:1}
+.card-thumb .duration{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.8);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-family:'SF Mono',monospace}
+.card-body{padding:8px 10px}
+.card-title{font-size:11px;color:#ccc;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.card-meta{display:flex;gap:8px;font-size:9px;color:#666}
+.card-meta span{display:flex;align-items:center;gap:2px}
+.card-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.card-tags .tag{padding:1px 6px;border-radius:8px;font-size:8px;background:#1a1a2a;color:#60a5fa;border:1px solid #2563eb33}
+.card-date{font-size:8px;color:#444;margin-top:4px}
+
+/* Loading & empty */
+.loading{display:flex;align-items:center;justify-content:center;flex:1;color:#555;font-size:12px}
+.empty{text-align:center;padding:40px;color:#444;font-size:12px}
+
+/* Modal overlay */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#141414;border:1px solid #2a2a2a;border-radius:10px;width:90vw;max-width:900px;max-height:90vh;display:flex;overflow:hidden}
+.modal-video{width:55%;flex-shrink:0;background:#000;display:flex;align-items:center;justify-content:center;position:relative}
+.modal-video video{width:100%;height:100%;object-fit:contain;max-height:90vh}
+.modal-close{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid #333;color:#ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:10}
+.modal-close:hover{background:#333}
+.modal-detail{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+
+/* Modal detail sections */
+.detail-section{display:flex;flex-direction:column;gap:6px}
+.detail-section h3{font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.detail-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:10px;color:#666}
+.detail-meta span{display:flex;align-items:center;gap:3px}
+.detail-name-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#e0e0e0;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;font-family:inherit;width:100%}
+.detail-name-input:focus{outline:none;border-color:#2563eb}
+
+/* Tag editor */
+.tag-editor{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tag-editor .tag{padding:2px 8px;border-radius:10px;font-size:10px;background:#1a1a2a;color:#60a5fa;border:1px solid #2563eb44;display:flex;align-items:center;gap:4px}
+.tag-editor .tag .remove{cursor:pointer;color:#f87171;font-size:8px;font-weight:bold}
+.tag-editor .tag .remove:hover{color:#ef4444}
+.tag-add-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:10px;padding:2px 8px;font-size:10px;width:100px;font-family:inherit}
+.tag-add-input:focus{outline:none;border-color:#2563eb;width:140px}
+
+/* Notes editor */
+.notes-area{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:6px;padding:8px;font-size:11px;font-family:inherit;resize:vertical;min-height:60px;line-height:1.5}
+.notes-area:focus{outline:none;border-color:#2563eb}
+
+/* Save bar */
+.save-bar{display:flex;gap:6px;padding-top:8px;border-top:1px solid #1e1e1e;margin-top:auto}
+
+/* Upload overlay */
+.upload-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1100;display:none;align-items:center;justify-content:center}
+.upload-overlay.show{display:flex}
+.upload-box{background:#141414;border:1px solid #2a2a2a;border-radius:10px;width:480px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.upload-box h2{font-size:14px;color:#ccc;font-weight:600}
+.drop-zone{border:2px dashed #2a2a2a;border-radius:8px;padding:40px 20px;text-align:center;color:#555;font-size:11px;cursor:pointer;transition:.15s}
+.drop-zone:hover,.drop-zone.dragover{border-color:#2563eb;color:#60a5fa;background:#0a0a2a}
+.upload-progress{display:none;flex-direction:column;gap:6px}
+.progress-bar{height:4px;background:#1e1e1e;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:#2563eb;border-radius:2px;width:0%;transition:width .3s}
+.progress-text{font-size:10px;color:#666;text-align:center}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#555}
+
+/* Responsive */
+@media(max-width:1280px){.grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr}
+  .modal{flex-direction:column;width:95vw}
+  .modal-video{width:100%;max-height:40vh}
+}
+</style>
+</head>
+<body>
+
+<!-- 사이드 네비 -->
+<div class="page-sidenav">
+  <a href="projects.html" class="page-sidenav-btn" title="프로젝트">📁</a>
+  <div class="page-sidenav-label">프로젝트</div>
+  <a href="references.html" class="page-sidenav-btn" title="레퍼런스">🎬</a>
+  <div class="page-sidenav-label">레퍼런스</div>
+  <a href="finished.html" class="page-sidenav-btn active" title="완료 영상">🎞️</a>
+  <div class="page-sidenav-label">완료 영상</div>
+</div>
+
+<div class="page-content">
+<!-- Top bar -->
+<div class="top">
+  <a href="index.html" style="text-decoration:none"><h1>✂️</h1></a>
+  <span style="font-size:12px;font-weight:600;color:#ccc">🎞️ 완료 영상</span>
+  <div class="sep"></div>
+  <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
+    <button class="btn pri" onclick="openUpload()">📤 업로드</button>
+    <div class="sep"></div>
+    <a href="index.html" class="btn" style="text-decoration:none">✂️ 에디터로 돌아가기</a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <span class="filter-label">정렬</span>
+      <select class="filter-select" id="filterSort" onchange="loadVideos()">
+        <option value="latest">최신순</option>
+        <option value="name">이름순</option>
+        <option value="size">크기순</option>
+      </select>
+    </div>
+    <div class="sep"></div>
+    <div class="filter-group">
+      <input type="text" class="search-input" id="searchInput" placeholder="이름으로 검색..." oninput="debounceSearch()">
+    </div>
+    <span class="count-label" id="countLabel"></span>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid-wrap" id="gridWrap">
+    <div class="loading">불러오는 중...</div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-video">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <video id="modalVideo" controls playsinline autoplay></video>
+    </div>
+    <div class="modal-detail" id="modalDetail"></div>
+  </div>
+</div>
+
+<!-- Upload modal -->
+<div class="upload-overlay" id="uploadOverlay" onclick="if(event.target===this)closeUpload()">
+  <div class="upload-box">
+    <h2>📤 완료 영상 업로드</h2>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      파일을 드래그하거나 클릭하여 선택
+      <br><span style="font-size:9px;color:#444;margin-top:4px;display:inline-block">MP4, MOV, WebM</span>
+    </div>
+    <input type="file" id="fileInput" accept="video/*" style="display:none" onchange="handleFileSelect(this.files)">
+    <div class="upload-progress" id="uploadProgress">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">업로드 중...</div>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="btn" onclick="closeUpload()">닫기</button>
+    </div>
+  </div>
+</div>
+</div><!-- /page-content -->
+
+<script>
+const API_BASE = window.location.origin || 'http://localhost:8092';
+function apiUrl(p){ return /^https?:\/\//.test(p)?p:`${API_BASE}${p.startsWith('/')?p:'/'+p}` }
+
+// Hover play
+function hoverPlay(card){
+  const vid=card.querySelector('.card-thumb video');
+  if(vid){vid.currentTime=0;vid.play().catch(()=>{})}
+}
+function hoverStop(card){
+  const vid=card.querySelector('.card-thumb video');
+  if(vid){vid.pause();vid.currentTime=0}
+}
+
+// State
+let videos = [];
+let currentVideo = null;
+let searchTimer = null;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadVideos();
+  setupDragDrop();
+});
+
+// ── Load videos ──
+async function loadVideos(){
+  const wrap = document.getElementById('gridWrap');
+  wrap.innerHTML = '<div class="loading">불러오는 중...</div>';
+
+  try{
+    const r = await fetch(apiUrl('/api/finished?limit=200'));
+    const d = await r.json();
+    videos = d.videos || [];
+    applyClientFilters();
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">영상을 불러올 수 없습니다</div>';
+  }
+}
+
+function applyClientFilters(){
+  let filtered = [...videos];
+
+  // Search
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  if(q){
+    filtered = filtered.filter(v => (v.name||'').toLowerCase().includes(q));
+  }
+
+  // Sort
+  const sort = document.getElementById('filterSort').value;
+  if(sort === 'latest'){
+    filtered.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+  } else if(sort === 'name'){
+    filtered.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  } else if(sort === 'size'){
+    filtered.sort((a,b) => (b.file_size||0) - (a.file_size||0));
+  }
+
+  document.getElementById('countLabel').textContent = `${filtered.length}개 영상`;
+  renderGrid(filtered);
+}
+
+function debounceSearch(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyClientFilters, 200);
+}
+
+// ── Render grid ──
+function renderGrid(list){
+  const wrap = document.getElementById('gridWrap');
+  if(!list.length){
+    wrap.innerHTML = '<div class="empty">영상이 없습니다</div>';
+    return;
+  }
+  let html = '<div class="grid">';
+  list.forEach(v => {
+    const dur = v.duration ? formatDuration(v.duration) : '';
+    const size = v.file_size ? formatSize(v.file_size) : '';
+    const thumbUrl = apiUrl(`/api/finished/${v.id}/thumbnail`);
+    const date = v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR') : '';
+    const tags = (v.tags||[]).slice(0,3);
+
+    const streamUrl = apiUrl(`/api/finished/${v.id}/stream`);
+    html += `<div class="card" onclick="openDetail('${v.id}')" onmouseenter="hoverPlay(this)" onmouseleave="hoverStop(this)">
+      <div class="card-thumb">
+        <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <video src="${streamUrl}" muted loop playsinline preload="none"></video>
+        ${dur ? `<span class="duration">${dur}</span>` : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${escHtml(v.name||'Untitled')}</div>
+        <div class="card-meta">
+          ${dur ? `<span>⏱ ${dur}</span>` : ''}
+          ${size ? `<span>📦 ${size}</span>` : ''}
+        </div>
+        ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">${escHtml(t)}</span>`).join('')}</div>` : ''}
+        ${date ? `<div class="card-date">${date}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+// ── Detail modal ──
+async function openDetail(id){
+  const modal = document.getElementById('modal');
+  const video = document.getElementById('modalVideo');
+  const detail = document.getElementById('modalDetail');
+
+  modal.classList.add('show');
+  detail.innerHTML = '<div class="loading">불러오는 중...</div>';
+  video.src = apiUrl(`/api/finished/${id}/stream`);
+
+  try{
+    const r = await fetch(apiUrl(`/api/finished/${id}`));
+    const d = await r.json();
+    currentVideo = d.video || d;
+    renderDetail();
+  }catch(e){
+    detail.innerHTML = '<div class="empty">상세 정보를 불러올 수 없습니다</div>';
+  }
+}
+
+function renderDetail(){
+  const v = currentVideo;
+  if(!v) return;
+  const detail = document.getElementById('modalDetail');
+  const date = v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) : '';
+  const res = (v.width && v.height) ? `${v.width}×${v.height}` : '';
+  const tags = v.tags || [];
+
+  detail.innerHTML = `
+    <div class="detail-section">
+      <h3>이름</h3>
+      <input class="detail-name-input" id="detailName" value="${escAttr(v.name||'')}" placeholder="영상 이름">
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-meta">
+        ${v.duration ? `<span>⏱ ${formatDuration(v.duration)}</span>` : ''}
+        ${v.file_size ? `<span>📦 ${formatSize(v.file_size)}</span>` : ''}
+        ${res ? `<span>🖥 ${res}</span>` : ''}
+        ${date ? `<span>📅 ${date}</span>` : ''}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Tags</h3>
+      <div class="tag-editor" id="tagEditor">
+        ${tags.map(t => `<span class="tag">${escHtml(t)} <span class="remove" onclick="removeTag('${escAttr(t)}')">✕</span></span>`).join('')}
+        <input class="tag-add-input" placeholder="쉼표로 구분" onkeydown="handleTagInput(event,this)">
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Notes</h3>
+      <textarea class="notes-area" id="notesArea" rows="3" placeholder="메모를 입력하세요...">${escHtml(v.notes||'')}</textarea>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn pri" onclick="saveDetail()">💾 저장</button>
+      <a class="btn" href="${apiUrl(`/api/finished/${v.id}/stream`)}" download="${escAttr(v.name||'video')}.mp4" style="text-decoration:none">📥 다운로드</a>
+      <button class="btn danger" onclick="deleteVideo()">🗑 삭제</button>
+      <button class="btn" onclick="closeModal()" style="margin-left:auto">닫기</button>
+    </div>
+  `;
+}
+
+function removeTag(tag){
+  if(!currentVideo) return;
+  currentVideo.tags = (currentVideo.tags||[]).filter(t => t !== tag);
+  renderDetail();
+}
+
+function handleTagInput(e, input){
+  if(e.key === 'Enter' || e.key === ','){
+    e.preventDefault();
+    const val = input.value.replace(/,/g,'').trim();
+    if(!val || !currentVideo) return;
+    if(!currentVideo.tags) currentVideo.tags = [];
+    const newTags = val.split(',').map(t=>t.trim()).filter(t=>t);
+    newTags.forEach(t => {
+      if(!currentVideo.tags.includes(t)) currentVideo.tags.push(t);
+    });
+    input.value = '';
+    renderDetail();
+  }
+}
+
+async function saveDetail(){
+  if(!currentVideo) return;
+  const body = {
+    name: document.getElementById('detailName').value.trim() || currentVideo.name,
+    tags: currentVideo.tags || [],
+    notes: document.getElementById('notesArea').value
+  };
+  try{
+    const r = await fetch(apiUrl(`/api/finished/${currentVideo.id}`), {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error(r.status);
+    const updated = await r.json();
+    Object.assign(currentVideo, updated);
+    renderDetail();
+    loadVideos();
+  }catch(e){
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+async function deleteVideo(){
+  if(!currentVideo) return;
+  if(!confirm(`"${currentVideo.name}" 을(를) 삭제하시겠습니까?`)) return;
+  try{
+    const r = await fetch(apiUrl(`/api/finished/${currentVideo.id}`), {method:'DELETE'});
+    if(!r.ok) throw new Error(r.status);
+    closeModal();
+    loadVideos();
+  }catch(e){
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  const video = document.getElementById('modalVideo');
+  video.pause();
+  video.src = '';
+  currentVideo = null;
+}
+
+// ── Upload ──
+function openUpload(){
+  document.getElementById('uploadOverlay').classList.add('show');
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+}
+
+function closeUpload(){
+  document.getElementById('uploadOverlay').classList.remove('show');
+}
+
+function setupDragDrop(){
+  const zone = document.getElementById('dropZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if(e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files);
+  });
+}
+
+async function handleFileSelect(files){
+  if(!files || !files.length) return;
+  const file = files[0];
+  const progress = document.getElementById('uploadProgress');
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
+
+  progress.style.display = 'flex';
+  fill.style.width = '0%';
+  text.textContent = `업로드 중: ${file.name}`;
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('name', file.name.replace(/\.[^/.]+$/, ''));
+
+  try{
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', apiUrl('/api/finished/upload'));
+
+    xhr.upload.onprogress = e => {
+      if(e.lengthComputable){
+        const pct = Math.round(e.loaded / e.total * 100);
+        fill.style.width = pct + '%';
+        text.textContent = `업로드 중: ${pct}%`;
+      }
+    };
+
+    xhr.onload = () => {
+      if(xhr.status >= 200 && xhr.status < 300){
+        fill.style.width = '100%';
+        text.textContent = '업로드 완료!';
+        setTimeout(() => {
+          closeUpload();
+          loadVideos();
+        }, 800);
+      } else {
+        text.textContent = '업로드 실패: ' + xhr.status;
+      }
+    };
+
+    xhr.onerror = () => { text.textContent = '업로드 실패'; };
+    xhr.send(fd);
+  }catch(e){
+    text.textContent = '업로드 실패: ' + e.message;
+  }
+}
+
+// ESC to close modals
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(document.getElementById('uploadOverlay').classList.contains('show')) closeUpload();
+    else closeModal();
+  }
+});
+
+// ── Helpers ──
+function formatDuration(sec){
+  if(!sec) return '';
+  const m = Math.floor(sec/60);
+  const s = Math.floor(sec%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function formatSize(bytes){
+  if(!bytes) return '';
+  if(bytes >= 1073741824) return (bytes/1073741824).toFixed(1)+' GB';
+  if(bytes >= 1048576) return (bytes/1048576).toFixed(1)+' MB';
+  if(bytes >= 1024) return (bytes/1024).toFixed(1)+' KB';
+  return bytes+' B';
+}
+
+function escHtml(s){
+  if(!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s){
+  return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+document.querySelectorAll('.page-sidenav-btn[href]').forEach(a=>{
+  a.addEventListener('click',(e)=>{
+    e.preventDefault();
+    const href=a.getAttribute('href');
+    document.querySelectorAll('video').forEach(v=>{v.pause();v.src='';v.remove()});
+    window.location.href=href;
+  });
+});
+</script>
+</body>
+</html>

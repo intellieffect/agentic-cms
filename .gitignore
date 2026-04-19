@@ -17,3 +17,44 @@ dashboard/src/app/(dashboard)/video/templates_removed_*
 .*_removed_*/
 **/*.bak_*
 **/.env.bak_*
+
+# editor/ — Python FastAPI 영상 편집 서버 (embedded)
+# editor/.gitignore 도 개별 패턴을 갖고 있지만, top-level 에서도 중복 방어.
+editor/.venv/
+editor/__pycache__/
+editor/**/__pycache__/
+editor/**/*.pyc
+editor/.next/
+editor/.next_removed*/
+editor/remotion/out/
+editor/remotion/node_modules/
+editor/remotion/public/fonts/
+editor/src/editor/_proxy/
+editor/src/editor/_proxy*/
+editor/src/editor/_render_tmp/
+editor/src/editor/_thumbs/
+editor/src/editor/_projects/
+editor/src/editor/*.mp4
+editor/src/editor/*.MP4
+editor/src/editor/*.mov
+editor/src/editor/*.MOV
+editor/src/editor/*.m4v
+editor/src/editor/*.avi
+editor/src/editor/*.mkv
+editor/src/editor/*.webm
+editor/src/editor/*.HEIC
+editor/src/editor/*.mp3
+editor/src/editor/*.wav
+editor/demix/
+editor/spec/*.npy
+editor/data/
+editor/scripts/.ig_*.json
+editor/.removed_files/
+editor/.vercel/
+editor/.DS_Store
+editor/~/
+# ↑ 마지막은 literal "~" 디렉토리 — tilde expansion 실패로 생기는 오류 경로 차단
+editor/tsconfig.tsbuildinfo
+editor/**/tsconfig.tsbuildinfo
+editor/.turbo/
+editor/coverage/

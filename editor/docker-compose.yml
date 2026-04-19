@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  editor:
+    build: .
+    ports:
+      - "${PORT:-8092}:8092"
+    env_file:
+      - .env
+    volumes:
+      - ./src/editor:/app/src/editor
+      - ./assets:/app/assets
+      - ./src/presets:/app/src/presets
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

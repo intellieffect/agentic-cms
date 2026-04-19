@@ -1,0 +1,15 @@
+node_modules
+.next
+.venv
+src/editor/_proxy
+src/editor/_proxy_hq
+src/editor/_projects
+src/editor/_thumbs
+src/editor/_finished
+src/editor/*.mp4
+src/editor/*.mov
+src/editor/*.mp3
+*.pyc
+__pycache__
+.git
+.env.local

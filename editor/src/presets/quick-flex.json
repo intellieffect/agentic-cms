@@ -1,0 +1,24 @@
+{
+  "id": "quick-flex",
+  "name": "Quick Flex",
+  "description": "4~7초 오피스 플렉스, 시네마틱 hit",
+  "traits": ["1~2 클립", "빠른 줌", "최소 자막"],
+  "clipCount": "1~2",
+  "duration": "4~7초",
+  "editStyle": "시네마틱 hit 사운드 + 빠른 줌",
+  "subtitleStyle": "한 줄 임팩트 텍스트 or 없음",
+  "bgmStyle": "cinematic bass hit / whoosh",
+  "icon": "⚡",
+  "color": "#818cf8",
+  "references": ["Hope Choi", "Trillionaire Life", "Solocreateurs"],
+  "defaultProject": {
+    "name": "Quick Flex",
+    "clips": [
+      {"source": "", "start": 0, "end": 3.5, "subtitle": "", "zoom": {"scale": 1.15, "panX": 0, "panY": 0}},
+      {"source": "", "start": 0, "end": 3.5, "subtitle": "", "zoom": {"scale": 1.1, "panX": 0, "panY": 0}}
+    ],
+    "globalSubs": [],
+    "fps": 30
+  },
+  "referenceNote": "Hope Choi, Trillionaire Life 스타일 오피스 플렉스"
+}

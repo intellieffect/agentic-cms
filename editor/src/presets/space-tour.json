@@ -1,0 +1,29 @@
+{
+  "id": "space-tour",
+  "name": "Space Tour",
+  "description": "30~45초 공간 투어, 다앵글 촬영",
+  "traits": ["8~15 클립", "다앵글", "설명 자막"],
+  "clipCount": "8~15",
+  "duration": "30~45초",
+  "editStyle": "다양한 앵글 + 부드러운 전환",
+  "subtitleStyle": "장소·설명 자막",
+  "bgmStyle": "chill / ambient",
+  "icon": "🏠",
+  "color": "#10b981",
+  "references": ["Toronto", "JAYDEN", "Net Kohen"],
+  "defaultProject": {
+    "name": "Space Tour",
+    "clips": [
+      {"source": "", "start": 0, "end": 3, "subtitle": "입구"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "거실"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "작업실"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "장비"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "데스크"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "조명"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "수납"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "전경"}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "Toronto, JAYDEN 스타일 공간 투어"
+}
