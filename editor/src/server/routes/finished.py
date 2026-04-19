@@ -1,6 +1,7 @@
 """Finished videos routes — CRUD + upload + thumbnail.
 Files are uploaded to Supabase Storage (bucket: finished).
 """
+import logging
 import os
 import json
 import subprocess
@@ -15,6 +16,8 @@ from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from src.server.table_config import TABLE_FINISHED
 from src.server.storage import get_storage, STORAGE_MODE
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["finished"])
 
@@ -57,7 +60,9 @@ def _probe(path):
                 height = s.get("height", 0)
                 break
         return duration, size, width, height
-    except Exception:
+    except Exception as e:
+        # ffprobe 실패 — 기본값 (0) 반환해서 save 흐름 중단 안 함. probe 자체는 보조 기능.
+        logger.debug("ffprobe failed for %s: %s", path, e)
         return 0, 0, 0, 0
 
 
@@ -69,8 +74,9 @@ def _make_thumb(video_path, thumb_path):
              "-vf", "scale=240:-2", "-q:v", "6", str(thumb_path)],
             capture_output=True, timeout=10,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        # 썸네일 실패는 본 영상 save 를 막지 않는다 (보조 기능).
+        logger.debug("ffmpeg thumbnail gen failed for %s: %s", video_path, e)
 
 
 @router.get("/api/finished")
@@ -101,7 +107,9 @@ async def stream_finished(video_id: str, request: Request):
     sb = _get_sb()
     try:
         resp = sb.table(TABLE_FINISHED).select("file_path,file_url,name").eq("id", video_id).maybe_single().execute()
-    except Exception:
+    except Exception as e:
+        # DB 실패 — "not found" 로 클라이언트엔 동일하게 응답하되, 서버 로그에는 남긴다.
+        logger.warning("stream_finished DB lookup failed for %s: %s", video_id, e)
         return JSONResponse({"error": "not found"}, status_code=404)
     if not resp or not resp.data:
         return JSONResponse({"error": "not found"}, status_code=404)
@@ -151,7 +159,8 @@ async def download_finished_named(video_id: str, filename: str):
     sb = _get_sb()
     try:
         resp = sb.table(TABLE_FINISHED).select("file_path,file_url").eq("id", video_id).maybe_single().execute()
-    except Exception:
+    except Exception as e:
+        logger.warning("download_finished DB lookup failed for %s: %s", video_id, e)
         return JSONResponse({"error": "not found"}, status_code=404)
     if not resp or not resp.data:
         return JSONResponse({"error": "not found"}, status_code=404)
@@ -262,14 +271,15 @@ async def upload_finished(
     }
     
     sb.table(TABLE_FINISHED).insert(row).execute()
-    
+
     # 로컬 임시 파일 정리 (Storage에 올렸으므로)
     try:
         dest.unlink(missing_ok=True)
         thumb_path.unlink(missing_ok=True)
-    except Exception:
-        pass
-    
+    except Exception as e:
+        # 정리 실패해도 이미 DB/Storage 에는 올라가 있어 영향 없음 — 디버그만.
+        logger.debug("Temp file cleanup failed for %s: %s", vid, e)
+
     return {"id": vid, "name": row["name"], "file_url": file_url}
 
 
@@ -333,8 +343,8 @@ async def save_from_render(request: Request):
         try:
             dest.unlink(missing_ok=True)
             thumb_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Temp file cleanup failed for %s: %s", vid, e)
     return {"id": vid, "name": name}
 
 
@@ -375,7 +385,7 @@ async def delete_finished(video_id: str):
                 if p and not p.startswith("http") and Path(p).exists():
                     try:
                         Path(p).unlink()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Local file unlink failed for %s: %s", p, e)
         sb.table(TABLE_FINISHED).delete().eq("id", video_id).execute()
     return {"ok": True}

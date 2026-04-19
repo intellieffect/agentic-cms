@@ -1,5 +1,6 @@
 """Project CRUD routes — replaces both Next.js API and legacy local JSON."""
 import json
+import logging
 import os
 import re
 import subprocess
@@ -9,6 +10,8 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -57,7 +60,10 @@ def _try_supabase():
             "to_summary": row_to_summary,
             "to_project": row_to_project,
         }
-    except Exception:
+    except Exception as e:
+        # Import failure (e.g., supabase package missing) — legitimate skip,
+        # editor 는 local JSON 모드로 fallback. DEBUG 레벨로만 기록.
+        logger.debug("Supabase helpers unavailable: %s", e)
         return None
 
 
@@ -85,8 +91,11 @@ async def project_list(status: str | None = None, limit: int = 50, offset: int =
                     "locked": pd.get("locked", False) if isinstance(pd, dict) else False,
                 })
                 db_ids.add(row["id"])
-        except Exception:
-            pass
+        except Exception as e:
+            # DB list 실패 — 테이블 이름 오염, RLS, 네트워크 등 원인 가능.
+            # 2026-04-18 TABLE_PROJECTS 드리프트 버그가 silent fail 로 2일 숨겨졌던
+            # 이유이므로 이제는 반드시 WARNING 로 기록한다.
+            logger.warning("project_list DB lookup failed (falling back to local): %s", e)
 
     # Merge local-only projects
     PROJECTS_DIR.mkdir(exist_ok=True)
@@ -108,8 +117,9 @@ async def project_list(status: str | None = None, limit: int = 50, offset: int =
                 "sources": data.get("sources", []),
                 "source": "local",
             })
-        except Exception:
-            pass
+        except Exception as e:
+            # 개별 JSON 파일 parsing 실패 — 파일 1개 깨져도 목록 전체는 계속.
+            logger.warning("Failed to parse local project file %s: %s", f, e)
 
     return {"projects": projects}
 
@@ -129,8 +139,9 @@ async def project_create(request: Request):
             row = db["create"](body)
             if row:
                 return JSONResponse({"project": db["to_project"](row)}, status_code=201)
-        except Exception:
-            pass
+            logger.warning("project_create DB insert returned no row — falling back to local save")
+        except Exception as e:
+            logger.warning("project_create DB insert raised (falling back to local): %s", e)
 
     # Fallback: local save
     pid = f"project_{int(time.time() * 1000)}"
@@ -152,8 +163,8 @@ async def project_get(project_id: str):
             row = db["get"](project_id)
             if row:
                 return {"project": db["to_project"](row)}
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("project_get DB lookup failed for %s (trying local): %s", project_id, e)
 
     fpath = _safe_project_path(project_id)
     if fpath and fpath.exists():
@@ -173,8 +184,8 @@ def _is_locked(project_id: str) -> bool:
             if row:
                 pd = row.get("project_data") or {}
                 return pd.get("locked", False) if isinstance(pd, dict) else False
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("_is_locked DB lookup failed for %s: %s", project_id, e)
     return False
 
 
@@ -193,8 +204,9 @@ async def project_update(project_id: str, request: Request):
             row = db["update"](project_id, body)
             if row:
                 return {"project": db["to_project"](row)}
-        except Exception:
-            pass
+            logger.warning("project_update DB update returned no row for %s (falling back to local)", project_id)
+        except Exception as e:
+            logger.warning("project_update DB update failed for %s (falling back to local): %s", project_id, e)
 
     # Local fallback
     fpath = _safe_project_path(project_id)
@@ -217,8 +229,8 @@ async def project_delete(project_id: str):
     if db and _is_uuid(project_id):
         try:
             db["delete"](project_id)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("project_delete DB soft-delete failed for %s (continuing to local unlink): %s", project_id, e)
 
     fpath = _safe_project_path(project_id)
     if fpath and fpath.exists():
@@ -264,8 +276,9 @@ async def project_save(request: Request):
                         dur = float(probe.get("format", {}).get("duration", 0))
                         if dur > 0:
                             bgm["totalDuration"] = round(dur, 3)
-                except Exception:
-                    pass
+                except Exception as e:
+                    # ffprobe 실패 — duration 보조 계산만 놓치는 수준, save 자체는 계속.
+                    logger.debug("ffprobe failed for BGM %s: %s", bgm.get("source"), e)
 
     # DB save
     db = _try_supabase()
@@ -289,8 +302,18 @@ async def project_save(request: Request):
                 row = db["create"](db_payload)
             if row:
                 body["dbId"] = row["id"]
-        except Exception:
-            pass
+            else:
+                # 이게 바로 TABLE_PROJECTS 드리프트 버그가 숨어 있던 지점 —
+                # row 가 None 이면 save 실패한 것이므로 경고 로그 필수.
+                logger.warning(
+                    "project_save DB %s returned no row (pid=%s, dbId=%s) — saved to local only",
+                    "update" if db_id else "insert", pid, db_id,
+                )
+        except Exception as e:
+            logger.warning(
+                "project_save DB operation raised (pid=%s, dbId=%s) — falling back to local only: %s",
+                pid, db_id, e,
+            )
 
     fpath.parent.mkdir(exist_ok=True)
     fpath.write_text(json.dumps(body, ensure_ascii=False, indent=2))
