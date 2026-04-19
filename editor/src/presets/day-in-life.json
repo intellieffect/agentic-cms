@@ -1,0 +1,29 @@
+{
+  "id": "day-in-life",
+  "name": "Day-in-Life Montage",
+  "description": "15~30초 일상 몽타주, 빠른 컷",
+  "traits": ["6~10 클립", "빠른 컷", "비트 싱크"],
+  "clipCount": "6~10",
+  "duration": "15~30초",
+  "editStyle": "빠른 컷 + 비트 싱크",
+  "subtitleStyle": "시간대·장소 한 줄",
+  "bgmStyle": "upbeat / trendy beat",
+  "icon": "🎬",
+  "color": "#3b82f6",
+  "references": ["Dovydas", "Anhphu", "牛马"],
+  "defaultProject": {
+    "name": "Day-in-Life Montage",
+    "clips": [
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "기상"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "커피"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "출근"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "코딩"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "회의"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "점심"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "딥워크"},
+      {"source": "", "start": 0, "end": 2.5, "subtitle": "퇴근"}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "Dovydas, Anhphu 스타일 일상 몽타주"
+}

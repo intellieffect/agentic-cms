@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>레퍼런스 관리 — brxce editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f0f;color:#e0e0e0;font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;height:100vh;display:flex;flex-direction:row;overflow:hidden}
+.page-sidenav{width:48px;background:#0a0a0a;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0}
+.page-sidenav-btn{width:36px;height:36px;border-radius:8px;border:1px solid #2a2a2a;background:#141414;color:#888;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;text-decoration:none}
+.page-sidenav-btn:hover{background:#1e1e1e;color:#ddd;border-color:#444}
+.page-sidenav-btn.active{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
+.page-sidenav-label{font-size:7px;color:#555;text-align:center}
+.page-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:8px;padding:5px 12px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-shrink:0}
+.top h1{font-size:13px;font-weight:600;color:#888;cursor:pointer;text-decoration:none}
+.top h1:hover{color:#ccc}
+.btn{padding:4px 10px;border:1px solid #3a3a3a;background:#222;color:#ccc;border-radius:5px;cursor:pointer;font-size:10px;transition:.15s;white-space:nowrap}
+.btn:hover{background:#333;border-color:#555}
+.btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.pri:hover{background:#3b82f6}
+.btn.on{background:#374151;border-color:#60a5fa;color:#60a5fa}
+.top .sep{width:1px;height:20px;background:#2a2a2a}
+
+/* Layout */
+.main{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;background:#0a0a0a;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sidebar-header{padding:10px 12px 8px;font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1a1a1a}
+.account-list{flex:1;overflow-y:auto;padding:4px}
+.account-item{padding:6px 10px;border-radius:5px;cursor:pointer;font-size:11px;color:#999;display:flex;align-items:center;gap:8px;transition:.1s}
+.account-item:hover{background:#1a1a1a;color:#ccc}
+.account-item.active{background:#1a1a2a;color:#60a5fa;border:1px solid #2563eb33}
+.account-item .avatar{width:24px;height:24px;border-radius:50%;background:#222;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;overflow:hidden}
+.account-item .avatar img{width:100%;height:100%;object-fit:cover}
+.account-item .acct-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account-item .acct-count{font-size:9px;color:#555;flex-shrink:0}
+
+/* Content area */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Filters bar */
+.filters{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1a1a1a;flex-shrink:0;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:4px}
+.filter-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.3px}
+.filter-select{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 6px;font-size:10px;cursor:pointer;font-family:inherit}
+.filter-select:focus{outline:none;border-color:#2563eb}
+.tag-filter{display:flex;gap:3px;flex-wrap:wrap}
+.tag-chip{padding:2px 8px;border-radius:10px;font-size:9px;cursor:pointer;border:1px solid #2a2a2a;background:#1a1a1a;color:#888;transition:.1s}
+.tag-chip:hover{border-color:#555;color:#ccc}
+.tag-chip.active{background:#2563eb22;border-color:#2563eb;color:#60a5fa}
+.search-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 8px;font-size:10px;font-family:inherit;width:180px}
+.search-input:focus{outline:none;border-color:#2563eb}
+.import-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 8px;font-size:10px;font-family:inherit;width:260px}
+.import-input:focus{outline:none;border-color:#2563eb}
+
+/* Video grid */
+.grid-wrap{flex:1;overflow-y:auto;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-content:start}
+.card{background:#141414;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;cursor:pointer;transition:.15s}
+.card:hover{border-color:#333;transform:translateY(-1px)}
+.card-thumb{position:relative;aspect-ratio:9/16;background:#0a0a0a;overflow:hidden}
+.card-thumb img{width:100%;height:100%;object-fit:cover}
+.card-thumb video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+.card:hover .card-thumb video{opacity:1}
+.card-thumb .duration{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.8);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-family:'SF Mono',monospace}
+.card-thumb .platform-badge{position:absolute;top:4px;left:4px;font-size:10px}
+.card-body{padding:8px 10px}
+.card-title{font-size:11px;color:#ccc;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;min-height:15px}
+.card-stats{display:flex;gap:8px;font-size:9px;color:#666;margin-bottom:4px}
+.card-stats span{display:flex;align-items:center;gap:2px}
+.card-tags{display:flex;gap:3px;flex-wrap:wrap}
+.card-tags .tag{padding:1px 6px;border-radius:8px;font-size:8px;background:#1a1a2a;color:#60a5fa;border:1px solid #2563eb33}
+.card-date{font-size:8px;color:#444;margin-top:4px}
+
+/* Loading & empty */
+.loading{display:flex;align-items:center;justify-content:center;flex:1;color:#555;font-size:12px}
+.empty{text-align:center;padding:40px;color:#444;font-size:12px}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-top:1px solid #1a1a1a;flex-shrink:0}
+.pagination .btn{font-size:9px}
+.pagination .page-info{font-size:10px;color:#555}
+
+/* Modal overlay */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#141414;border:1px solid #2a2a2a;border-radius:10px;width:90vw;max-width:900px;max-height:90vh;display:flex;overflow:hidden}
+.modal-video{width:360px;flex-shrink:0;background:#000;display:flex;align-items:center;justify-content:center;position:relative}
+.modal-video video{width:100%;height:100%;object-fit:contain;max-height:90vh}
+.modal-detail{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.modal-close{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid #333;color:#ccc;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:10}
+.modal-close:hover{background:#333}
+
+/* Modal detail sections */
+.detail-section{display:flex;flex-direction:column;gap:6px}
+.detail-section h3{font-size:11px;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.detail-caption{font-size:12px;color:#ccc;line-height:1.5;white-space:pre-wrap;max-height:80px;overflow-y:auto}
+.detail-stats{display:flex;gap:16px;font-size:11px;color:#999}
+.detail-stats .stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.detail-stats .stat-val{font-size:16px;font-weight:600;color:#e0e0e0}
+.detail-stats .stat-label{font-size:9px;color:#555}
+.detail-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:10px;color:#666}
+.detail-meta span{display:flex;align-items:center;gap:3px}
+
+/* Tag editor */
+.tag-editor{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tag-editor .tag{padding:2px 8px;border-radius:10px;font-size:10px;background:#1a1a2a;color:#60a5fa;border:1px solid #2563eb44;display:flex;align-items:center;gap:4px}
+.tag-editor .tag .remove{cursor:pointer;color:#f87171;font-size:8px;font-weight:bold}
+.tag-editor .tag .remove:hover{color:#ef4444}
+.tag-add-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:10px;padding:2px 8px;font-size:10px;width:80px;font-family:inherit}
+.tag-add-input:focus{outline:none;border-color:#2563eb;width:120px}
+
+/* Notes editor */
+.notes-area{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:6px;padding:8px;font-size:11px;font-family:inherit;resize:vertical;min-height:60px;line-height:1.5}
+.notes-area:focus{outline:none;border-color:#2563eb}
+
+/* Save bar */
+.save-bar{display:flex;gap:6px;padding-top:8px;border-top:1px solid #1e1e1e;margin-top:auto}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#555}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .modal{flex-direction:column;width:95vw}
+  .modal-video{width:100%;max-height:40vh}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<!-- 사이드 네비 -->
+<div class="page-sidenav">
+  <a href="projects.html" class="page-sidenav-btn" title="프로젝트">📁</a>
+  <div class="page-sidenav-label">프로젝트</div>
+  <a href="references.html" class="page-sidenav-btn active" title="레퍼런스">🎬</a>
+  <div class="page-sidenav-label">레퍼런스</div>
+  <a href="finished.html" class="page-sidenav-btn" title="완료 영상">🎞️</a>
+  <div class="page-sidenav-label">완료 영상</div>
+</div>
+
+<div class="page-content">
+<!-- Top bar -->
+<div class="top">
+  <a href="index.html" style="text-decoration:none"><h1>✂️</h1></a>
+  <span style="font-size:12px;font-weight:600;color:#ccc">레퍼런스</span>
+  <div class="sep"></div>
+  <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
+    <input type="text" class="import-input" id="importUrl" placeholder="영상 URL 붙여넣기 (Instagram, YouTube, TikTok...)">
+    <button class="btn pri" onclick="importVideo()">임포트</button>
+    <div class="sep"></div>
+    <a href="index.html" class="btn" style="text-decoration:none">✂️ 에디터로 돌아가기</a>
+  </div>
+</div>
+
+<!-- Main layout -->
+<div class="main">
+  <!-- Sidebar: accounts -->
+  <div class="sidebar">
+    <div class="sidebar-header">계정</div>
+    <div class="account-list" id="accountList">
+      <div class="loading">불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-label">플랫폼</span>
+        <select class="filter-select" id="filterPlatform" onchange="applyFilters()">
+          <option value="">전체</option>
+          <option value="instagram">Instagram</option>
+          <option value="youtube">YouTube</option>
+          <option value="tiktok">TikTok</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">정렬</span>
+        <select class="filter-select" id="filterSort" onchange="applyFilters()">
+          <option value="latest">최신순</option>
+          <option value="views">조회순</option>
+          <option value="likes">좋아요순</option>
+          <option value="comments">댓글순</option>
+        </select>
+      </div>
+      <div class="sep"></div>
+      <div class="filter-group">
+        <span class="filter-label">스타일</span>
+        <div class="tag-filter" id="styleFilter"></div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-wrap" id="gridWrap">
+      <div class="loading">불러오는 중...</div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination" style="display:none">
+      <button class="btn" id="prevBtn" onclick="changePage(-1)">← 이전</button>
+      <span class="page-info" id="pageInfo">1 / 1</span>
+      <button class="btn" id="nextBtn" onclick="changePage(1)">다음 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-video">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <video id="modalVideo" controls playsinline></video>
+    </div>
+    <div class="modal-detail" id="modalDetail"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin || 'http://localhost:8092';
+function apiUrl(p){ return /^https?:\/\//.test(p)?p:`${API_BASE}${p.startsWith('/')?p:'/'+p}` }
+
+// Hover play
+function hoverPlay(card){
+  const vid=card.querySelector('.card-thumb video');
+  if(vid){vid.currentTime=0;vid.play().catch(()=>{})}
+}
+function hoverStop(card){
+  const vid=card.querySelector('.card-thumb video');
+  if(vid){vid.pause();vid.currentTime=0}
+}
+
+// State
+let accounts = [];
+let videos = [];
+let totalVideos = 0;
+let currentAccount = '';
+let currentPage = 0;
+const PAGE_SIZE = 50;
+let activeStyles = new Set();
+let allStyleTags = ['vlog','cinematic','montage','tutorial','aesthetic','minimal','fast-cut','slow-motion','transition','storytelling'];
+let currentVideoData = null;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadAccounts();
+  buildStyleFilter();
+  loadVideos();
+});
+
+// ── Accounts ──
+async function loadAccounts(){
+  try{
+    const r = await fetch(apiUrl('/api/references/accounts'));
+    const d = await r.json();
+    accounts = d.accounts || [];
+    renderAccounts();
+  }catch(e){
+    document.getElementById('accountList').innerHTML = '<div class="empty">계정 로드 실패</div>';
+  }
+}
+
+function renderAccounts(){
+  const el = document.getElementById('accountList');
+  let html = `<div class="account-item ${!currentAccount?'active':''}" onclick="selectAccount('')">
+    <div class="avatar">🌐</div><span class="acct-name">전체</span>
+    <span class="acct-count">${totalVideos||''}</span>
+  </div>`;
+  accounts.forEach(a => {
+    const name = a.username || a.account_name || a.id;
+    const platform = a.platform || '';
+    const pIcon = platform === 'instagram' ? '📷' : platform === 'youtube' ? '▶️' : platform === 'tiktok' ? '🎵' : '📱';
+    const avatarHtml = a.profile_pic_url
+      ? `<img src="${a.profile_pic_url}" alt="">`
+      : pIcon;
+    html += `<div class="account-item ${currentAccount===a.id?'active':''}" onclick="selectAccount('${a.id}')">
+      <div class="avatar">${avatarHtml}</div>
+      <span class="acct-name">${escHtml(name)}</span>
+      <span class="acct-count">${a.video_count||''}</span>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function selectAccount(id){
+  currentAccount = id;
+  currentPage = 0;
+  renderAccounts();
+  loadVideos();
+}
+
+// ── Style filter ──
+function buildStyleFilter(){
+  const el = document.getElementById('styleFilter');
+  el.innerHTML = allStyleTags.map(t =>
+    `<span class="tag-chip ${activeStyles.has(t)?'active':''}" onclick="toggleStyle('${t}')">${t}</span>`
+  ).join('');
+}
+
+function toggleStyle(tag){
+  if(activeStyles.has(tag)) activeStyles.delete(tag);
+  else activeStyles.add(tag);
+  buildStyleFilter();
+  currentPage = 0;
+  loadVideos();
+}
+
+// ── Load videos ──
+async function loadVideos(){
+  const wrap = document.getElementById('gridWrap');
+  wrap.innerHTML = '<div class="loading">불러오는 중...</div>';
+
+  const params = new URLSearchParams();
+  if(currentAccount) params.set('account', currentAccount);
+  const platform = document.getElementById('filterPlatform').value;
+  if(platform) params.set('platform', platform);
+  const sort = document.getElementById('filterSort').value;
+  params.set('sort', sort);
+  if(activeStyles.size > 0) params.set('style', [...activeStyles][0]);
+  params.set('limit', PAGE_SIZE);
+  params.set('offset', currentPage * PAGE_SIZE);
+
+  try{
+    const r = await fetch(apiUrl(`/api/references/videos?${params}`));
+    const d = await r.json();
+    videos = d.videos || [];
+    totalVideos = d.total || videos.length;
+    renderGrid();
+    renderPagination();
+    renderAccounts();
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">영상을 불러올 수 없습니다</div>';
+  }
+}
+
+function applyFilters(){
+  currentPage = 0;
+  loadVideos();
+}
+
+// ── Render grid ──
+function renderGrid(){
+  const wrap = document.getElementById('gridWrap');
+  if(!videos.length){
+    wrap.innerHTML = '<div class="empty">영상이 없습니다</div>';
+    return;
+  }
+  let html = '<div class="grid">';
+  videos.forEach(v => {
+    const title = (v.caption||'').split('\n')[0].slice(0,60) || '제목 없음';
+    const dur = v.duration_sec ? formatDuration(v.duration_sec) : '';
+    const pIcon = v.platform === 'instagram' ? '📷' : v.platform === 'youtube' ? '▶️' : v.platform === 'tiktok' ? '🎵' : '';
+    const tags = (v.style_tags||[]).slice(0,3);
+    const thumbUrl = apiUrl(`/api/references/videos/${v.id}/thumbnail`);
+    const date = v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR') : '';
+
+    const streamUrl = v.video_url || apiUrl(`/api/references/videos/${v.id}/stream`);
+    html += `<div class="card" onclick="openDetail('${v.id}')" onmouseenter="hoverPlay(this)" onmouseleave="hoverStop(this)">
+      <div class="card-thumb">
+        <img src="${thumbUrl}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <video src="${streamUrl}" muted loop playsinline preload="none"></video>
+        ${dur ? `<span class="duration">${dur}</span>` : ''}
+        ${pIcon ? `<span class="platform-badge">${pIcon}</span>` : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${escHtml(title)}</div>
+        <div class="card-stats">
+          ${v.like_count != null ? `<span>❤️ ${fmtNum(v.like_count)}</span>` : ''}
+          ${v.comment_count != null ? `<span>💬 ${fmtNum(v.comment_count)}</span>` : ''}
+          ${v.view_count != null ? `<span>👁 ${fmtNum(v.view_count)}</span>` : ''}
+        </div>
+        ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="tag">${escHtml(t)}</span>`).join('')}</div>` : ''}
+        ${date ? `<div class="card-date">${date}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+// ── Pagination ──
+function renderPagination(){
+  const totalPages = Math.ceil(totalVideos / PAGE_SIZE);
+  const el = document.getElementById('pagination');
+  if(totalPages <= 1){ el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  document.getElementById('pageInfo').textContent = `${currentPage+1} / ${totalPages}`;
+  document.getElementById('prevBtn').disabled = currentPage === 0;
+  document.getElementById('nextBtn').disabled = currentPage >= totalPages - 1;
+}
+
+function changePage(delta){
+  const totalPages = Math.ceil(totalVideos / PAGE_SIZE);
+  const next = currentPage + delta;
+  if(next < 0 || next >= totalPages) return;
+  currentPage = next;
+  loadVideos();
+  document.getElementById('gridWrap').scrollTop = 0;
+}
+
+// ── Detail modal ──
+async function openDetail(id){
+  const modal = document.getElementById('modal');
+  const video = document.getElementById('modalVideo');
+  const detail = document.getElementById('modalDetail');
+
+  modal.classList.add('show');
+  detail.innerHTML = '<div class="loading">불러오는 중...</div>';
+  video.src = apiUrl(`/api/references/videos/${id}/stream`);
+
+  try{
+    const r = await fetch(apiUrl(`/api/references/videos/${id}`));
+    currentVideoData = await r.json();
+    renderDetail();
+  }catch(e){
+    detail.innerHTML = '<div class="empty">상세 정보를 불러올 수 없습니다</div>';
+  }
+}
+
+function renderDetail(){
+  const v = currentVideoData;
+  if(!v) return;
+  const detail = document.getElementById('modalDetail');
+  const caption = v.caption || '';
+  const date = v.created_at ? new Date(v.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) : '';
+  const accountName = v.account_name || v.username || '';
+
+  detail.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-caption">${escHtml(caption)}</div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-stats">
+        <div class="stat"><span class="stat-val">${fmtNum(v.like_count||0)}</span><span class="stat-label">좋아요</span></div>
+        <div class="stat"><span class="stat-val">${fmtNum(v.comment_count||0)}</span><span class="stat-label">댓글</span></div>
+        <div class="stat"><span class="stat-val">${fmtNum(v.view_count||0)}</span><span class="stat-label">조회수</span></div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-meta">
+        ${accountName ? `<span>👤 ${escHtml(accountName)}</span>` : ''}
+        ${v.platform ? `<span>📱 ${v.platform}</span>` : ''}
+        ${date ? `<span>📅 ${date}</span>` : ''}
+        ${v.duration_sec ? `<span>⏱ ${formatDuration(v.duration_sec)}</span>` : ''}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Style Tags</h3>
+      <div class="tag-editor" id="styleTagEditor">
+        ${(v.style_tags||[]).map(t => `<span class="tag">${escHtml(t)} <span class="remove" onclick="removeTag('style_tags','${escAttr(t)}')">✕</span></span>`).join('')}
+        <input class="tag-add-input" placeholder="+ 추가" onkeydown="if(event.key==='Enter'){addTag('style_tags',this);event.preventDefault()}">
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Transition Tags</h3>
+      <div class="tag-editor" id="transitionTagEditor">
+        ${(v.transition_tags||[]).map(t => `<span class="tag">${escHtml(t)} <span class="remove" onclick="removeTag('transition_tags','${escAttr(t)}')">✕</span></span>`).join('')}
+        <input class="tag-add-input" placeholder="+ 추가" onkeydown="if(event.key==='Enter'){addTag('transition_tags',this);event.preventDefault()}">
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Music Tags</h3>
+      <div class="tag-editor" id="musicTagEditor">
+        ${(v.music_tags||[]).map(t => `<span class="tag">${escHtml(t)} <span class="remove" onclick="removeTag('music_tags','${escAttr(t)}')">✕</span></span>`).join('')}
+        <input class="tag-add-input" placeholder="+ 추가" onkeydown="if(event.key==='Enter'){addTag('music_tags',this);event.preventDefault()}">
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Notes</h3>
+      <textarea class="notes-area" id="notesArea" rows="3" placeholder="메모를 입력하세요...">${escHtml(v.notes||'')}</textarea>
+    </div>
+
+    <div class="save-bar">
+      <button class="btn pri" onclick="saveDetail()">💾 저장</button>
+      <button class="btn" style="background:#059669;border-color:#059669;color:#fff" onclick="createProjectFromRef()">🚀 프로젝트 생성</button>
+      <button class="btn" onclick="closeModal()">닫기</button>
+    </div>
+  `;
+}
+
+function removeTag(field, tag){
+  if(!currentVideoData) return;
+  const arr = currentVideoData[field] || [];
+  currentVideoData[field] = arr.filter(t => t !== tag);
+  renderDetail();
+}
+
+function addTag(field, input){
+  const val = input.value.trim();
+  if(!val || !currentVideoData) return;
+  if(!currentVideoData[field]) currentVideoData[field] = [];
+  if(!currentVideoData[field].includes(val)){
+    currentVideoData[field].push(val);
+  }
+  input.value = '';
+  renderDetail();
+}
+
+async function saveDetail(){
+  if(!currentVideoData) return;
+  const body = {
+    style_tags: currentVideoData.style_tags || [],
+    transition_tags: currentVideoData.transition_tags || [],
+    music_tags: currentVideoData.music_tags || [],
+    notes: document.getElementById('notesArea').value
+  };
+  try{
+    const r = await fetch(apiUrl(`/api/references/videos/${currentVideoData.id}`), {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error(r.status);
+    const updated = await r.json();
+    Object.assign(currentVideoData, updated);
+    renderDetail();
+    // Update grid card if visible
+    loadVideos();
+  }catch(e){
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  const video = document.getElementById('modalVideo');
+  video.pause();
+  video.src = '';
+  currentVideoData = null;
+}
+
+// ── Import ──
+async function importVideo(){
+  const input = document.getElementById('importUrl');
+  const url = input.value.trim();
+  if(!url){ input.focus(); return; }
+  try{
+    const r = await fetch(apiUrl('/api/references/import'), {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({url})
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || r.status);
+    input.value = '';
+    loadVideos();
+  }catch(e){
+    alert('임포트 실패: ' + e.message);
+  }
+}
+
+// Enter key for import
+document.getElementById('importUrl').addEventListener('keydown', e => {
+  if(e.key === 'Enter') importVideo();
+});
+
+// ESC to close modal
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeModal();
+});
+
+// ── Create project from reference ──
+function createProjectFromRef(){
+  if(!currentVideoData) return;
+  const v = currentVideoData;
+  const refData = {
+    referenceId: v.id,
+    accountName: v.account_name || v.username || '',
+    styleTags: v.style_tags || [],
+    caption: v.caption || ''
+  };
+  localStorage.setItem('brxce-ref-project', JSON.stringify(refData));
+  window.location.href = 'index.html';
+}
+
+// ── Helpers ──
+function formatDuration(sec){
+  if(!sec) return '';
+  const m = Math.floor(sec/60);
+  const s = Math.floor(sec%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function fmtNum(n){
+  if(n == null) return '0';
+  if(n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if(n >= 1000) return (n/1000).toFixed(1)+'K';
+  return String(n);
+}
+
+function escHtml(s){
+  if(!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s){
+  return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+// 사이드 네비 클릭 시: 모든 비디오 즉시 파괴 후 이동 (전환 속도 개선)
+document.querySelectorAll('.page-sidenav-btn[href]').forEach(a=>{
+  a.addEventListener('click',(e)=>{
+    e.preventDefault();
+    const href=a.getAttribute('href');
+    // 모든 video 태그 즉시 파괴
+    document.querySelectorAll('video').forEach(v=>{v.pause();v.src='';v.remove()});
+    // 즉시 이동
+    window.location.href=href;
+  });
+});
+</script>
+</div><!-- /page-content -->
+</body>
+</html>

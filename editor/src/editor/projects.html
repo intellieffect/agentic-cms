@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로젝트 — brxce editor</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0f0f0f;color:#e0e0e0;font-family:-apple-system,'Apple SD Gothic Neo',sans-serif;height:100vh;display:flex;flex-direction:row;overflow:hidden}
+.page-sidenav{width:48px;background:#0a0a0a;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0}
+.page-sidenav-btn{width:36px;height:36px;border-radius:8px;border:1px solid #2a2a2a;background:#141414;color:#888;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;text-decoration:none}
+.page-sidenav-btn:hover{background:#1e1e1e;color:#ddd;border-color:#444}
+.page-sidenav-btn.active{background:#1e3a5f;color:#60a5fa;border-color:#2563eb}
+.page-sidenav-label{font-size:7px;color:#555;text-align:center}
+.page-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:8px;padding:5px 12px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;flex-shrink:0}
+.top h1{font-size:13px;font-weight:600;color:#888;cursor:pointer;text-decoration:none}
+.top h1:hover{color:#ccc}
+.btn{padding:4px 10px;border:1px solid #3a3a3a;background:#222;color:#ccc;border-radius:5px;cursor:pointer;font-size:10px;transition:.15s;white-space:nowrap}
+.btn:hover{background:#333;border-color:#555}
+.btn.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+.btn.pri:hover{background:#3b82f6}
+.top .sep{width:1px;height:20px;background:#2a2a2a}
+
+/* Content area */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Filters bar */
+.filters{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1a1a1a;flex-shrink:0;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:4px}
+.filter-label{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:.3px}
+.filter-select{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 6px;font-size:10px;cursor:pointer;font-family:inherit}
+.filter-select:focus{outline:none;border-color:#2563eb}
+.search-input{background:#1a1a1a;border:1px solid #2a2a2a;color:#ccc;border-radius:4px;padding:3px 8px;font-size:10px;font-family:inherit;width:180px}
+.search-input:focus{outline:none;border-color:#2563eb}
+.count-label{font-size:10px;color:#555;margin-left:auto}
+
+/* Project list */
+.grid-wrap{flex:1;overflow-y:auto;padding:12px}
+.grid{display:flex;flex-direction:column;gap:4px}
+.card{background:#141414;border:1px solid #1e1e1e;border-radius:6px;cursor:pointer;transition:.15s;padding:10px 16px;display:flex;align-items:center;gap:16px}
+.card:hover{border-color:#333;background:#1a1a1a}
+.card-icon{font-size:20px;flex-shrink:0}
+.card-title{font-size:12px;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;flex:1;min-width:0}
+.card-meta{display:flex;gap:10px;font-size:10px;color:#666;flex-shrink:0}
+.card-meta span{display:flex;align-items:center;gap:2px}
+.card-sources{font-size:9px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;flex-shrink:0}
+.card-date{font-size:9px;color:#444;flex-shrink:0}
+.card-badge{display:inline-block;padding:1px 6px;border-radius:8px;font-size:8px;flex-shrink:0}
+.card-badge.db{background:#1a1a2a;color:#60a5fa;border:1px solid #2563eb33}
+.card-badge.local{background:#1a2a1a;color:#4ade80;border:1px solid #22c55e33}
+
+/* New project bar */
+.new-project-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#1a1a1a;border-top:1px solid #2a2a2a;flex-shrink:0}
+.new-project-input{flex:1;background:#141414;border:1px solid #2a2a2a;color:#e0e0e0;border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit}
+.new-project-input:focus{outline:none;border-color:#2563eb}
+
+/* Loading & empty */
+.loading{display:flex;align-items:center;justify-content:center;flex:1;color:#555;font-size:12px}
+.empty{text-align:center;padding:40px;color:#444;font-size:12px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#555}
+
+/* Responsive */
+/* 리스트형이므로 반응형 불필요 */
+</style>
+</head>
+<body>
+
+<!-- 사이드 네비 -->
+<div class="page-sidenav">
+  <a href="projects.html" class="page-sidenav-btn active" title="프로젝트">📁</a>
+  <div class="page-sidenav-label">프로젝트</div>
+  <a href="references.html" class="page-sidenav-btn" title="레퍼런스">🎬</a>
+  <div class="page-sidenav-label">레퍼런스</div>
+  <a href="finished.html" class="page-sidenav-btn" title="완료 영상">🎞️</a>
+  <div class="page-sidenav-label">완료 영상</div>
+</div>
+
+<div class="page-content">
+<!-- Top bar -->
+<div class="top">
+  <span style="font-size:12px;font-weight:600;color:#ccc">📁 프로젝트</span>
+  <div class="sep"></div>
+  <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
+    <a href="index.html" class="btn" style="text-decoration:none">✂️ 에디터로 돌아가기</a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <span class="filter-label">정렬</span>
+      <select class="filter-select" id="filterSort" onchange="applyClientFilters()">
+        <option value="latest">최신순</option>
+        <option value="name">이름순</option>
+        <option value="clips">클립수</option>
+      </select>
+    </div>
+    <div class="sep" style="width:1px;height:20px;background:#2a2a2a"></div>
+    <div class="filter-group">
+      <input type="text" class="search-input" id="searchInput" placeholder="프로젝트 검색..." oninput="debounceSearch()">
+    </div>
+    <span class="count-label" id="countLabel"></span>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid-wrap" id="gridWrap">
+    <div class="loading">불러오는 중...</div>
+  </div>
+</div>
+
+<!-- New project bar -->
+<div class="new-project-bar">
+  <span style="font-size:10px;color:#666">➕ 새 프로젝트</span>
+  <input type="text" class="new-project-input" id="newProjectName" placeholder="프로젝트 이름을 입력하세요..." onkeydown="if(event.key==='Enter')createProject()">
+  <button class="btn pri" onclick="createProject()">생성</button>
+</div>
+</div><!-- /page-content -->
+
+<script>
+const API_BASE = window.location.origin || 'http://localhost:8092';
+function apiUrl(p){ return /^https?:\/\//.test(p)?p:`${API_BASE}${p.startsWith('/')?p:'/'+p}` }
+
+// State
+let projects = [];
+let searchTimer = null;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadProjects();
+});
+
+// ── Load projects ──
+async function loadProjects(){
+  const wrap = document.getElementById('gridWrap');
+  wrap.innerHTML = '<div class="loading">불러오는 중...</div>';
+
+  try{
+    const r = await fetch(apiUrl('/api/projects'));
+    const d = await r.json();
+    projects = d.projects || [];
+    applyClientFilters();
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">프로젝트를 불러올 수 없습니다</div>';
+  }
+}
+
+function applyClientFilters(){
+  let filtered = [...projects];
+
+  // Search
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  if(q){
+    filtered = filtered.filter(p => (p.name||'').toLowerCase().includes(q));
+  }
+
+  // Sort
+  const sort = document.getElementById('filterSort').value;
+  if(sort === 'latest'){
+    filtered.sort((a,b) => {
+      const ta = typeof a.updatedAt==='number'?a.updatedAt:Date.parse(a.updatedAt)||0;
+      const tb = typeof b.updatedAt==='number'?b.updatedAt:Date.parse(b.updatedAt)||0;
+      return tb - ta;
+    });
+  } else if(sort === 'name'){
+    filtered.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  } else if(sort === 'clips'){
+    filtered.sort((a,b) => (b.clipCount||0) - (a.clipCount||0));
+  }
+
+  document.getElementById('countLabel').textContent = `${filtered.length}개 프로젝트`;
+  renderGrid(filtered);
+}
+
+function debounceSearch(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyClientFilters, 200);
+}
+
+// ── Render grid ──
+function renderGrid(list){
+  const wrap = document.getElementById('gridWrap');
+  if(!list.length){
+    wrap.innerHTML = '<div class="empty">프로젝트가 없습니다</div>';
+    return;
+  }
+  let html = '<div class="grid">';
+  list.forEach(p => {
+    const dur = p.totalDuration ? formatDuration(p.totalDuration) : '';
+    const ts = typeof p.updatedAt==='number' ? p.updatedAt*1000 : Date.parse(p.updatedAt);
+    const date = !isNaN(ts) ? new Date(ts).toLocaleDateString('ko-KR') : '';
+    const srcs = (p.sources||[]).slice(0,3).map(s => typeof s==='object'?s.filename:s).join(', ');
+    const isDb = p.source === 'db';
+    const badge = isDb ? 'db' : 'local';
+    const badgeLabel = isDb ? '☁️ 클라우드' : '💻 로컬';
+
+    html += `<div class="card" onclick="openProject('${escAttr(p.id)}')">
+      <div class="card-icon">${isDb ? '☁️' : '📁'}</div>
+      <div class="card-title">${escHtml(p.name||p.id)}</div>
+      <div class="card-meta">
+        <span>🎬 ${p.clipCount||0}클립</span>
+        ${dur ? `<span>⏱ ${dur}</span>` : ''}
+      </div>
+      ${srcs ? `<div class="card-sources">📎 ${escHtml(srcs)}</div>` : ''}
+      ${date ? `<div class="card-date">${date}</div>` : ''}
+      <span class="card-badge ${badge}">${badgeLabel}</span>
+    </div>`;
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+// ── Open project (go to editor) ──
+function openProject(id){
+  window.location.href = 'index.html?project=' + encodeURIComponent(id);
+}
+
+// ── Create new project ──
+async function createProject(){
+  const input = document.getElementById('newProjectName');
+  const name = input.value.trim();
+  if(!name){
+    input.focus();
+    return;
+  }
+
+  try{
+    const r = await fetch(apiUrl('/api/projects'), {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: name, clips: [], subs: [] })
+    });
+    if(!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    const newId = d.project?.id;
+    input.value = '';
+    if(newId){
+      openProject(newId);
+    } else {
+      loadProjects();
+    }
+  }catch(e){
+    alert('프로젝트 생성 실패: ' + e.message);
+  }
+}
+
+// ── Helpers ──
+function formatDuration(sec){
+  if(!sec) return '';
+  const m = Math.floor(sec/60);
+  const s = Math.floor(sec%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function escHtml(s){
+  if(!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s){
+  return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "name": "brxce-editor",
+  "version": "0.1.0",
+  "description": "Video editor — standalone extraction from brxce.ai",
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./config": "./editor.config.ts",
+    "./routes": "./lib/editor-routes.ts",
+    "./next-plugin": "./lib/with-brxce-editor.ts",
+    "./components/*": "./components/*",
+    "./pages/*": "./app/*",
+    "./sdk": "./sdk/api-client.ts",
+    "./sdk/embed": "./sdk/embed.ts",
+    "./sdk/types": "./sdk/types.ts"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,next -c yellow,cyan \".venv/bin/python -m src.server.app\" \"next dev -p 3100\"",
+    "dev:next": "next dev -p 3100",
+    "dev:api": ".venv/bin/python -m src.server.app",
+    "build:next": "next build",
+    "start": "next start -p 3100",
+    "build:sdk": "tsc --project tsconfig.json",
+    "server": ".venv/bin/python -m src.server.app",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "@remotion/player": "4.0.440",
+    "@remotion/transitions": "^4.0.440",
+    "html-to-image": "^1.11.13",
+    "jszip": "^3.10.1",
+    "next": "^16.2.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "4.0.440",
+    "zustand": "^5.0.12"
+  }
+}

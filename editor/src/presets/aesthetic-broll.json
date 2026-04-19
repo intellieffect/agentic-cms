@@ -1,0 +1,26 @@
+{
+  "id": "aesthetic-broll",
+  "name": "Aesthetic B-roll",
+  "description": "10~20초 감성 B-roll",
+  "traits": ["4~8 클립", "슬로모션", "줌 1.1~1.3x"],
+  "clipCount": "4~8",
+  "duration": "10~20초",
+  "editStyle": "슬로모션 0.6~0.8x + 줌 1.1~1.3x",
+  "subtitleStyle": "감성 한 줄 or 없음",
+  "bgmStyle": "lo-fi / chill / ambient",
+  "icon": "✨",
+  "color": "#ec4899",
+  "references": ["marisa", "牛马", "Dovydas"],
+  "defaultProject": {
+    "name": "Aesthetic B-roll",
+    "clips": [
+      {"source": "", "start": 0, "end": 3, "subtitle": "", "speed": 0.7, "zoom": {"scale": 1.2, "panX": 0, "panY": 0}},
+      {"source": "", "start": 0, "end": 3, "subtitle": "", "speed": 0.7, "zoom": {"scale": 1.15, "panX": 0, "panY": 0}},
+      {"source": "", "start": 0, "end": 3, "subtitle": "", "speed": 0.7, "zoom": {"scale": 1.1, "panX": 0, "panY": 0}},
+      {"source": "", "start": 0, "end": 3, "subtitle": "", "speed": 0.7, "zoom": {"scale": 1.25, "panX": 0, "panY": 0}},
+      {"source": "", "start": 0, "end": 3, "subtitle": "", "speed": 0.7, "zoom": {"scale": 1.2, "panX": 0, "panY": 0}}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "marisa, 牛马 스타일 감성 B-roll"
+}

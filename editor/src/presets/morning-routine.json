@@ -1,0 +1,26 @@
+{
+  "id": "morning-routine",
+  "name": "Morning Routine",
+  "description": "7~15초 아침 루틴, 시간순 구성",
+  "traits": ["3~5 클립", "시간순", "로파이 BGM"],
+  "clipCount": "3~5",
+  "duration": "7~15초",
+  "editStyle": "부드러운 전환, 시간순 구성",
+  "subtitleStyle": "시간·행동 한 줄",
+  "bgmStyle": "lo-fi / acoustic",
+  "icon": "☀️",
+  "color": "#f59e0b",
+  "references": ["Abdulla", "Wayne", "Jason Byers", "marisa"],
+  "defaultProject": {
+    "name": "Morning Routine",
+    "clips": [
+      {"source": "", "start": 0, "end": 3, "subtitle": "5:30 AM"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "커피 한 잔"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "코드 리뷰"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "오전 스탠드업"},
+      {"source": "", "start": 0, "end": 3, "subtitle": "딥 워크 시작"}
+    ],
+    "fps": 30
+  },
+  "referenceNote": "Abdulla, Wayne 스타일 아침 루틴"
+}

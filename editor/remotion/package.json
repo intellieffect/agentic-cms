@@ -1,0 +1,36 @@
+{
+  "name": "brxce-remotion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "npx remotion studio",
+    "build": "npx remotion render",
+    "render": "npx remotion render VideoProject out/video.mp4"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.440",
+    "@remotion/cli": "4.0.440",
+    "@remotion/compositor-darwin-arm64": "4.0.440",
+    "@remotion/licensing": "4.0.440",
+    "@remotion/media-parser": "4.0.440",
+    "@remotion/media-utils": "4.0.440",
+    "@remotion/paths": "4.0.440",
+    "@remotion/player": "4.0.440",
+    "@remotion/renderer": "4.0.440",
+    "@remotion/shapes": "4.0.440",
+    "@remotion/streaming": "4.0.440",
+    "@remotion/studio": "4.0.440",
+    "@remotion/studio-server": "4.0.440",
+    "@remotion/studio-shared": "4.0.440",
+    "@remotion/transitions": "4.0.440",
+    "@remotion/web-renderer": "4.0.440",
+    "@remotion/zod-types": "4.0.440",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "4.0.440"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "typescript": "^5.6.3"
+  }
+}
