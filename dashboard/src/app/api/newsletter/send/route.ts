@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "게시글 제목이 비어 있습니다." }, { status: 400 });
       }
 
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://agenticworkflows.club";
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
       const supabaseStorageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog-images`;
 
       let thumbnailHtml = "";
@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "발송 작업 생성에 실패했습니다." }, { status: 500 });
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://agenticworkflows.club";
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
     let sentCount = 0;
     let failedCount = 0;
     let trackingErrorCount = 0;
@@ -263,7 +263,9 @@ export async function POST(req: NextRequest) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Bruce Choe <newsletter@brxce.ai>",
+            // 뉴스레터 발신인 — NEWSLETTER_FROM env 로 workspace 별 지정 (필수).
+            // 형식: "표시 이름 <주소@도메인>" 또는 "주소@도메인" 만.
+            from: process.env.NEWSLETTER_FROM || "",
             to: [subscriber.email],
             subject: effectiveSubject,
             html,

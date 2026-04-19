@@ -13,7 +13,7 @@ setup: ## Full setup (Python + Node + Remotion + env)
 	cd remotion && pnpm install
 	@if [ ! -f .env ]; then cp .env.example .env; echo "📝 .env created — edit it with your Supabase credentials"; fi
 	@echo "✅ Setup complete! Run 'make dev' to start."
-	@echo "⚠️  .env 파일에 SUPABASE 키를 입력하세요 (팀원용 .env는 덩딘당님에게 받으세요)"
+	@echo "⚠️  .env 파일에 SUPABASE 키를 입력하세요 (팀원용 .env는 프로젝트 관리자에게 문의)"
 
 install: ## Install dependencies only
 	.venv/bin/pip install -r requirements.txt

@@ -10,10 +10,12 @@ export interface CTALinkProps extends BaseSlideStyleProps {
   caption: string
 }
 
+// linkValue 는 env NEXT_PUBLIC_CONTACT_DOMAIN 로 주입 (multi-tenant)
+// 예: "brxce.ai/studio" 같은 tenant 특정 경로
 export const ctaLinkDefaultProps: CTALinkProps = {
   title: '전체 가이드는 프로필 링크에서',
   linkLabel: 'LINK',
-  linkValue: 'brxce.ai/studio',
+  linkValue: process.env.NEXT_PUBLIC_CONTACT_DOMAIN || '',
   caption: '프로필 방문 후 무료 템플릿을 받아보세요.',
   ...DEFAULT_COLORS,
 }

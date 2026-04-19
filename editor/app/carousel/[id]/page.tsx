@@ -469,7 +469,9 @@ export default function CarouselDetailPage() {
                   <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff', fontWeight: 700 }}>B</div>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.2 }}>brxce.ai</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.2 }}>
+                    {process.env.NEXT_PUBLIC_BRAND_HANDLE?.replace(/^@/, '') || process.env.NEXT_PUBLIC_CONTACT_DOMAIN || 'your-brand'}
+                  </div>
                 </div>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6" r="1.5" fill="#a8a8a8"/><circle cx="12" cy="12" r="1.5" fill="#a8a8a8"/><circle cx="12" cy="18" r="1.5" fill="#a8a8a8"/></svg>
               </div>
@@ -532,7 +534,7 @@ export default function CarouselDetailPage() {
               <div style={{ padding: '0 14px 12px' }}>
                 {captionDraft ? (
                   <div style={{ fontSize: 13, color: '#fff' }}>
-                    <span style={{ fontWeight: 600 }}>brxce.ai</span>{' '}
+                    <span style={{ fontWeight: 600 }}>{process.env.NEXT_PUBLIC_BRAND_HANDLE?.replace(/^@/, '') || process.env.NEXT_PUBLIC_CONTACT_DOMAIN || 'your-brand'}</span>{' '}
                     {(() => {
                       const plain = captionDraft.replace(/\*\*([^*]+)\*\*/g, '$1')
                       return captionExpanded ? (

@@ -11,12 +11,17 @@ export interface CTACarouselEndProps extends BaseSlideStyleProps {
   titleFontSize?: number
 }
 
+// Tenant-specific CTA 값은 env 에서 주입. NEXT_PUBLIC_CONTACT_EMAIL + NEXT_PUBLIC_CONTACT_DOMAIN.
+// 값이 없으면 label 만 표시 (value 비어있음) — 브랜딩이 튀지 않도록.
+const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || ''
+const contactDomain = process.env.NEXT_PUBLIC_CONTACT_DOMAIN || ''
+
 export const ctaCarouselEndDefaultProps: CTACarouselEndProps = {
   title: '끝까지 본 당신,\n이미 상위 5%',
   subtitle: '이제 행동할 차례입니다',
   actions: [
-    { label: '도입 상담 신청하기', value: 'bruce@agenticworkflows.club' },
-    { label: '사례 더 보기', value: 'agenticworkflows.club' },
+    { label: '도입 상담 신청하기', value: contactEmail },
+    { label: '사례 더 보기', value: contactDomain },
   ],
   ...DEFAULT_COLORS,
 }

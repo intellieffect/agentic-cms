@@ -243,7 +243,7 @@ make setup    # Python venv + npm install + .env 생성
 
 ### 환경변수 (.env)
 
-덩딘당님한테 아래 값을 받으세요:
+프로젝트 관리자에게 아래 값을 받으세요:
 - `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` — DB 접속 (필수)
 - `GEMINI_API_KEY` — AI 레퍼런스 분석 (선택)
 
