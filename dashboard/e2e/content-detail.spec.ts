@@ -58,17 +58,20 @@ test.describe('Content Detail', () => {
     const previewSwitch = page.locator('#preview-toggle');
     await expect(previewSwitch).toBeVisible();
 
-    // Initially should show textarea (not preview)
-    const textarea = page.locator('textarea').last();
-    await expect(textarea).toBeVisible();
+    // Target the body_md textarea specifically (rows=16 in content-detail-view.tsx).
+    // `textarea.last()` 같이 느슨한 selector 는 CoreMessage(rows=2) 등 다른 textarea
+    // 에 잡혀 toggle 무관 요소를 보게 된다.
+    const bodyTextarea = page.locator('textarea[rows="16"]');
+    await expect(bodyTextarea).toBeVisible();
 
     // Toggle preview
     await previewSwitch.click();
     await page.waitForTimeout(300);
 
-    // After toggle, should show prose div instead
-    const proseDiv = page.locator('.prose');
-    await expect(proseDiv).toBeVisible();
+    // After toggle, the body_md textarea is swapped for MarkdownPreview.
+    // body_md 가 비어있으면 `.prose` 대신 "No content" fallback 이 뜨므로,
+    // prose 존재 여부가 아니라 **textarea 가 사라졌는지** 로 검증한다.
+    await expect(bodyTextarea).not.toBeVisible();
   });
 
   test('right sidebar shows status badge and meta info', async ({ page }) => {

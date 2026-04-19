@@ -2,7 +2,18 @@ node_modules/
 dist/
 reference/
 .env
+.env.local
+.env.*.bak_*
 *.js.map
 *.d.ts.map
 dashboard/src/app/(dashboard)/video/edit_removed_*
 dashboard/src/app/(dashboard)/video/templates_removed_*
+
+# Per-developer MCP config (contains absolute paths)
+.mcp.json
+
+# Cleanup artifacts from migrations
+.editor-api_removed_*/
+.*_removed_*/
+**/*.bak_*
+**/.env.bak_*
