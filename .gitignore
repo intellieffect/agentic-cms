@@ -1,5 +1,8 @@
 node_modules/
 dist/
+# Vendored content-core CLI (Markdown → PlateJS 변환) — `dist/` 패턴에 막히지 않게 negate.
+!tools/content-core/dist/
+!tools/content-core/dist/**
 reference/
 .env
 .env.local
