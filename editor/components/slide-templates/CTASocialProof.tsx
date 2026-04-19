@@ -19,7 +19,7 @@ export const ctaSocialProofDefaultProps: CTASocialProofProps = {
     { value: '98%', label: '만족도' },
   ],
   cta: '지금 시작하기',
-  handle: '@brxce.ai',
+  handle: process.env.NEXT_PUBLIC_BRAND_HANDLE || '',
   ...DEFAULT_COLORS,
 }
 

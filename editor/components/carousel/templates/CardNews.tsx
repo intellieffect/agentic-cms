@@ -50,7 +50,7 @@ const CtaSlide: React.FC<{ handle: string; accentColor: string }> = ({ handle, a
 )
 
 export const CardNews: React.FC<CardNewsProps> = ({
-  slideIndex, slides, coverTitle, coverSubtitle, ctaHandle = '@brxce.ai', accentColor = BRXCE_BRAND.colors.primary,
+  slideIndex, slides, coverTitle, coverSubtitle, ctaHandle = process.env.NEXT_PUBLIC_BRAND_HANDLE || '', accentColor = BRXCE_BRAND.colors.primary,
 }) => {
   const totalSlides = slides.length + 2
   if (slideIndex === 0) return <CoverSlide title={coverTitle} subtitle={coverSubtitle} accentColor={accentColor} handle={ctaHandle} />

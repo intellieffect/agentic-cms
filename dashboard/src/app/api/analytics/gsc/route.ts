@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
-const SITE_URL = "https://agenticworkflows.club";
+// GSC 분석 대상 site URL. NEXT_PUBLIC_GSC_SITE_URL (optional) 이 있으면 우선,
+// 없으면 NEXT_PUBLIC_SITE_URL 로 fallback. 둘 다 없으면 runtime error.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_GSC_SITE_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "";
 
 async function getClient() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
@@ -26,6 +31,13 @@ function formatDate(d: Date) {
 }
 
 export async function GET(req: NextRequest) {
+  if (!SITE_URL) {
+    return NextResponse.json(
+      { error: "NEXT_PUBLIC_GSC_SITE_URL or NEXT_PUBLIC_SITE_URL must be set for GSC analytics" },
+      { status: 500 },
+    );
+  }
+
   const days = Number(req.nextUrl.searchParams.get("days") || "7");
   const endDate = new Date();
   endDate.setDate(endDate.getDate() - 1);

@@ -196,11 +196,14 @@ const compareQuerySchema = z.object({
 
 const DIRECT_TRAFFIC_SOURCE: TrafficSource = { channel: "직접", sourceDomain: null, sourceLabel: "Direct", sourceKey: "direct" };
 const UNKNOWN_REFERRER_TRAFFIC_SOURCE: TrafficSource = { channel: "레퍼럴", sourceDomain: null, sourceLabel: "unknown-referrer", sourceKey: "unknown-referrer" };
+// Self-referrer 도메인 whitelist. ANALYTICS_OWN_DOMAINS env 로 확장 (comma-separated).
+// 로컬 개발은 항상 포함.
+const ANALYTICS_OWN_DOMAINS = (process.env.ANALYTICS_OWN_DOMAINS || "")
+  .split(",")
+  .map((d) => d.trim())
+  .filter(Boolean);
 const SELF_REFERRER_ALLOWLIST = [
-  "agenticworkflows.club",
-  "studio.agenticworkflows.club",
-  "brxce.ai",
-  "studio.brxce.ai",
+  ...ANALYTICS_OWN_DOMAINS,
   "localhost",
   "127.0.0.1",
 ];
@@ -409,9 +412,20 @@ export function extractNormalizedHostname(referrer: string | null) {
   }
 }
 
+// Vercel preview 배포의 프로젝트 이름 substring 매치 — tenant 별로 키워드 다름.
+// ANALYTICS_VERCEL_KEYWORDS (comma-separated) 로 주입. 예: "agenticworkflows,awc,brxce"
+const ANALYTICS_VERCEL_KEYWORDS = (process.env.ANALYTICS_VERCEL_KEYWORDS || "")
+  .split(",")
+  .map((k) => k.trim().toLowerCase())
+  .filter(Boolean);
+
 function isSelfReferrerHost(hostname: string) {
   if (SELF_REFERRER_ALLOWLIST.some((allowedHost) => matchesHostname(hostname, allowedHost))) return true;
-  if (hostname.endsWith(".vercel.app") && (hostname.includes("agenticworkflows") || hostname.includes("awc") || hostname.includes("brxce"))) return true;
+  if (
+    hostname.endsWith(".vercel.app") &&
+    ANALYTICS_VERCEL_KEYWORDS.some((kw) => hostname.includes(kw))
+  )
+    return true;
   return false;
 }
 

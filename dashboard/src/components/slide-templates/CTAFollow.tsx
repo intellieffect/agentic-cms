@@ -12,7 +12,7 @@ export interface CTAFollowProps extends BaseSlideStyleProps {
 
 export const ctaFollowDefaultProps: CTAFollowProps = {
   title: '실전 템플릿이 더 필요하다면?',
-  handle: '@brxce.ai',
+  handle: process.env.NEXT_PUBLIC_BRAND_HANDLE || '',
   reason: '팔로우하고 매주 새로운 템플릿을 받아보세요.',
   hintText: '↑ 프로필에서 팔로우',
   ...DEFAULT_COLORS,

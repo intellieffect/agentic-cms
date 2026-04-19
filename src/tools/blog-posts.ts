@@ -4,6 +4,14 @@ import { existsSync } from 'node:fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getSupabase } from '../shared/supabase.js';
 
+// SEO meta_title 은 `META_TITLE_SUFFIX` env 로 workspace 별 suffix 붙일 수 있다.
+// 예: META_TITLE_SUFFIX="AWC" → "{title} | AWC"
+// 미설정 시 suffix 없이 title 만 사용.
+function buildMetaTitle(title: string): string {
+  const suffix = process.env.META_TITLE_SUFFIX?.trim();
+  return suffix ? `${title} | ${suffix}` : title;
+}
+
 // Types for blog_posts table
 interface BlogPostRow {
   id: string;
@@ -220,7 +228,12 @@ export function registerBlogPostTools(server: McpServer): void {
         .describe('URL-friendly English slug. Lowercase letters, digits, hyphens only.'),
       markdown_body: z.string().min(10).describe('Full blog post body in Markdown (will be converted to PlateJS)'),
       excerpt: z.string().optional().describe('Short summary (~100 chars, shown in listings)'),
-      meta_title: z.string().optional().describe('SEO meta_title (defaults to "{title} | AWC")'),
+      meta_title: z
+        .string()
+        .optional()
+        .describe(
+          'SEO meta_title. META_TITLE_SUFFIX env 가 있으면 default = "{title} | {suffix}", 없으면 {title} 만.',
+        ),
       meta_description: z.string().optional().describe('SEO meta_description (~155 chars)'),
       meta_keywords: z.array(z.string()).optional().describe('SEO keyword array'),
       reading_time: z.number().int().min(1).max(60).optional().describe('Estimated reading time in minutes'),
@@ -286,7 +299,7 @@ export function registerBlogPostTools(server: McpServer): void {
           slug: params.slug,
           excerpt: params.excerpt ?? null,
           content: plateContent,
-          meta_title: params.meta_title ?? `${params.title} | AWC`,
+          meta_title: params.meta_title ?? buildMetaTitle(params.title),
           meta_description: params.meta_description ?? null,
           meta_keywords: params.meta_keywords ?? [],
           status: 'draft' as const,

@@ -96,12 +96,16 @@ export function SlideBase({
           )}
           {footer === 'avatar' && (
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
-              <span style={{ fontSize: 24, fontWeight: 600, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.65)' }}>@brxce.ai</span>
-              <img src="/bruce-avatar-rounded.png" alt="Bruce" style={{ height: 52, width: 52, borderRadius: '50%' }} />
+              {(process.env.NEXT_PUBLIC_BRAND_HANDLE) && (
+                <span style={{ fontSize: 24, fontWeight: 600, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.65)' }}>{process.env.NEXT_PUBLIC_BRAND_HANDLE}</span>
+              )}
+              {process.env.NEXT_PUBLIC_BRAND_AVATAR_URL && (
+                <img src={process.env.NEXT_PUBLIC_BRAND_AVATAR_URL} alt={process.env.NEXT_PUBLIC_BRAND_NAME || 'Brand'} style={{ height: 52, width: 52, borderRadius: '50%' }} />
+              )}
             </div>
           )}
-          {footer === 'minimal' && (
-            <span style={{ marginLeft: 'auto', fontSize: 24, letterSpacing: '0.38em', color: 'rgba(255,255,255,0.5)' }}>@brxce.ai</span>
+          {footer === 'minimal' && process.env.NEXT_PUBLIC_BRAND_HANDLE && (
+            <span style={{ marginLeft: 'auto', fontSize: 24, letterSpacing: '0.38em', color: 'rgba(255,255,255,0.5)' }}>{process.env.NEXT_PUBLIC_BRAND_HANDLE}</span>
           )}
         </div>
       )}

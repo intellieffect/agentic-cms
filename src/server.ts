@@ -51,10 +51,10 @@ async function main(): Promise<void> {
   // Video editor tools
   registerVideoTools(server, editorApiUrl);
 
-  // Blog post tools (AWC blog — blog_posts table, markdown → PlateJS)
+  // Blog post tools — blog_posts table, Markdown → PlateJS 변환 + draft 저장
   registerBlogPostTools(server);
 
-  // Carousel tools (AWC carousels table — slide deck CRUD)
+  // Carousel tools — carousels table, slide deck CRUD
   registerCarouselTools(server, adapter);
 
   // Newsletter — HTTP wrap over dashboard send endpoint + email_logs.variant_id linking

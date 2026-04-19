@@ -13,7 +13,7 @@ export type TemplateData =
 function defaultDataForTemplate(template: CarouselTemplateId): TemplateData {
   switch (template) {
     case 'CardNews':
-      return { template: 'CardNews', coverTitle: '제목을 입력하세요', coverSubtitle: '', ctaHandle: '@brxce.ai', slides: [{ title: '슬라이드 1', body: '내용을 입력하세요' }] }
+      return { template: 'CardNews', coverTitle: '제목을 입력하세요', coverSubtitle: '', ctaHandle: process.env.NEXT_PUBLIC_BRAND_HANDLE || '', slides: [{ title: '슬라이드 1', body: '내용을 입력하세요' }] }
     case 'StepByStep':
       return { template: 'StepByStep', guideTitle: '가이드 제목', guideSubtitle: '', steps: [{ title: 'Step 1', description: '설명을 입력하세요' }] }
     case 'BeforeAfter':
