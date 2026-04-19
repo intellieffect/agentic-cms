@@ -1,4 +1,5 @@
 """Reference videos API — replaces Next.js reference routes."""
+import logging
 import subprocess
 import tempfile
 import json
@@ -9,6 +10,8 @@ from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from src.server.table_config import TABLE_VIDEOS, TABLE_ACCOUNTS
 from src.server.storage import get_storage, STORAGE_MODE
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/references", tags=["references"])
 
 
@@ -16,7 +19,8 @@ def _get_sb():
     try:
         from src.db.supabase import get_client
         return get_client()
-    except Exception:
+    except Exception as e:
+        logger.debug("Supabase client unavailable: %s", e)
         return None
 
 
@@ -119,8 +123,8 @@ async def delete_video(video_id: str):
                 storage = get_storage()
                 storage.delete_file("references", f"{prefix}/video.mp4")
                 storage.delete_file("references", f"{prefix}/thumbnail.jpg")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Reference storage cleanup failed: %s", e)
         # Delete from DB
         sb.table(TABLE_VIDEOS).delete().eq("id", video_id).execute()
         return {"ok": True}
@@ -203,8 +207,8 @@ def _recognize_music(video_path: str) -> dict | None:
     finally:
         try:
             os.remove(audio_tmp)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Temp audio file cleanup failed: %s", e)
 
 
 def _detect_platform(url: str) -> str:
@@ -240,8 +244,9 @@ def _do_import(sb, url: str, meta: dict, video_id: str) -> dict:
                 "display_name": uploader_name,
                 "platform": platform,
             }).execute()
-    except Exception:
-        pass  # account may already exist
+    except Exception as e:
+        # account may already exist (unique violation) — insert 실패여도 link 된 이전 row 사용.
+        logger.debug("account upsert (ignored if duplicate): %s", e)
 
     storage_prefix = f"{uploader}/{video_id}"
     thumbnail_url = None
@@ -262,8 +267,8 @@ def _do_import(sb, url: str, meta: dict, video_id: str) -> dict:
                 buf = Path(thumb_tmp).read_bytes()
                 storage_path = f"{storage_prefix}/thumbnail.jpg"
                 thumbnail_url = storage.upload_file("references", storage_path, buf, "image/jpeg")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Thumbnail upload failed (ref post continues w/o thumbnail): %s", e)
 
     # Video download
     video_tmp = os.path.join(tmp_dir, f"{video_id}.mp4")
@@ -276,8 +281,9 @@ def _do_import(sb, url: str, meta: dict, video_id: str) -> dict:
             buf = Path(video_tmp).read_bytes()
             storage_path = f"{storage_prefix}/video.mp4"
             video_url = storage.upload_file("references", storage_path, buf, "video/mp4")
-    except Exception:
-        pass  # video download failed, thumbnail-only
+    except Exception as e:
+        # video download failed — thumbnail-only fallback. 이게 자주 일어나면 Instagram block/proxy 문제일 수 있음.
+        logger.warning("Reference video download/upload failed (thumbnail-only fallback): %s", e)
 
     # Post date
     upload_date = meta.get("upload_date", "")  # YYYYMMDD
@@ -330,8 +336,8 @@ def _do_import(sb, url: str, meta: dict, video_id: str) -> dict:
     for f in [os.path.join(tmp_dir, f"{video_id}.jpg"), video_tmp]:
         try:
             os.remove(f)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Temp file cleanup failed: %s", e)
 
     return {"id": video_id, "message": "임포트 완료"}
 
