@@ -24,10 +24,10 @@ export function registerGalleryTools(server: McpServer, adapter: CMSAdapter): vo
   // 1. list_gallery_items
   server.tool(
     'list_gallery_items',
-    'List AWC Gallery items. Filter by status/kind/featured/visibility. Ordered by featured first, featured_rank asc, then published_at desc.',
+    'List AWC Gallery items. Filter by status/kinds/featured/visibility. kinds is OR-match (any overlap). Ordered by featured first, featured_rank asc, then published_at desc.',
     {
       status: STATUS.optional().describe("Lifecycle status filter (default: no filter)"),
-      kind: KIND.optional().describe('Kind filter'),
+      kinds: z.array(KIND).optional().describe('Kinds filter — items with ANY of these kinds match'),
       is_featured: z.boolean().optional().describe('Featured flag filter'),
       visibility: VISIBILITY.optional().describe('Visibility filter'),
       limit: z.number().min(1).max(100).optional().describe('Max results (default 50)'),
@@ -46,13 +46,13 @@ export function registerGalleryTools(server: McpServer, adapter: CMSAdapter): vo
   // 2. create_gallery_item
   server.tool(
     'create_gallery_item',
-    'Create a Gallery item (default status=draft, visibility=public). Use set_gallery_featured afterwards to pin to the landing carousel.',
+    'Create a Gallery item with one or more kinds (kinds[0] is the primary). Default status=draft, visibility=public. Use set_gallery_featured afterwards to pin to the landing carousel.',
     {
       slug: z.string().min(1).describe('Unique slug (/gallery/item/:slug)'),
       title: z.string().min(1),
       subtitle: z.string().optional(),
       summary: z.string().optional(),
-      kind: KIND,
+      kinds: z.array(KIND).min(1).describe('Categories — first one is the primary. e.g. ["video","ad"] for a brand film.'),
       cover_media_id: z.string().uuid().optional().describe('FK media.id for cover'),
       cover_aspect: ASPECT.optional().describe("Cover aspect hint (default '16:9')"),
       status: STATUS.optional().describe("Lifecycle status (default 'draft')"),
@@ -96,13 +96,13 @@ export function registerGalleryTools(server: McpServer, adapter: CMSAdapter): vo
   // 4. update_gallery_item — meta + status/visibility 통합 patch
   server.tool(
     'update_gallery_item',
-    'Patch a Gallery item. Any subset of: title, subtitle, summary, kind, status, visibility, cover_aspect, tags, author, duration_minutes, is_featured, featured_rank, cover_media_id. published_at/featured_at are auto-set when status flips to published or is_featured flips to true.',
+    'Patch a Gallery item. Any subset of: title, subtitle, summary, kinds, status, visibility, cover_aspect, tags, author, duration_minutes, is_featured, featured_rank, cover_media_id. kinds[0] is treated as primary. published_at/featured_at are auto-set when status flips to published or is_featured flips to true.',
     {
       id: z.string().uuid(),
       title: z.string().min(1).optional(),
       subtitle: z.string().nullable().optional(),
       summary: z.string().nullable().optional(),
-      kind: KIND.optional(),
+      kinds: z.array(KIND).min(1).optional(),
       cover_media_id: z.string().uuid().nullable().optional(),
       cover_aspect: ASPECT.optional(),
       status: STATUS.optional(),

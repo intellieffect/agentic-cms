@@ -11,13 +11,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type {
   GalleryItemWithCover,
   GalleryCoverAspect,
+  GalleryKind,
 } from "@/lib/types";
 import { updateGalleryMeta } from "../actions";
 
 const ASPECT_OPTIONS: GalleryCoverAspect[] = ["1:1", "16:9", "9:16", "4:5", "3:4"];
+const KIND_OPTIONS: GalleryKind[] = [
+  "landing",
+  "video",
+  "ad",
+  "image",
+  "carousel",
+  "case_study",
+  "other",
+];
 
 export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
   const [pending, startTransition] = useTransition();
@@ -30,9 +41,19 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
   );
   const [aspect, setAspect] = useState<GalleryCoverAspect>(item.cover_aspect);
   const [tagsInput, setTagsInput] = useState(item.tags.join(", "));
+  const [kinds, setKinds] = useState<GalleryKind[]>(
+    item.kinds && item.kinds.length > 0 ? item.kinds : [item.kind]
+  );
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
+  const toggleKind = (k: GalleryKind) => {
+    setKinds((prev) =>
+      prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+    );
+  };
+
   const save = () => {
+    if (kinds.length === 0) return;
     startTransition(async () => {
       await updateGalleryMeta(item.id, {
         title,
@@ -41,6 +62,7 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
         author: author || null,
         duration_minutes: duration ? Number.parseInt(duration, 10) : null,
         cover_aspect: aspect,
+        kinds,
         tags: tagsInput
           .split(",")
           .map((t) => t.trim())
@@ -93,6 +115,33 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
             </Select>
           </Field>
         </div>
+        <Field label="Kinds (다중 선택, 첫 번째가 primary ★)">
+          <div className="flex flex-wrap gap-2">
+            {KIND_OPTIONS.map((k) => {
+              const active = kinds.includes(k);
+              const isPrimary = active && kinds[0] === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => toggleKind(k)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors",
+                    active
+                      ? isPrimary
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-primary/40 bg-primary/10 text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                  )}
+                >
+                  {k}
+                  {isPrimary && <span className="ml-1 opacity-70">★</span>}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
         <Field label="Tags (쉼표 구분)">
           <Input
             value={tagsInput}

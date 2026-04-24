@@ -6,6 +6,7 @@ import type {
   GalleryItemStatus,
   GalleryCoverAspect,
   GalleryVisibility,
+  GalleryKind,
 } from "@/lib/types";
 
 // ── status 변경 ─────────────────────────────────────────
@@ -61,7 +62,7 @@ export async function updateGalleryVisibility(id: string, visibility: GalleryVis
   revalidatePath("/gallery");
 }
 
-// ── 메타 편집 (title / subtitle / summary / tags / duration / cover_aspect) ─────────
+// ── 메타 편집 (title / subtitle / summary / tags / duration / cover_aspect / kinds) ─────────
 export interface GalleryMetaPatch {
   title?: string;
   subtitle?: string | null;
@@ -70,6 +71,7 @@ export interface GalleryMetaPatch {
   duration_minutes?: number | null;
   cover_aspect?: GalleryCoverAspect;
   author?: string | null;
+  kinds?: GalleryKind[];
 }
 
 export async function updateGalleryMeta(id: string, patch: GalleryMetaPatch) {

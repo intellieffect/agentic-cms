@@ -264,6 +264,7 @@ export interface GalleryItem {
   subtitle?: string | null;
   summary?: string | null;
   kind: GalleryKind;
+  kinds: GalleryKind[];
   source_table?: string | null;
   source_id?: string | null;
   cover_media_id?: string | null;
@@ -289,7 +290,7 @@ export interface GalleryItemCreateInput {
   title: string;
   subtitle?: string;
   summary?: string;
-  kind: GalleryKind;
+  kinds: GalleryKind[];
   source_table?: string;
   source_id?: string;
   cover_media_id?: string;
@@ -307,7 +308,7 @@ export interface GalleryItemCreateInput {
 
 export interface GalleryItemFilter {
   status?: GalleryStatus;
-  kind?: GalleryKind;
+  kinds?: GalleryKind[];
   is_featured?: boolean;
   visibility?: GalleryVisibility;
   limit?: number;
@@ -324,7 +325,7 @@ export interface GalleryItemUpdateInput {
   title?: string;
   subtitle?: string | null;
   summary?: string | null;
-  kind?: GalleryKind;
+  kinds?: GalleryKind[];
   cover_media_id?: string | null;
   cover_aspect?: GalleryCoverAspect;
   status?: GalleryStatus;

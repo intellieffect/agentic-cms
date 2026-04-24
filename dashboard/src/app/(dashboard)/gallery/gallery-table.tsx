@@ -62,7 +62,8 @@ export function GalleryTable({ items }: { items: GalleryItemWithCover[] }) {
   const [featuredOnly, setFeaturedOnly] = useState(false);
 
   const filtered = items.filter((i) => {
-    if (kindFilter !== "all" && i.kind !== kindFilter) return false;
+    const itemKinds = i.kinds && i.kinds.length > 0 ? i.kinds : [i.kind];
+    if (kindFilter !== "all" && !itemKinds.includes(kindFilter as GalleryKind)) return false;
     if (statusFilter !== "all" && i.status !== statusFilter) return false;
     if (featuredOnly && !i.is_featured) return false;
     return true;
@@ -208,7 +209,13 @@ function GalleryRow({ item }: { item: GalleryItemWithCover }) {
       </td>
 
       <td className="px-3 py-3">
-        <Badge variant={kindVariant(item.kind)}>{item.kind}</Badge>
+        <div className="flex flex-wrap gap-1">
+          {(item.kinds && item.kinds.length > 0 ? item.kinds : [item.kind]).map((k) => (
+            <Badge key={k} variant={kindVariant(k)}>
+              {k}
+            </Badge>
+          ))}
+        </div>
       </td>
 
       <td className="px-3 py-3">
