@@ -18,6 +18,7 @@ import { registerCarouselTools } from './tools/carousels.js';
 import { registerNewsletterTools } from './tools/newsletter.js';
 import { registerVideoLinkTools } from './tools/video-link.js';
 import { registerPostizTools } from './tools/postiz.js';
+import { registerGalleryTools } from './tools/gallery.js';
 
 async function main(): Promise<void> {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -65,6 +66,9 @@ async function main(): Promise<void> {
 
   // Postiz — 소셜 채널 실제 발행 (POSTIZ_API_URL + POSTIZ_API_KEY 필요).
   registerPostizTools(server, adapter);
+
+  // Gallery — AWC Web(/gallery) + APP Gallery 공용. list/create/set_featured 3 tool.
+  registerGalleryTools(server, adapter);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

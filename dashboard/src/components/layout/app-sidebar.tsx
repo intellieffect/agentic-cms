@@ -20,6 +20,7 @@ import {
   LayersIcon,
   TrendingUpIcon,
   PenSquareIcon,
+  GalleryHorizontalIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +59,7 @@ const pipelineNavItems: NavItem[] = [
 
 const productionNavItems: NavItem[] = [
   { title: "Media", url: "/media", icon: ImageIcon },
+  { title: "Gallery", url: "/gallery", icon: GalleryHorizontalIcon },
 ];
 
 const carouselNavItems: NavItem[] = [

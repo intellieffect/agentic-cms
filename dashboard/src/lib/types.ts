@@ -199,3 +199,69 @@ export interface FinishedVideo {
   notes?: string;
   created_at?: string;
 }
+
+// ── Gallery ──────────────────────────────────────────────
+export type GalleryKind =
+  | 'landing'
+  | 'video'
+  | 'ad'
+  | 'image'
+  | 'carousel'
+  | 'case_study'
+  | 'other';
+
+export type GalleryCoverAspect = '1:1' | '16:9' | '9:16' | '4:5' | '3:4';
+
+export type GalleryItemStatus = 'draft' | 'published' | 'archived';
+
+export type GalleryVisibility = 'internal' | 'member' | 'public';
+
+export interface GalleryItem {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  summary: string | null;
+  kind: GalleryKind;
+  source_table: string | null;
+  source_id: string | null;
+  cover_media_id: string | null;
+  cover_aspect: GalleryCoverAspect;
+  status: GalleryItemStatus;
+  visibility: GalleryVisibility;
+  is_featured: boolean;
+  featured_rank: number | null;
+  published_at: string | null;
+  featured_at: string | null;
+  created_at: string;
+  updated_at: string;
+  tags: string[];
+  brand: string;
+  author: string | null;
+  duration_minutes: number | null;
+  source_label: string;
+  metrics: Record<string, unknown>;
+}
+
+export interface GalleryItemWithCover extends GalleryItem {
+  cover_url: string | null;
+  cover_mime: string | null;
+}
+
+export type GalleryMediaRole = 'cover' | 'gallery' | 'detail' | 'hero_video';
+
+export interface GalleryItemMediaLink {
+  id: string;
+  item_id: string;
+  media_id: string;
+  role: GalleryMediaRole;
+  sort_order: number;
+  created_at: string;
+  media_url: string | null;
+  media_mime: string | null;
+  media_filename: string | null;
+}
+
+export interface GalleryItemDetail extends GalleryItemWithCover {
+  media_links: GalleryItemMediaLink[];
+}

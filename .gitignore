@@ -65,3 +65,7 @@ editor/coverage/
 # Phase 2 multi-tenant — editor 개인/런타임 데이터
 editor/src/editor/_resolver_config.json
 editor/src/editor/_projects/
+
+# Playwright MCP fixtures + ad-hoc E2E artifacts
+.playwright-mcp/
+e2e-*.png

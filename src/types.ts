@@ -240,3 +240,122 @@ export interface ContentRelation {
   relation_type: 'related' | 'series' | 'parent-child';
   sort_order: number;
 }
+
+// ── Gallery (AWC Web + APP 공용) ──────────────────────────────
+export type GalleryKind =
+  | 'landing'
+  | 'video'
+  | 'ad'
+  | 'image'
+  | 'carousel'
+  | 'case_study'
+  | 'other';
+
+export type GalleryCoverAspect = '1:1' | '16:9' | '9:16' | '4:5' | '3:4';
+
+export type GalleryStatus = 'draft' | 'published' | 'archived';
+
+export type GalleryVisibility = 'internal' | 'member' | 'public';
+
+export interface GalleryItem {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string | null;
+  summary?: string | null;
+  kind: GalleryKind;
+  source_table?: string | null;
+  source_id?: string | null;
+  cover_media_id?: string | null;
+  cover_aspect: GalleryCoverAspect;
+  status: GalleryStatus;
+  visibility: GalleryVisibility;
+  is_featured: boolean;
+  featured_rank?: number | null;
+  published_at?: string | null;
+  featured_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  tags: string[];
+  brand: string;
+  author?: string | null;
+  duration_minutes?: number | null;
+  source_label: string;
+  metrics: Record<string, unknown>;
+}
+
+export interface GalleryItemCreateInput {
+  slug: string;
+  title: string;
+  subtitle?: string;
+  summary?: string;
+  kind: GalleryKind;
+  source_table?: string;
+  source_id?: string;
+  cover_media_id?: string;
+  cover_aspect?: GalleryCoverAspect;
+  status?: GalleryStatus;
+  visibility?: GalleryVisibility;
+  is_featured?: boolean;
+  featured_rank?: number;
+  published_at?: string;
+  tags?: string[];
+  author?: string;
+  duration_minutes?: number;
+  source_label?: string;
+}
+
+export interface GalleryItemFilter {
+  status?: GalleryStatus;
+  kind?: GalleryKind;
+  is_featured?: boolean;
+  visibility?: GalleryVisibility;
+  limit?: number;
+  offset?: number;
+}
+
+export interface GalleryFeaturedUpdate {
+  id: string;
+  is_featured: boolean;
+  featured_rank?: number | null;
+}
+
+export interface GalleryItemUpdateInput {
+  title?: string;
+  subtitle?: string | null;
+  summary?: string | null;
+  kind?: GalleryKind;
+  cover_media_id?: string | null;
+  cover_aspect?: GalleryCoverAspect;
+  status?: GalleryStatus;
+  visibility?: GalleryVisibility;
+  is_featured?: boolean;
+  featured_rank?: number | null;
+  published_at?: string | null;
+  tags?: string[];
+  author?: string | null;
+  duration_minutes?: number | null;
+}
+
+export type GalleryMediaRole = 'cover' | 'gallery' | 'detail' | 'hero_video';
+
+export interface GalleryItemMedia {
+  id: string;
+  item_id: string;
+  media_id: string;
+  role: GalleryMediaRole;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface GalleryMediaAttachInput {
+  item_id: string;
+  media_id: string;
+  role?: GalleryMediaRole;
+  sort_order?: number;
+}
+
+export interface GalleryMediaReorderInput {
+  id: string;
+  sort_order: number;
+}
