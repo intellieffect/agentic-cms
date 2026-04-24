@@ -75,7 +75,12 @@ export async function POST(req: Request) {
     if (mode === "new") {
       const slug = (fd.get("slug") as string | null)?.trim();
       const title = (fd.get("title") as string | null)?.trim();
-      const kind = (fd.get("kind") as string | null) ?? "image";
+      const kindsRaw =
+        (fd.get("kinds") as string | null) ?? (fd.get("kind") as string | null) ?? "image";
+      const kinds = kindsRaw
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean);
 
       if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
@@ -85,8 +90,12 @@ export async function POST(req: Request) {
         );
       }
       if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
-      if (!ALLOWED_KINDS.has(kind)) {
-        return NextResponse.json({ error: `invalid kind: ${kind}` }, { status: 400 });
+      if (kinds.length === 0) {
+        return NextResponse.json({ error: "kinds required (at least one)" }, { status: 400 });
+      }
+      const invalidKind = kinds.find((k) => !ALLOWED_KINDS.has(k));
+      if (invalidKind) {
+        return NextResponse.json({ error: `invalid kind: ${invalidKind}` }, { status: 400 });
       }
       slugForPath = slug;
       role = "cover";
@@ -176,7 +185,12 @@ export async function POST(req: Request) {
     if (mode === "new") {
       const slug = fd.get("slug") as string;
       const title = fd.get("title") as string;
-      const kind = (fd.get("kind") as string) ?? "image";
+      const kindsRaw =
+        (fd.get("kinds") as string | null) ?? (fd.get("kind") as string | null) ?? "image";
+      const kinds = kindsRaw
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean);
       const subtitle = (fd.get("subtitle") as string | null) || null;
       const summary = (fd.get("summary") as string | null) || null;
       const author = (fd.get("author") as string | null) || null;
@@ -204,7 +218,7 @@ export async function POST(req: Request) {
           title,
           subtitle,
           summary,
-          kind,
+          kinds,
           cover_media_id: mediaId,
           cover_aspect,
           status,

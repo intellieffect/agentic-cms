@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type {
   GalleryKind,
   GalleryCoverAspect,
@@ -54,7 +55,7 @@ export function NewGalleryForm() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [kind, setKind] = useState<GalleryKind>("image");
+  const [kinds, setKinds] = useState<GalleryKind[]>(["image"]);
   const [coverAspect, setCoverAspect] = useState<GalleryCoverAspect>("16:9");
   const [subtitle, setSubtitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -87,11 +88,20 @@ export function NewGalleryForm() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(f ? URL.createObjectURL(f) : null);
     if (f?.type.startsWith("video/")) {
-      setKind((k) => (k === "image" ? "video" : k));
+      setKinds((prev) =>
+        prev.includes("video") ? prev : ["video", ...prev.filter((k) => k !== "image")]
+      );
     }
   };
 
-  const canSubmit = !!file && !sizeOver && title.trim() && slug.trim() && !pending;
+  const toggleKind = (k: GalleryKind) => {
+    setKinds((prev) =>
+      prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+    );
+  };
+
+  const canSubmit =
+    !!file && !sizeOver && title.trim() && slug.trim() && kinds.length > 0 && !pending;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +113,7 @@ export function NewGalleryForm() {
     fd.set("mode", "new");
     fd.set("slug", slug.trim());
     fd.set("title", title.trim());
-    fd.set("kind", kind);
+    fd.set("kinds", kinds.join(","));
     fd.set("cover_aspect", coverAspect);
     fd.set("status", status);
     fd.set("visibility", visibility);
@@ -178,21 +188,34 @@ export function NewGalleryForm() {
           </div>
         </Field>
 
-        <div className="grid grid-cols-3 gap-4">
-          <Field label="Kind">
-            <Select value={kind} onValueChange={(v) => setKind(v as GalleryKind)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {KIND_OPTIONS.map((k) => (
-                  <SelectItem key={k} value={k}>
-                    {k}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+        <Field label="Kinds (다중 선택, 첫 번째가 primary ★)">
+          <div className="flex flex-wrap gap-2">
+            {KIND_OPTIONS.map((k) => {
+              const active = kinds.includes(k);
+              const isPrimary = active && kinds[0] === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => toggleKind(k)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors",
+                    active
+                      ? isPrimary
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-primary/40 bg-primary/10 text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                  )}
+                >
+                  {k}
+                  {isPrimary && <span className="ml-1 opacity-70">★</span>}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        <div className="grid grid-cols-2 gap-4">
           <Field label="Cover Aspect">
             <Select value={coverAspect} onValueChange={(v) => setCoverAspect(v as GalleryCoverAspect)}>
               <SelectTrigger>

@@ -551,7 +551,7 @@ export class SupabaseAdapter implements CMSAdapter {
     let q = this.client.from('gallery_items').select('*');
 
     if (filter.status) q = q.eq('status', filter.status);
-    if (filter.kind) q = q.eq('kind', filter.kind);
+    if (filter.kinds && filter.kinds.length > 0) q = q.overlaps('kinds', filter.kinds);
     if (typeof filter.is_featured === 'boolean') q = q.eq('is_featured', filter.is_featured);
     if (filter.visibility) q = q.eq('visibility', filter.visibility);
 

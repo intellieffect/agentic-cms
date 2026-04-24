@@ -223,6 +223,7 @@ export interface GalleryItem {
   subtitle: string | null;
   summary: string | null;
   kind: GalleryKind;
+  kinds: GalleryKind[];
   source_table: string | null;
   source_id: string | null;
   cover_media_id: string | null;
