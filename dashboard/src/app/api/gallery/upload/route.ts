@@ -78,6 +78,12 @@ export async function POST(req: Request) {
       const kind = (fd.get("kind") as string | null) ?? "image";
 
       if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+        return NextResponse.json(
+          { error: "invalid slug (lowercase kebab-case only, no slashes / dots / traversal)" },
+          { status: 400 }
+        );
+      }
       if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
       if (!ALLOWED_KINDS.has(kind)) {
         return NextResponse.json({ error: `invalid kind: ${kind}` }, { status: 400 });

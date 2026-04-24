@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,6 +67,12 @@ export function NewGalleryForm() {
   const isVideo = file?.type.startsWith("video/") ?? false;
   const sizeCap = isVideo ? GALLERY_VIDEO_MAX : GALLERY_IMAGE_MAX;
   const sizeOver = file ? file.size > sizeCap : false;
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   // title 입력 시 slug 자동 생성 (사용자가 수동 편집한 적 없을 때만)
   const autoSlug = useMemo(() => toKebab(title), [title]);
