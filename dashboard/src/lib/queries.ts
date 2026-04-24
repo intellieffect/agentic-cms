@@ -16,6 +16,12 @@ import type {
   ActivityAction,
   ActorType,
   Revision,
+  GalleryItem,
+  GalleryItemWithCover,
+  GalleryItemStatus,
+  GalleryKind,
+  GalleryItemDetail,
+  GalleryItemMediaLink,
 } from "./types";
 
 export async function getContents(): Promise<Content[]> {
@@ -260,4 +266,96 @@ export async function getRevisions(contentId: string): Promise<Revision[]> {
     .order("version_number", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Revision[];
+}
+
+// ─── Gallery (AWC Web + APP 페어링) ─────────────────────────
+// 대시보드는 service_role 로 전체 조회 (RLS bypass). cover_url 은 media join 으로 채움.
+
+interface GalleryListOptions {
+  status?: GalleryItemStatus;
+  kind?: GalleryKind;
+  is_featured?: boolean;
+}
+
+export async function getGalleryItems(
+  opts: GalleryListOptions = {}
+): Promise<GalleryItemWithCover[]> {
+  let q = getSupabase()
+    .from("gallery_items")
+    .select("*, media:cover_media_id(url, mime_type)");
+
+  if (opts.status) q = q.eq("status", opts.status);
+  if (opts.kind) q = q.eq("kind", opts.kind);
+  if (typeof opts.is_featured === "boolean") q = q.eq("is_featured", opts.is_featured);
+
+  const { data, error } = await q
+    .order("is_featured", { ascending: false })
+    .order("featured_rank", { ascending: true, nullsFirst: false })
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => {
+    const { media, ...rest } = row;
+    return {
+      ...rest,
+      cover_url: media?.url ?? null,
+      cover_mime: media?.mime_type ?? null,
+    } as GalleryItemWithCover;
+  });
+}
+
+export async function getGalleryItemById(
+  id: string
+): Promise<GalleryItemWithCover | null> {
+  const { data, error } = await getSupabase()
+    .from("gallery_items")
+    .select("*, media:cover_media_id(url, mime_type)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  const { media, ...rest } = data as any;
+  return {
+    ...rest,
+    cover_url: media?.url ?? null,
+    cover_mime: media?.mime_type ?? null,
+  } as GalleryItemWithCover;
+}
+
+export async function getGalleryItemDetail(
+  id: string
+): Promise<GalleryItemDetail | null> {
+  const { data, error } = await getSupabase()
+    .from("gallery_items")
+    .select(
+      "*, cover:cover_media_id(url, mime_type), gallery_item_media(id, item_id, media_id, role, sort_order, created_at, media:media_id(url, mime_type, filename))"
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const { cover, gallery_item_media, ...rest } = data as any;
+
+  const media_links: GalleryItemMediaLink[] = (gallery_item_media ?? [])
+    .map((row: any) => {
+      const { media, ...linkRest } = row;
+      return {
+        ...linkRest,
+        media_url: media?.url ?? null,
+        media_mime: media?.mime_type ?? null,
+        media_filename: media?.filename ?? null,
+      } as GalleryItemMediaLink;
+    })
+    .sort((a: GalleryItemMediaLink, b: GalleryItemMediaLink) =>
+      a.role === b.role ? a.sort_order - b.sort_order : a.role.localeCompare(b.role)
+    );
+
+  return {
+    ...rest,
+    cover_url: cover?.url ?? null,
+    cover_mime: cover?.mime_type ?? null,
+    media_links,
+  };
 }

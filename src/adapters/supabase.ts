@@ -23,6 +23,14 @@ import type {
   Revision,
   Media,
   MediaCreateInput,
+  GalleryItem,
+  GalleryItemCreateInput,
+  GalleryItemFilter,
+  GalleryFeaturedUpdate,
+  GalleryItemUpdateInput,
+  GalleryItemMedia,
+  GalleryMediaAttachInput,
+  GalleryMediaReorderInput,
 } from '../types.js';
 import { hooks } from '../hooks.js';
 
@@ -535,5 +543,170 @@ export class SupabaseAdapter implements CMSAdapter {
 
     if (error) throw new Error(`Failed to create media: ${error.message}`);
     return data as Media;
+  }
+
+  // ─── Gallery ──────────────────────────────────────────────
+
+  async listGalleryItems(filter: GalleryItemFilter = {}): Promise<GalleryItem[]> {
+    let q = this.client.from('gallery_items').select('*');
+
+    if (filter.status) q = q.eq('status', filter.status);
+    if (filter.kind) q = q.eq('kind', filter.kind);
+    if (typeof filter.is_featured === 'boolean') q = q.eq('is_featured', filter.is_featured);
+    if (filter.visibility) q = q.eq('visibility', filter.visibility);
+
+    q = q.order('is_featured', { ascending: false })
+      .order('featured_rank', { ascending: true, nullsFirst: false })
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(filter.limit ?? 50);
+
+    if (filter.offset) {
+      q = q.range(filter.offset, filter.offset + (filter.limit ?? 50) - 1);
+    }
+
+    const { data, error } = await q;
+    if (error) throw new Error(`Failed to list gallery items: ${error.message}`);
+    return data as GalleryItem[];
+  }
+
+  async createGalleryItem(input: GalleryItemCreateInput): Promise<GalleryItem> {
+    const payload = {
+      status: 'draft' as const,
+      visibility: 'public' as const,
+      is_featured: false,
+      cover_aspect: '16:9' as const,
+      source_label: 'Agentic CMS',
+      brand: 'awc',
+      tags: [] as string[],
+      ...input,
+    };
+
+    const { data, error } = await this.client
+      .from('gallery_items')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to create gallery item: ${error.message}`);
+    return data as GalleryItem;
+  }
+
+  async setGalleryFeatured(input: GalleryFeaturedUpdate): Promise<GalleryItem> {
+    const patch: Record<string, unknown> = {
+      is_featured: input.is_featured,
+      featured_rank: input.is_featured ? (input.featured_rank ?? null) : null,
+      featured_at: input.is_featured ? new Date().toISOString() : null,
+    };
+
+    const { data, error } = await this.client
+      .from('gallery_items')
+      .update(patch)
+      .eq('id', input.id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to set gallery featured: ${error.message}`);
+    return data as GalleryItem;
+  }
+
+  async getGalleryItem(id: string): Promise<GalleryItem | null> {
+    const { data, error } = await this.client
+      .from('gallery_items')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(`Failed to get gallery item: ${error.message}`);
+    return (data as GalleryItem) ?? null;
+  }
+
+  async updateGalleryItem(id: string, patch: GalleryItemUpdateInput): Promise<GalleryItem> {
+    const finalPatch: Record<string, unknown> = { ...patch };
+    if (patch.status === 'published' && !('published_at' in patch)) {
+      finalPatch.published_at = new Date().toISOString();
+    }
+    if (patch.is_featured === true && !('featured_at' in patch)) {
+      finalPatch.featured_at = new Date().toISOString();
+    }
+    if (patch.is_featured === false) {
+      finalPatch.featured_rank = null;
+      finalPatch.featured_at = null;
+    }
+
+    const { data, error } = await this.client
+      .from('gallery_items')
+      .update(finalPatch)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to update gallery item: ${error.message}`);
+    return data as GalleryItem;
+  }
+
+  async deleteGalleryItem(id: string): Promise<void> {
+    const { error } = await this.client.from('gallery_items').delete().eq('id', id);
+    if (error) throw new Error(`Failed to delete gallery item: ${error.message}`);
+  }
+
+  // ─── Gallery item media ─────────────────────────────────────
+
+  async listGalleryMedia(itemId: string): Promise<GalleryItemMedia[]> {
+    const { data, error } = await this.client
+      .from('gallery_item_media')
+      .select('*')
+      .eq('item_id', itemId)
+      .order('sort_order', { ascending: true });
+    if (error) throw new Error(`Failed to list gallery media: ${error.message}`);
+    return data as GalleryItemMedia[];
+  }
+
+  async attachGalleryMedia(input: GalleryMediaAttachInput): Promise<GalleryItemMedia> {
+    const payload = {
+      item_id: input.item_id,
+      media_id: input.media_id,
+      role: input.role ?? 'gallery',
+      sort_order: input.sort_order ?? 0,
+    };
+    const { data, error } = await this.client
+      .from('gallery_item_media')
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to attach gallery media: ${error.message}`);
+    return data as GalleryItemMedia;
+  }
+
+  async detachGalleryMedia(linkId: string): Promise<void> {
+    const { error } = await this.client
+      .from('gallery_item_media')
+      .delete()
+      .eq('id', linkId);
+    if (error) throw new Error(`Failed to detach gallery media: ${error.message}`);
+  }
+
+  async reorderGalleryMedia(updates: GalleryMediaReorderInput[]): Promise<void> {
+    const results = await Promise.all(
+      updates.map((u) =>
+        this.client
+          .from('gallery_item_media')
+          .update({ sort_order: u.sort_order })
+          .eq('id', u.id)
+          .then((r) => ({ id: u.id, error: r.error }))
+      )
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      throw new Error(`Failed to reorder gallery media (${failed.id}): ${failed.error.message}`);
+    }
+  }
+
+  async setGalleryCover(itemId: string, mediaId: string): Promise<GalleryItem> {
+    const { data, error } = await this.client
+      .from('gallery_items')
+      .update({ cover_media_id: mediaId })
+      .eq('id', itemId)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to set gallery cover: ${error.message}`);
+    return data as GalleryItem;
   }
 }

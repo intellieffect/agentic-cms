@@ -21,6 +21,14 @@ import type {
   Revision,
   Media,
   MediaCreateInput,
+  GalleryItem,
+  GalleryItemCreateInput,
+  GalleryItemFilter,
+  GalleryFeaturedUpdate,
+  GalleryItemUpdateInput,
+  GalleryItemMedia,
+  GalleryMediaAttachInput,
+  GalleryMediaReorderInput,
 } from '../types.js';
 
 export interface CMSAdapter {
@@ -62,4 +70,19 @@ export interface CMSAdapter {
   // Media
   listMedia(limit?: number): Promise<Media[]>;
   createMedia(data: MediaCreateInput): Promise<Media>;
+
+  // Gallery (AWC Web + APP 페어링)
+  listGalleryItems(filter?: GalleryItemFilter): Promise<GalleryItem[]>;
+  getGalleryItem(id: string): Promise<GalleryItem | null>;
+  createGalleryItem(input: GalleryItemCreateInput): Promise<GalleryItem>;
+  updateGalleryItem(id: string, patch: GalleryItemUpdateInput): Promise<GalleryItem>;
+  deleteGalleryItem(id: string): Promise<void>;
+  setGalleryFeatured(input: GalleryFeaturedUpdate): Promise<GalleryItem>;
+
+  // Gallery item media (1 item → N media)
+  listGalleryMedia(itemId: string): Promise<GalleryItemMedia[]>;
+  attachGalleryMedia(input: GalleryMediaAttachInput): Promise<GalleryItemMedia>;
+  detachGalleryMedia(linkId: string): Promise<void>;
+  reorderGalleryMedia(updates: GalleryMediaReorderInput[]): Promise<void>;
+  setGalleryCover(itemId: string, mediaId: string): Promise<GalleryItem>;
 }
