@@ -397,7 +397,13 @@ export function getPageTitle(event: AnalyticsEvent | undefined, url: string) {
 }
 
 export function isConversion(event: AnalyticsEvent) {
-  return event.event_name === "newsletter_submit" || (event.event_name === "outbound_click" && typeof event.props?.url === "string" && event.props.url.includes("open.kakao"));
+  // AWC 전환 정의 v3 (2026-04-24) — BP 정합.
+  // page_view as conversion 제거 (Kaushik canonical·GA4·Intercom·Mixpanel 3/3 합의: pageview는 intent 신호 아님).
+  // v2(/my page_view 포함)는 세션당 25.1 이벤트 double count 발생 — 구조적 함정. 폐기.
+  // 과도기: sign_up만 primary. 후속 계측 완료 시 v4로 확장 예정:
+  //   - chat_first_message (ledger t_fbc66a1 p1) — Intercom 공식 "user reply = conversation" BP
+  //   - meeting_booked (신규 task) — Drift·Directive·HubSpot B2B 컨설팅 SQL primary
+  return event.event_name === "sign_up";
 }
 
 export function extractNormalizedHostname(referrer: string | null) {
@@ -426,6 +432,12 @@ function isSelfReferrerHost(hostname: string) {
     ANALYTICS_VERCEL_KEYWORDS.some((kw) => hostname.includes(kw))
   )
     return true;
+  // 사설 IP + CGNAT 대역 필터 (내부 테스트·Tailscale 오염 방지).
+  // RFC 1918 (10/8, 172.16/12, 192.168/16) + RFC 6598 (100.64/10, Tailscale CGNAT).
+  if (/^10\./.test(hostname)) return true;
+  if (/^192\.168\./.test(hostname)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true;
+  if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(hostname)) return true;
   return false;
 }
 
@@ -576,21 +588,24 @@ export function buildBreakdown(events: AnalyticsEvent[], current: DateRange, pre
   const buildPageMap = (rows: AnalyticsEvent[]) => {
     const map = new Map<string, { title: string; sessions: Set<string>; conversions: number; conversionSessions: Set<string> }>();
     const pagesBySession = new Map<string, Set<string>>();
+    const convSids = new Set<string>();
     for (const event of rows) {
-      if (event.event_name !== "page_view") continue;
-      const bucket = map.get(event.url) ?? { title: getPageTitle(event, event.url), sessions: new Set<string>(), conversions: 0, conversionSessions: new Set<string>() };
-      bucket.sessions.add(event.session_id);
-      map.set(event.url, bucket);
-      if (!pagesBySession.has(event.session_id)) pagesBySession.set(event.session_id, new Set<string>());
-      pagesBySession.get(event.session_id)?.add(event.url);
+      if (event.event_name === "page_view") {
+        const bucket = map.get(event.url) ?? { title: getPageTitle(event, event.url), sessions: new Set<string>(), conversions: 0, conversionSessions: new Set<string>() };
+        bucket.sessions.add(event.session_id);
+        map.set(event.url, bucket);
+        if (!pagesBySession.has(event.session_id)) pagesBySession.set(event.session_id, new Set<string>());
+        pagesBySession.get(event.session_id)?.add(event.url);
+      }
+      if (isConversion(event)) convSids.add(event.session_id);
     }
-    for (const event of rows) {
-      if (!isConversion(event)) continue;
-      for (const url of pagesBySession.get(event.session_id) ?? []) {
+    // Session-level attribution: 전환 세션이 본 페이지 각각에 1회만 기여 (이벤트 단위 multi-touch 아님)
+    for (const sid of convSids) {
+      for (const url of pagesBySession.get(sid) ?? []) {
         const bucket = map.get(url);
         if (bucket) {
           bucket.conversions += 1;
-          bucket.conversionSessions.add(event.session_id);
+          bucket.conversionSessions.add(sid);
         }
       }
     }
@@ -600,22 +615,25 @@ export function buildBreakdown(events: AnalyticsEvent[], current: DateRange, pre
   const buildChannelMap = (rows: AnalyticsEvent[]) => {
     const map = new Map<string, { sessions: Set<string>; conversions: number; conversionSessions: Set<string> }>();
     const channelsBySession = new Map<string, Set<string>>();
+    const convSids = new Set<string>();
     for (const event of rows) {
-      if (event.event_name !== "page_view") continue;
-      const channel = classifyReferrer(event.referrer);
-      const bucket = map.get(channel) ?? { sessions: new Set<string>(), conversions: 0, conversionSessions: new Set<string>() };
-      bucket.sessions.add(event.session_id);
-      map.set(channel, bucket);
-      if (!channelsBySession.has(event.session_id)) channelsBySession.set(event.session_id, new Set<string>());
-      channelsBySession.get(event.session_id)?.add(channel);
+      if (event.event_name === "page_view") {
+        const channel = classifyReferrer(event.referrer);
+        const bucket = map.get(channel) ?? { sessions: new Set<string>(), conversions: 0, conversionSessions: new Set<string>() };
+        bucket.sessions.add(event.session_id);
+        map.set(channel, bucket);
+        if (!channelsBySession.has(event.session_id)) channelsBySession.set(event.session_id, new Set<string>());
+        channelsBySession.get(event.session_id)?.add(channel);
+      }
+      if (isConversion(event)) convSids.add(event.session_id);
     }
-    for (const event of rows) {
-      if (!isConversion(event)) continue;
-      for (const channel of channelsBySession.get(event.session_id) ?? []) {
+    // Session-level attribution: 전환 세션이 거친 채널 각각에 1회만 기여
+    for (const sid of convSids) {
+      for (const channel of channelsBySession.get(sid) ?? []) {
         const bucket = map.get(channel);
         if (bucket) {
           bucket.conversions += 1;
-          bucket.conversionSessions.add(event.session_id);
+          bucket.conversionSessions.add(sid);
         }
       }
     }
@@ -625,23 +643,26 @@ export function buildBreakdown(events: AnalyticsEvent[], current: DateRange, pre
   const buildSourceMap = (rows: AnalyticsEvent[]) => {
     const map = new Map<string, { source: TrafficSource; sessions: Set<string>; conversions: number; conversionSessions: Set<string> }>();
     const sourceBySession = new Map<string, TrafficSource>();
+    const convSids = new Set<string>();
     const sortedRows = [...rows].sort((a, b) => a.created_at.localeCompare(b.created_at));
     for (const event of sortedRows) {
-      if (event.event_name !== "page_view" || sourceBySession.has(event.session_id)) continue;
-      const source = classifyTrafficSource(event.referrer);
-      sourceBySession.set(event.session_id, source);
-      const bucket = map.get(source.sourceKey) ?? { source, sessions: new Set<string>(), conversions: 0, conversionSessions: new Set<string>() };
-      bucket.sessions.add(event.session_id);
-      map.set(source.sourceKey, bucket);
+      if (event.event_name === "page_view" && !sourceBySession.has(event.session_id)) {
+        const source = classifyTrafficSource(event.referrer);
+        sourceBySession.set(event.session_id, source);
+        const bucket = map.get(source.sourceKey) ?? { source, sessions: new Set<string>(), conversions: 0, conversionSessions: new Set<string>() };
+        bucket.sessions.add(event.session_id);
+        map.set(source.sourceKey, bucket);
+      }
+      if (isConversion(event)) convSids.add(event.session_id);
     }
-    for (const event of sortedRows) {
-      if (!isConversion(event)) continue;
-      const source = sourceBySession.get(event.session_id);
+    // Session-level attribution: 전환 세션의 first-touch source에 1회만 기여
+    for (const sid of convSids) {
+      const source = sourceBySession.get(sid);
       if (!source) continue;
       const bucket = map.get(source.sourceKey);
       if (!bucket) continue;
       bucket.conversions += 1;
-      bucket.conversionSessions.add(event.session_id);
+      bucket.conversionSessions.add(sid);
     }
     return map;
   };
