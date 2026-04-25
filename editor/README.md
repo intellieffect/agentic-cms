@@ -1,9 +1,16 @@
 # brxce-editor (agentic-cms 에 이식됨)
 
+> # ⚠️ DEPRECATED for editing — see [DEPRECATED.md](./DEPRECATED.md)
+>
+> **dashboard의 영상 편집기를 수정하려면 `editor/`가 아닌 `dashboard/src/components/{studio,remotion}/`을 수정하세요.**
+>
+> 이 디렉토리의 `components/`, `app/`, `lib/` 는 dashboard로 fully ported된 후 historical reference로 보존 중입니다.
+> 단, `editor/remotion/src/` (server-side Remotion render bundle) 와 `editor/src/server/` (Python API) 는 여전히 운영에서 사용됩니다.
+
 AI 기반 숏폼 영상 편집기. 레퍼런스 분석 → 소스 자동 매칭 → 비트 싱크 → BGM 매칭 → 프로젝트 생성까지 자동화.
 
 > **이식 안내 (2026-04-18)**: 이 프로젝트는 원래 독립 repo (`https://github.com/intelli-ddd/brxce-editor`) 였으나, `agentic-cms` 의 `editor/` 서브디렉토리로 흡수됨. 독립 실행도 가능하지만, 기본 사용 방식은 agentic-cms dashboard 의 영상 관련 기능이 이 서버에 proxy 로 위임하는 구조.
-> 자세한 통합 내역: `../CHANGELOG.md`
+> 자세한 통합 내역: `../CHANGELOG.md` · sync 가이드: [`./DEPRECATED.md`](./DEPRECATED.md)
 
 ## Quick Start
 

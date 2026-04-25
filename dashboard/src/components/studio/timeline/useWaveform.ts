@@ -13,6 +13,13 @@ export function useWaveform() {
   const [clipAudioInfo, setClipAudioInfo] = useState<Record<string, ClipAudioInfo>>({});
   const [waveformVersion, setWaveformVersion] = useState(0);
 
+  // Per-source dedupe — prevents the effect from re-fetching the same media when
+  // any unrelated state update re-triggers this hook (StrictMode double-mount,
+  // sibling re-renders). The Map shares an in-flight promise; the Set marks any
+  // source that completed (success OR failure) so failures are never retried.
+  const waveformAttempts = useRef<Map<string, Promise<{ peaks: Float32Array; duration: number } | null>>>(new Map());
+  const waveformTried = useRef<Set<string>>(new Set());
+
   const buildMediaUrl = useCallback((source: string) => {
     const isAudio = /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(source);
     if (isAudio) {
@@ -23,36 +30,49 @@ export function useWaveform() {
   }, []);
 
   const extractWaveform = useCallback(async (source: string) => {
-    const url = buildMediaUrl(source);
-    try {
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      const buf = await response.arrayBuffer();
-      const audioCtx = new AudioContext();
+    // Dedupe: share the in-flight promise; refuse to re-fetch a tried source.
+    const inFlight = waveformAttempts.current.get(source);
+    if (inFlight) return inFlight;
+    if (waveformTried.current.has(source)) return null;
+
+    const promise = (async () => {
+      const url = buildMediaUrl(source);
       try {
-        const decoded = await audioCtx.decodeAudioData(buf);
-        const data = decoded.getChannelData(0);
-        const targetLen = Math.min(16000, data.length);
-        const windowSize = Math.max(1, Math.floor(data.length / targetLen));
-        const result = new Float32Array(targetLen);
-        for (let i = 0; i < targetLen; i++) {
-          const start = i * windowSize;
-          const end = Math.min(start + windowSize, data.length);
-          let peak = 0;
-          for (let j = start; j < end; j++) {
-            const abs = Math.abs(data[j]);
-            if (abs > peak) peak = abs;
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const buf = await response.arrayBuffer();
+        const audioCtx = new AudioContext();
+        try {
+          const decoded = await audioCtx.decodeAudioData(buf);
+          const data = decoded.getChannelData(0);
+          const targetLen = Math.min(16000, data.length);
+          const windowSize = Math.max(1, Math.floor(data.length / targetLen));
+          const result = new Float32Array(targetLen);
+          for (let i = 0; i < targetLen; i++) {
+            const start = i * windowSize;
+            const end = Math.min(start + windowSize, data.length);
+            let peak = 0;
+            for (let j = start; j < end; j++) {
+              const abs = Math.abs(data[j]);
+              if (abs > peak) peak = abs;
+            }
+            result[i] = peak;
           }
-          result[i] = peak;
+          return { peaks: result, duration: decoded.duration };
+        } finally {
+          void audioCtx.close();
         }
-        const audioDuration = decoded.duration;
-        return { peaks: result, duration: audioDuration };
+      } catch {
+        // decodeAudioData on a video container with no decodable audio track throws — expected.
+        return null;
       } finally {
-        void audioCtx.close();
+        waveformTried.current.add(source);
+        waveformAttempts.current.delete(source);
       }
-    } catch {
-      return null;
-    }
+    })();
+
+    waveformAttempts.current.set(source, promise);
+    return promise;
   }, [buildMediaUrl]);
 
   const drawWaveformBars = useCallback((ctx: CanvasRenderingContext2D, widthPx: number, h: number, waveData: Float32Array | undefined, color: string, fallbackColor: string) => {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Sequence,
   useVideoConfig,
@@ -168,87 +168,85 @@ export const VideoProject: React.FC<ProjectData> = (props) => {
 
   const frame = useCurrentFrame();
 
-  // Build CSS filter string from globalEffects — applied directly to each <OffthreadVideo>
-  const getEffectVal = (type: string, defaultVal: number = 100) => {
-    const ef = (globalEffects || []).find((e) => e.type === type);
-    return ef?.value ?? defaultVal;
-  };
-  const brightness = getEffectVal("brightness", 100);
-  const contrast = getEffectVal("contrast", 100);
-  const saturation = getEffectVal("saturation", 100);
-  const blur = getEffectVal("blur", 0);
-  const grayscale = getEffectVal("grayscale", 0);
-  const sepia = getEffectVal("sepia", 0);
-  const hueRotate = getEffectVal("hueRotate", 0);
+  // Build CSS filter string from globalEffects — props 변경 시에만 재계산
+  const filterStr = useMemo(() => {
+    const get = (type: string, defaultVal: number) =>
+      (globalEffects || []).find((e) => e.type === type)?.value ?? defaultVal;
+    const brightness = get("brightness", 100);
+    const contrast = get("contrast", 100);
+    const saturation = get("saturation", 100);
+    const blur = get("blur", 0);
+    const grayscale = get("grayscale", 0);
+    const sepia = get("sepia", 0);
+    const hueRotate = get("hueRotate", 0);
 
-  const filterParts: string[] = [];
-  if (brightness !== 100) filterParts.push(`brightness(${brightness / 100})`);
-  if (contrast !== 100) filterParts.push(`contrast(${contrast / 100})`);
-  if (saturation !== 100) filterParts.push(`saturate(${saturation / 100})`);
-  if (blur > 0) filterParts.push(`blur(${blur}px)`);
-  if (grayscale > 0) filterParts.push(`grayscale(${grayscale / 100})`);
-  if (sepia > 0) filterParts.push(`sepia(${sepia / 100})`);
-  if (hueRotate > 0) filterParts.push(`hue-rotate(${hueRotate}deg)`);
+    const parts: string[] = [];
+    if (brightness !== 100) parts.push(`brightness(${brightness / 100})`);
+    if (contrast !== 100) parts.push(`contrast(${contrast / 100})`);
+    if (saturation !== 100) parts.push(`saturate(${saturation / 100})`);
+    if (blur > 0) parts.push(`blur(${blur}px)`);
+    if (grayscale > 0) parts.push(`grayscale(${grayscale / 100})`);
+    if (sepia > 0) parts.push(`sepia(${sepia / 100})`);
+    if (hueRotate > 0) parts.push(`hue-rotate(${hueRotate}deg)`);
+    return parts.length > 0 ? parts.join(" ") : undefined;
+  }, [globalEffects]);
 
-  const filterStr = filterParts.length > 0 ? filterParts.join(" ") : undefined;
-
-  // Calculate clip durations
-  const clipDurations: number[] = clips.map((clip, i) => {
-    const speed = clipMeta[i]?.speed ?? 1;
-    return (clip.end - clip.start) / speed;
-  });
-
-  // Calculate timeline positions (for subtitles/BGM positioning)
-  const transitionDurations: number[] = [];
-  for (let i = 0; i < clips.length - 1; i++) {
-    const t = transitions[i];
-    if (t && t.type !== "none" && t.duration > 0) {
-      transitionDurations.push(t.duration);
-    } else {
-      transitionDurations.push(0);
-    }
-  }
-
-  const clipStarts: number[] = [0];
-  for (let i = 1; i < clips.length; i++) {
-    const prevEnd = clipStarts[i - 1] + clipDurations[i - 1];
-    const overlap = transitionDurations[i - 1] ?? 0;
-    clipStarts.push(prevEnd - overlap);
-  }
-
-  // Get effective timeline start for a clip (multi-track: timelineStart, fallback: sequential)
-  const getClipTimelineStart = (i: number) => clips[i].timelineStart ?? clipStarts[i];
-
-  // Group clips by track for multi-track rendering
+  // Clip durations / timeline positions / track grouping — 매 프레임이 아닌 props 기반으로만 재계산
   const NUM_TRACKS = 3;
-  const trackClips: { clipIndex: number; clip: Clip }[][] = Array.from({ length: NUM_TRACKS }, () => []);
-  clips.forEach((clip, i) => {
-    const track = clip.track ?? 0;
-    const clampedTrack = Math.max(0, Math.min(NUM_TRACKS - 1, track));
-    trackClips[clampedTrack].push({ clipIndex: i, clip });
-  });
 
-  // For transition detection: find adjacent clips on same track
-  const getTrackTransitions = (trackIdx: number) => {
-    const tClips = trackClips[trackIdx];
-    if (tClips.length < 2) return [];
-    const sorted = [...tClips].sort((a, b) => getClipTimelineStart(a.clipIndex) - getClipTimelineStart(b.clipIndex));
-    const result: { transIndex: number; startSec: number; durationSec: number; type: string }[] = [];
-    for (let j = 0; j < sorted.length - 1; j++) {
-      const aIdx = sorted[j].clipIndex;
-      const bIdx = sorted[j + 1].clipIndex;
-      const aEnd = getClipTimelineStart(aIdx) + clipDurations[aIdx];
-      const bStart = getClipTimelineStart(bIdx);
-      if (Math.abs(aEnd - bStart) < 0.01) {
-        const tIdx = Math.min(aIdx, bIdx);
-        const t = transitions[tIdx];
-        if (t && t.type !== "none" && t.duration > 0) {
-          result.push({ transIndex: tIdx, startSec: aEnd - t.duration, durationSec: t.duration, type: t.type });
-        }
-      }
+  const layout = useMemo(() => {
+    const clipDurations: number[] = clips.map((clip, i) => {
+      const speed = clipMeta[i]?.speed ?? 1;
+      return (clip.end - clip.start) / speed;
+    });
+
+    const transitionDurations: number[] = [];
+    for (let i = 0; i < clips.length - 1; i++) {
+      const t = transitions[i];
+      transitionDurations.push(t && t.type !== "none" && t.duration > 0 ? t.duration : 0);
     }
-    return result;
-  };
+
+    const clipStarts: number[] = [0];
+    for (let i = 1; i < clips.length; i++) {
+      const prevEnd = clipStarts[i - 1] + clipDurations[i - 1];
+      clipStarts.push(prevEnd - (transitionDurations[i - 1] ?? 0));
+    }
+
+    const getClipTimelineStart = (i: number) => clips[i].timelineStart ?? clipStarts[i];
+
+    const trackClips: { clipIndex: number; clip: Clip }[][] = Array.from({ length: NUM_TRACKS }, () => []);
+    clips.forEach((clip, i) => {
+      const track = Math.max(0, Math.min(NUM_TRACKS - 1, clip.track ?? 0));
+      trackClips[track].push({ clipIndex: i, clip });
+    });
+
+    const trackTransitions: { transIndex: number; startSec: number; durationSec: number; type: string }[][] =
+      trackClips.map((tClips) => {
+        if (tClips.length < 2) return [];
+        const sorted = [...tClips].sort(
+          (a, b) => getClipTimelineStart(a.clipIndex) - getClipTimelineStart(b.clipIndex),
+        );
+        const result: { transIndex: number; startSec: number; durationSec: number; type: string }[] = [];
+        for (let j = 0; j < sorted.length - 1; j++) {
+          const aIdx = sorted[j].clipIndex;
+          const bIdx = sorted[j + 1].clipIndex;
+          const aEnd = getClipTimelineStart(aIdx) + clipDurations[aIdx];
+          const bStart = getClipTimelineStart(bIdx);
+          if (Math.abs(aEnd - bStart) < 0.01) {
+            const tIdx = Math.min(aIdx, bIdx);
+            const t = transitions[tIdx];
+            if (t && t.type !== "none" && t.duration > 0) {
+              result.push({ transIndex: tIdx, startSec: aEnd - t.duration, durationSec: t.duration, type: t.type });
+            }
+          }
+        }
+        return result;
+      });
+
+    return { clipDurations, clipStarts, getClipTimelineStart, trackClips, trackTransitions };
+  }, [clips, clipMeta, transitions]);
+
+  const { clipDurations, getClipTimelineStart, trackClips, trackTransitions } = layout;
 
   // Fade in/out opacity
   const totalDurationFrames = Math.ceil(props.totalDuration * fps);
@@ -302,7 +300,7 @@ export const VideoProject: React.FC<ProjectData> = (props) => {
               );
             })}
             {/* Transition overlays for this track */}
-            {getTrackTransitions(trackIdx).map((tr) => {
+            {trackTransitions[trackIdx].map((tr) => {
               const startFrame = Math.round(tr.startSec * fps);
               const durationFrames = Math.max(1, Math.ceil(tr.durationSec * fps));
               return (
