@@ -6,10 +6,20 @@
 
 ## 구조
 - `src/` — MCP 서버 (TypeScript ESM)
-- `dashboard/` — Next.js 15 + Tailwind 4 + shadcn/ui 대시보드
-- `editor/` — Python FastAPI 영상 편집 서버 (2026-04-18 brxce-editor 이식). 포트 8092. dashboard 가 iframe/proxy 로 임베드.
+- `dashboard/` — Next.js 15 + Tailwind 4 + shadcn/ui 대시보드 — **영상 편집기 UI도 여기 있음** (`dashboard/src/components/{studio,remotion}/`)
+- `editor/` — Python FastAPI 영상 편집 서버 (포트 8092) + Remotion server-side render bundle (`editor/remotion/src/`).
+  - **주의**: `editor/components/`, `editor/app/`, `editor/lib/` 는 dashboard로 fully ported된 후 historical reference로 보존. **dashboard 영상 편집기 변경은 절대 `editor/`가 아닌 `dashboard/src/components/...`에 적용**할 것 ([editor/DEPRECATED.md](./editor/DEPRECATED.md) 참조).
 - `supabase/` — DB 마이그레이션
 - `reference/` — Payload·Strapi·Directus·shadcn-admin 클론 (.gitignore)
+
+### 영상 편집기 변경 어디에 해야 하나? (가장 자주 헷갈리는 포인트)
+
+| 변경 영역 | 수정 위치 | 사용자가 보는 곳 |
+|---|---|---|
+| Player preview (Studio UI, Timeline, RemotionPreview, Panels 등) | `dashboard/src/components/studio/`, `dashboard/src/components/remotion/` | http://localhost:3000 (운영) |
+| Server-side Remotion render | `editor/remotion/src/` | render 시 ffmpeg 통해 mp4 생성 |
+| Python proxy/render API | `editor/src/server/` | port 8092 |
+| editor sub-app standalone (port 3100) | `editor/components/...` | 개별 테스트만, 운영 외 — **편집하지 말 것** |
 
 ## 기술 스택
 - MCP 서버: TypeScript, ESM, Supabase adapter
