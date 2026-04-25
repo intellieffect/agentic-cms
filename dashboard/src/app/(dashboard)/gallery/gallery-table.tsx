@@ -38,6 +38,7 @@ const KIND_FILTER: (GalleryKind | "all")[] = [
   "image",
   "carousel",
   "case_study",
+  "ai_influencer",
   "other",
 ];
 const VISIBILITY_OPTIONS: GalleryVisibility[] = ["public", "member", "internal"];
@@ -47,6 +48,7 @@ function kindVariant(kind: GalleryKind) {
   if (kind === "landing") return "warning" as const;
   if (kind === "ad") return "success" as const;
   if (kind === "case_study") return "info" as const;
+  if (kind === "ai_influencer") return "info" as const;
   return "secondary" as const;
 }
 

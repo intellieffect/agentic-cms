@@ -28,6 +28,7 @@ const KIND_OPTIONS: GalleryKind[] = [
   "image",
   "carousel",
   "case_study",
+  "ai_influencer",
   "other",
 ];
 const ASPECT_OPTIONS: GalleryCoverAspect[] = ["1:1", "16:9", "9:16", "4:5", "3:4"];

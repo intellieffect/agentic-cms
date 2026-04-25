@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CMSAdapter } from '../adapters/interface.js';
 
-const KIND = z.enum(['landing', 'video', 'ad', 'image', 'carousel', 'case_study', 'other']);
+const KIND = z.enum(['landing', 'video', 'ad', 'image', 'carousel', 'case_study', 'ai_influencer', 'other']);
 const ASPECT = z.enum(['1:1', '16:9', '9:16', '4:5', '3:4']);
 const STATUS = z.enum(['draft', 'published', 'archived']);
 const VISIBILITY = z.enum(['internal', 'member', 'public']);
