@@ -503,6 +503,15 @@ export const Timeline: React.FC = () => {
   const [clipAudioInfo, setClipAudioInfo] = useState<Record<string, ClipAudioInfo>>({});
   const [waveformVersion, setWaveformVersion] = useState(0);
 
+  // Per-source dedupe: prevents the effect from re-fetching the same media on every
+  // unrelated re-render (currentFrame ticks, sibling state updates, etc.). The Map
+  // value is the in-flight promise so concurrent callers get the same result.
+  // Once an attempt completes (success OR failure), the source is recorded as "tried"
+  // and never refetched in this Timeline mount.
+  const waveformAttempts = useRef<Map<string, Promise<{ peaks: Float32Array; duration: number } | null>>>(new Map());
+  const waveformTried = useRef<Set<string>>(new Set());
+  const probeAttempts = useRef<Set<string>>(new Set());
+
   const buildMediaUrl = useCallback((source: string) => {
     // 오디오 파일은 프록시 디렉토리에 없으므로 직접 경로 사용
     const isAudio = /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(source);
@@ -514,42 +523,53 @@ export const Timeline: React.FC = () => {
   }, []);
 
   const extractWaveform = useCallback(async (source: string) => {
-    const url = buildMediaUrl(source);
-    console.log('[Waveform] Fetching:', url);
-    try {
-      const response = await fetch(url);
-      if (!response.ok) { console.warn('[Waveform] Fetch failed:', response.status); return null; }
-      const buf = await response.arrayBuffer();
-      console.log('[Waveform] ArrayBuffer size:', buf.byteLength);
-      const audioCtx = new AudioContext();
+    // Dedupe: return the in-flight promise if one exists; refuse to re-fetch a tried source.
+    const inFlight = waveformAttempts.current.get(source);
+    if (inFlight) return inFlight;
+    if (waveformTried.current.has(source)) return null;
+
+    const promise = (async () => {
+      const url = buildMediaUrl(source);
       try {
-        const decoded = await audioCtx.decodeAudioData(buf);
-        const data = decoded.getChannelData(0);
-        console.log('[Waveform] Decoded samples:', data.length, 'sampleRate:', decoded.sampleRate);
-        // Very high resolution: store min/max pairs per window for detailed waveform
-        const targetLen = Math.min(16000, data.length);
-        const windowSize = Math.max(1, Math.floor(data.length / targetLen));
-        const result = new Float32Array(targetLen);
-        for (let i = 0; i < targetLen; i++) {
-          const start = i * windowSize;
-          const end = Math.min(start + windowSize, data.length);
-          let peak = 0;
-          for (let j = start; j < end; j++) {
-            const abs = Math.abs(data[j]);
-            if (abs > peak) peak = abs;
-          }
-          result[i] = peak;
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn('[Waveform] Fetch failed:', response.status, source);
+          return null;
         }
-        const audioDuration = decoded.duration;
-        console.log('[Waveform] Generated', result.length, 'peaks, duration:', audioDuration);
-        return { peaks: result, duration: audioDuration };
+        const buf = await response.arrayBuffer();
+        const audioCtx = new AudioContext();
+        try {
+          const decoded = await audioCtx.decodeAudioData(buf);
+          const data = decoded.getChannelData(0);
+          const targetLen = Math.min(16000, data.length);
+          const windowSize = Math.max(1, Math.floor(data.length / targetLen));
+          const result = new Float32Array(targetLen);
+          for (let i = 0; i < targetLen; i++) {
+            const start = i * windowSize;
+            const end = Math.min(start + windowSize, data.length);
+            let peak = 0;
+            for (let j = start; j < end; j++) {
+              const abs = Math.abs(data[j]);
+              if (abs > peak) peak = abs;
+            }
+            result[i] = peak;
+          }
+          return { peaks: result, duration: decoded.duration };
+        } finally {
+          void audioCtx.close();
+        }
+      } catch (err) {
+        // decodeAudioData on a video container with no decodable audio track throws — expected.
+        console.debug('[Waveform] decode failed (likely no audio track):', source, err instanceof Error ? err.message : err);
+        return null;
       } finally {
-        void audioCtx.close();
+        waveformTried.current.add(source);
+        waveformAttempts.current.delete(source);
       }
-    } catch (err) {
-      console.error('[Waveform] Error:', err);
-      return null;
-    }
+    })();
+
+    waveformAttempts.current.set(source, promise);
+    return promise;
   }, [buildMediaUrl]);
 
   const drawWaveformBars = useCallback((ctx: CanvasRenderingContext2D, widthPx: number, h: number, waveData: Float32Array | undefined, color: string, fallbackColor: string) => {
@@ -647,23 +667,38 @@ export const Timeline: React.FC = () => {
   }, [bgmClips, extractWaveform]);
 
   useEffect(() => {
+    // Per-source dedupe via probeAttempts ref — prevents the effect from re-fetching
+    // the same source whenever an unrelated state update re-triggers this hook.
+    // Removed `clipAudioInfo` from deps for the same reason: setState fan-out used to
+    // re-run this effect on every probe completion.
     for (const clip of clips) {
-      if (clipAudioInfo[clip.source]) continue;
+      if (probeAttempts.current.has(clip.source)) continue;
+      probeAttempts.current.add(clip.source);
+
       fetch(`/api/media/probe/${encodeURIComponent(clip.source)}`)
-        .then((r) => r.ok ? r.json() : null)
+        .then(async (r) => {
+          if (!r.ok) {
+            setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: true } });
+            return null;
+          }
+          return r.json();
+        })
         .then((info) => {
           if (!info) return;
           setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: info.hasAudio !== false } });
-          if (info.hasAudio === false || clipWaveforms.current.has(clip.source)) return;
+          if (info.hasAudio === false) return;
           return extractWaveform(clip.source).then((result) => {
-            if (result) clipWaveforms.current.set(clip.source, result.peaks);
+            if (result) {
+              clipWaveforms.current.set(clip.source, result.peaks);
+              setWaveformVersion((v) => v + 1);
+            }
           });
         })
         .catch(() => {
           setClipAudioInfo((prev) => prev[clip.source] ? prev : { ...prev, [clip.source]: { hasAudio: true } });
         });
     }
-  }, [clips, clipAudioInfo, extractWaveform]);
+  }, [clips, extractWaveform]);
 
   // Context menu for clip split
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; clipIdx: number; splitTime: number } | null>(null);
