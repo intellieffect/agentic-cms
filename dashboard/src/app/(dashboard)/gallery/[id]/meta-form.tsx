@@ -27,6 +27,7 @@ const KIND_OPTIONS: GalleryKind[] = [
   "image",
   "carousel",
   "case_study",
+  "ai_influencer",
   "other",
 ];
 
