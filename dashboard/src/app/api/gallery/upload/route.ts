@@ -1,24 +1,18 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getSupabase } from "@/lib/supabase";
-import { GALLERY_IMAGE_MAX, GALLERY_VIDEO_MAX } from "@/lib/gallery-constants";
+import {
+  GALLERY_IMAGE_MAX,
+  GALLERY_VIDEO_MAX,
+  ALLOWED_GALLERY_KINDS as ALLOWED_KINDS,
+  ALLOWED_GALLERY_ASPECTS as ALLOWED_ASPECTS,
+} from "@/lib/gallery-constants";
 
 const BUCKET = "content-media";
 
 type Mode = "new" | "attach" | "replace_cover";
 type Role = "cover" | "gallery" | "detail" | "hero_video";
 
-const ALLOWED_KINDS = new Set([
-  "landing",
-  "video",
-  "ad",
-  "image",
-  "carousel",
-  "case_study",
-  "ai_influencer",
-  "other",
-]);
-const ALLOWED_ASPECTS = new Set(["1:1", "16:9", "9:16", "4:5", "3:4"]);
 const ALLOWED_ROLES = new Set<Role>(["cover", "gallery", "detail", "hero_video"]);
 
 function safeName(name: string): string {

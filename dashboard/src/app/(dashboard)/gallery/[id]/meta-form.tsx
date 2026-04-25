@@ -17,19 +17,11 @@ import type {
   GalleryCoverAspect,
   GalleryKind,
 } from "@/lib/types";
+import {
+  GALLERY_KINDS as KIND_OPTIONS,
+  GALLERY_COVER_ASPECTS as ASPECT_OPTIONS,
+} from "@/lib/gallery-constants";
 import { updateGalleryMeta } from "../actions";
-
-const ASPECT_OPTIONS: GalleryCoverAspect[] = ["1:1", "16:9", "9:16", "4:5", "3:4"];
-const KIND_OPTIONS: GalleryKind[] = [
-  "landing",
-  "video",
-  "ad",
-  "image",
-  "carousel",
-  "case_study",
-  "ai_influencer",
-  "other",
-];
 
 export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
   const [pending, startTransition] = useTransition();
