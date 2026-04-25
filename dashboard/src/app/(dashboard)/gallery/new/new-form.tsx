@@ -19,19 +19,13 @@ import type {
   GalleryItemStatus,
   GalleryVisibility,
 } from "@/lib/types";
-import { GALLERY_IMAGE_MAX, GALLERY_VIDEO_MAX } from "@/lib/gallery-constants";
+import {
+  GALLERY_IMAGE_MAX,
+  GALLERY_VIDEO_MAX,
+  GALLERY_KINDS as KIND_OPTIONS,
+  GALLERY_COVER_ASPECTS as ASPECT_OPTIONS,
+} from "@/lib/gallery-constants";
 
-const KIND_OPTIONS: GalleryKind[] = [
-  "landing",
-  "video",
-  "ad",
-  "image",
-  "carousel",
-  "case_study",
-  "ai_influencer",
-  "other",
-];
-const ASPECT_OPTIONS: GalleryCoverAspect[] = ["1:1", "16:9", "9:16", "4:5", "3:4"];
 const STATUS_OPTIONS: GalleryItemStatus[] = ["draft", "published", "archived"];
 const VISIBILITY_OPTIONS: GalleryVisibility[] = ["public", "member", "internal"];
 

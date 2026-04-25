@@ -21,6 +21,7 @@ import type {
   GalleryKind,
   GalleryVisibility,
 } from "@/lib/types";
+import { GALLERY_KIND_FILTERS as KIND_FILTER } from "@/lib/gallery-constants";
 import {
   setGalleryFeatured,
   updateGalleryRank,
@@ -30,17 +31,6 @@ import {
 } from "./actions";
 
 const STATUS_OPTIONS: GalleryItemStatus[] = ["draft", "published", "archived"];
-const KIND_FILTER: (GalleryKind | "all")[] = [
-  "all",
-  "landing",
-  "video",
-  "ad",
-  "image",
-  "carousel",
-  "case_study",
-  "ai_influencer",
-  "other",
-];
 const VISIBILITY_OPTIONS: GalleryVisibility[] = ["public", "member", "internal"];
 
 function kindVariant(kind: GalleryKind) {
