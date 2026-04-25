@@ -599,7 +599,7 @@ export default function BlogDetailPage() {
       <hr className="border-[#222] mb-8" />
 
       {/* Thumbnail */}
-      <div className="mb-8">
+      <div className="mb-8 mx-auto max-w-2xl">
         <h3 className="text-sm font-medium text-[#888] mb-3">썸네일</h3>
         <input
           ref={fileInputRef}
@@ -643,7 +643,7 @@ export default function BlogDetailPage() {
         />
         {post.thumbnail_url ? (
           <div>
-            <div className="relative aspect-[16/9] max-w-md rounded-lg overflow-hidden bg-[#111]">
+            <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-[#111]">
               <Image
                 src={post.thumbnail_url}
                 alt="썸네일"
@@ -687,7 +687,7 @@ export default function BlogDetailPage() {
         ) : (
           <button
             type="button"
-            className="w-full max-w-md aspect-[16/9] rounded-lg border border-dashed border-[#333] bg-[#111] hover:border-[#555] transition-colors flex items-center justify-center cursor-pointer"
+            className="w-full aspect-[16/9] rounded-lg border border-dashed border-[#333] bg-[#111] hover:border-[#555] transition-colors flex items-center justify-center cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
           >
@@ -707,7 +707,7 @@ export default function BlogDetailPage() {
           onCancel={() => setEditMode(false)}
         />
       ) : (
-        <div>
+        <div className="mx-auto max-w-2xl">
           <div className="flex justify-end mb-4">
             <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
               편집
