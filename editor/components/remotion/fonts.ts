@@ -1,6 +1,10 @@
 /**
- * Register custom fonts for both Next.js (Player preview) and Remotion render.
- * Uses /fonts/ public directory.
+ * Register custom fonts for the Player preview (Next.js context).
+ * Uses FontFace API per Remotion best-practice — `document.fonts` ready promise gives
+ * deterministic font availability before Player starts rendering.
+ *
+ * The Remotion render path uses `editor/remotion/src/fonts.ts`, which wraps the same
+ * loads with `delayRender` / `continueRender` so the renderer waits for fonts.
  */
 
 const FONTS: Array<{ family: string; file: string; weight?: number }> = [
@@ -21,21 +25,23 @@ const FONTS: Array<{ family: string; file: string; weight?: number }> = [
   { family: "LINESeedKR", file: "LINESeedKR-Bold.woff2", weight: 700 },
 ];
 
+let registered = false;
+
 export function registerFonts(): void {
   if (typeof document === "undefined") return;
-  if (document.getElementById("__remotion-fonts")) return;
+  if (registered) return;
+  registered = true;
 
-  const style = document.createElement("style");
-  style.id = "__remotion-fonts";
-  const rules = FONTS.map(
-    (f) => `@font-face {
-  font-family: '${f.family}';
-  src: url('/fonts/${f.file}') format('${f.file.endsWith(".woff2") ? "woff2" : "truetype"}');
-  font-weight: ${f.weight ?? 400};
-  font-display: block;
-}`
-  ).join("\n");
-
-  style.textContent = rules;
-  document.head.appendChild(style);
+  for (const f of FONTS) {
+    const url = `/fonts/${f.file}`;
+    const format = f.file.endsWith(".woff2") ? "woff2" : "truetype";
+    const font = new FontFace(f.family, `url('${url}') format('${format}')`, {
+      weight: String(f.weight ?? 400),
+      display: "block",
+    });
+    font
+      .load()
+      .then((loaded) => document.fonts.add(loaded))
+      .catch((err) => console.warn(`[fonts] failed to load ${f.family}:`, err));
+  }
 }

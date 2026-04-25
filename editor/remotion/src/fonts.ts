@@ -1,7 +1,10 @@
-import { staticFile } from "remotion";
+import { continueRender, delayRender, staticFile } from "remotion";
 
 /**
  * Register all custom fonts for Remotion rendering.
+ * Uses FontFace API + delayRender/continueRender per Remotion best-practice
+ * so the renderer waits for fonts before capturing the first frame.
+ *
  * Must be imported at the top of Root.tsx.
  */
 
@@ -23,19 +26,35 @@ const FONTS: Array<{ family: string; file: string; weight?: number }> = [
   { family: "LINESeedKR", file: "LINESeedKR-Bold.woff2", weight: 700 },
 ];
 
+let registered = false;
+
 export function registerFonts(): void {
   if (typeof document === "undefined") return;
+  if (registered) return;
+  registered = true;
 
-  const style = document.createElement("style");
-  const rules = FONTS.map(
-    (f) => `@font-face {
-  font-family: '${f.family}';
-  src: url('${staticFile(`fonts/${f.file}`)}') format('${f.file.endsWith(".woff2") ? "woff2" : "truetype"}');
-  font-weight: ${f.weight ?? 400};
-  font-display: block;
-}`
-  ).join("\n");
+  for (const f of FONTS) {
+    const handle = delayRender(`Loading font ${f.family}`);
+    const url = staticFile(`fonts/${f.file}`);
+    const format = f.file.endsWith(".woff2") ? "woff2" : "truetype";
+    const font = new FontFace(f.family, `url('${url}') format('${format}')`, {
+      weight: String(f.weight ?? 400),
+      display: "block",
+    });
 
-  style.textContent = rules;
-  document.head.appendChild(style);
+    font
+      .load()
+      .then((loaded) => {
+        document.fonts.add(loaded);
+        continueRender(handle);
+      })
+      .catch((err) => {
+        // Don't cancel render on a single font failure — fall back to system font and continue.
+        // Cancelling would abort the entire render for one missing/optional font.
+        console.warn(`[fonts] failed to load ${f.family}:`, err);
+        continueRender(handle);
+      });
+  }
+
 }
+

@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { OffthreadVideo, Video, useCurrentFrame, useVideoConfig, interpolate, getRemotionEnvironment } from "remotion";
 
 export interface ClipZoomAnimated {
@@ -121,17 +121,16 @@ export const VideoClip: React.FC<ClipProps> = ({
   const transform = transformParts.length > 0 ? transformParts.join(' ') : undefined;
 
   const clipOpacity = opacity != null ? opacity / 100 : undefined;
-  const clipVolume = audioMuted ? 0 : (volume != null ? volume / 100 : 1);
+  const clipVolume = volume != null ? volume / 100 : 1;
   const objectFit = fitMode === 'contain' ? 'contain' : 'cover';
   const objPosX = positionX ?? 50;
   const objPosY = positionY ?? 50;
   const objectPosition = (objPosX !== 50 || objPosY !== 50) ? `${objPosX}% ${objPosY}%` : undefined;
 
-  // Suppress video playback errors (HEVC originals may fail in browser during proxy generation)
-  const handleError = useCallback((err: Error) => {
-    // Silently ignore — errorFallback will show placeholder
+  // HEVC originals may fail in browser during proxy generation — log only, errorFallback renders placeholder
+  const handleError = (err: Error) => {
     console.debug(`[VideoClip] ${source}: ${err.message}`);
-  }, [source]);
+  };
 
   return (
     <div
@@ -149,6 +148,7 @@ export const VideoClip: React.FC<ClipProps> = ({
           startFrom={startFromFrame}
           playbackRate={speed}
           volume={clipVolume}
+          muted={audioMuted}
           onError={handleError}
           style={{
             width: "100%",
@@ -166,6 +166,7 @@ export const VideoClip: React.FC<ClipProps> = ({
           startFrom={startFromFrame}
           playbackRate={speed}
           volume={clipVolume}
+          muted={audioMuted}
           onError={handleError}
           pauseWhenBuffering
           acceptableTimeShiftInSeconds={1}

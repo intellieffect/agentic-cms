@@ -4,6 +4,13 @@ import path from 'path';
 const API_URL = process.env.BRXCE_API_URL || 'http://localhost:8092';
 
 const nextConfig: NextConfig = {
+  // Strict Mode causes the Player tree to mount → unmount → mount in dev,
+  // which double-invokes every <Video> element's fetch and shows up as
+  // (canceled) + 2x success per clip in DevTools. HTML5 <video> is an
+  // external resource (not React-managed), so Strict Mode's protection
+  // brings no benefit here while doubling network noise during media editing.
+  // Production builds are unaffected (Strict Mode is dev-only behavior).
+  reactStrictMode: false,
   async rewrites() {
     return [
       {

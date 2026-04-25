@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { Audio, useCurrentFrame, interpolate } from "remotion";
+import { Audio, interpolate } from "remotion";
 
 export interface BgmClipData {
   id?: string;
@@ -39,40 +39,45 @@ export const BgmAudio: React.FC<BgmAudioProps> = ({
 
   const startFromFrame = Math.round(bgmClip.audioStart * fps);
   const baseVolume = bgmClip.volume / 100;
-  const frame = useCurrentFrame();
 
-  // Compute volume with fade in/out applied
+  // Stabilize fadeInOut deps by extracting primitives — 객체 참조 변경에 무관하게 동일 callback 유지
+  const fadeEnabled = !!fadeInOut?.enabled && totalDuration > 0;
+  const fadeInDuration = fadeInOut?.fadeInDuration ?? 0;
+  const fadeOutDuration = fadeInOut?.fadeOutDuration ?? 0;
+  const bgmStart = bgmClip.start;
+
   const getVolume = useCallback(
     (f: number) => {
-      if (!fadeInOut?.enabled || totalDuration <= 0) return baseVolume;
+      if (!fadeEnabled) return baseVolume;
 
-      // f is relative to this Sequence; convert to absolute timeline time
-      const absoluteTime = bgmClip.start + f / fps;
-      const fadeInEnd = fadeInOut.fadeInDuration;
-      const fadeOutStart = totalDuration - fadeInOut.fadeOutDuration;
+      const absoluteTime = bgmStart + f / fps;
+      const fadeOutStart = totalDuration - fadeOutDuration;
 
       let multiplier = 1;
-      if (fadeInOut.fadeInDuration > 0 && absoluteTime < fadeInEnd) {
-        multiplier = Math.min(multiplier, interpolate(
-          absoluteTime, [0, fadeInEnd], [0, 1],
-          { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-        ));
+      if (fadeInDuration > 0 && absoluteTime < fadeInDuration) {
+        multiplier = Math.min(
+          multiplier,
+          interpolate(absoluteTime, [0, fadeInDuration], [0, 1], {
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
+          }),
+        );
       }
-      if (fadeInOut.fadeOutDuration > 0 && absoluteTime > fadeOutStart) {
-        multiplier = Math.min(multiplier, interpolate(
-          absoluteTime, [fadeOutStart, totalDuration], [1, 0],
-          { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-        ));
+      if (fadeOutDuration > 0 && absoluteTime > fadeOutStart) {
+        multiplier = Math.min(
+          multiplier,
+          interpolate(absoluteTime, [fadeOutStart, totalDuration], [1, 0], {
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
+          }),
+        );
       }
       return baseVolume * multiplier;
     },
-    [baseVolume, bgmClip.start, fps, fadeInOut, totalDuration],
+    [baseVolume, bgmStart, fps, fadeEnabled, fadeInDuration, fadeOutDuration, totalDuration],
   );
 
-  // If no fade, use static volume; otherwise use callback
-  const volumeProp = (!fadeInOut?.enabled || totalDuration <= 0)
-    ? baseVolume
-    : getVolume;
+  const volumeProp = fadeEnabled ? getVolume : baseVolume;
 
   return (
     <Audio

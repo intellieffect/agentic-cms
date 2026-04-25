@@ -86,12 +86,13 @@ const WordHighlightRenderer: React.FC<{
     >
       {words.map((word, i) => {
         const isActive = i === activeIdx;
+        // No CSS transition — Remotion renders frames independently;
+        // transitions are non-deterministic and would flicker in render.
         return (
           <span
             key={i}
             style={{
               color: isActive ? highlightColor : color,
-              transition: "color 0.1s",
               fontWeight: isActive ? 800 : "inherit",
             }}
           >
@@ -183,10 +184,12 @@ const WordBoxMoveRenderer: React.FC<{
   const containerRef = React.useRef<HTMLSpanElement>(null);
   const wordRefs = React.useRef<(HTMLSpanElement | null)[]>([]);
 
-  // Measure active word position
+  // Measure active word position. Use useLayoutEffect so measurement completes
+  // before browser paints — required for Remotion render: each frame must paint
+  // with the correct box position, never with a one-frame stale value.
   const [boxStyle, setBoxStyle] = React.useState<React.CSSProperties>({});
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     const activeEl = wordRefs.current[activeIdx];
     const container = containerRef.current;
     if (!activeEl || !container) return;
@@ -199,6 +202,14 @@ const WordBoxMoveRenderer: React.FC<{
       height: wRect.height + 4 * scale,
     });
   }, [activeIdx, scale]);
+
+  // Smooth box arrival is driven by Remotion's frame, not CSS transition (which is
+  // non-deterministic across render workers). Spring scales the box on word change.
+  const framesPerWord = activeIdx >= 0 ? 1 : 0; // sentinel
+  const localFrame = framesPerWord > 0 ? frame % Math.max(1, Math.round(fps * 0.4)) : 0;
+  const arriveScale = activeIdx >= 0
+    ? interpolate(localFrame, [0, 4], [0.94, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    : 1;
 
   return (
     <span
@@ -216,13 +227,15 @@ const WordBoxMoveRenderer: React.FC<{
           : {}),
       }}
     >
-      {/* Animated background box */}
+      {/* Box snaps to active-word position each frame (deterministic);
+          subtle pop-in via interpolate keeps it lively without CSS transition. */}
       <span
         style={{
           position: "absolute",
           backgroundColor: highlightColor,
           borderRadius: `${6 * scale}px`,
-          transition: "all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transform: `scale(${arriveScale})`,
+          transformOrigin: "center center",
           zIndex: 0,
           ...boxStyle,
         }}
