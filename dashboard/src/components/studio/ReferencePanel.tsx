@@ -49,16 +49,16 @@ export const ReferencePanel: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100%', gap: 0 }}>
+    <div className="studio-panel-content studio-panel-content-reference" style={{ display: 'flex', height: '100%', gap: 0 }}>
       {/* 왼쪽: 레퍼런스 영상 재생 (40%) */}
-      <div style={{
+      <div className="studio-reference-preview-card" style={{
         flex: 4,
         display: 'flex',
         flexDirection: 'column',
         borderRight: '1px solid #2a2a2a',
         minWidth: 0,
       }}>
-        <div style={{ padding: '8px 10px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
+        <div className="studio-panel-header-card" style={{ padding: '8px 10px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
           <span style={{ color: '#a78bfa', fontWeight: 600, fontSize: 11 }}>🎬 레퍼런스</span>
         </div>
 
@@ -110,14 +110,14 @@ export const ReferencePanel: React.FC = () => {
       </div>
 
       {/* 오른쪽: 레퍼런스 리스트 (60%) */}
-      <div style={{
+      <div className="studio-reference-list-card" style={{
         flex: 6,
         minWidth: 0,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
       }}>
-        <div style={{ padding: '8px 10px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
+        <div className="studio-panel-header-card" style={{ padding: '8px 10px', borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
           <span style={{ color: '#888', fontWeight: 600, fontSize: 10 }}>목록 ({videos.length})</span>
         </div>
 
@@ -131,6 +131,7 @@ export const ReferencePanel: React.FC = () => {
           }}>
             {videos.map((v) => (
               <div
+                className="studio-reference-thumb"
                 key={v.id}
                 onClick={() => selectRef(v)}
                 style={{

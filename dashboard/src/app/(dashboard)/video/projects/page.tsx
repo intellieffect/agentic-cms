@@ -14,6 +14,7 @@ import { BgmPanel } from '@/components/studio/BgmPanel';
 import { TransitionPanel } from '@/components/studio/TransitionPanel';
 import { ReferencePanel } from '@/components/studio/ReferencePanel';
 import { EffectPanel } from '@/components/studio/EffectPanel';
+import { Captions, Film, Image, Music, Sparkles, Wand2 } from 'lucide-react';
 
 // ─── Project Summary types ───
 
@@ -313,20 +314,20 @@ function StudioEditor({ projectId }: { projectId: string }) {
   }, []);
 
   const panels = [
-    { key: 'subtitle' as const, label: '자막' },
-    { key: 'clip' as const, label: '클립' },
-    { key: 'bgm' as const, label: 'BGM' },
-    { key: 'transition' as const, label: '전환' },
-    { key: 'reference' as const, label: '레퍼런스' },
-    { key: 'effect' as const, label: '이펙트' },
+    { key: 'subtitle' as const, label: '자막', icon: Captions },
+    { key: 'clip' as const, label: '클립', icon: Film },
+    { key: 'bgm' as const, label: 'BGM', icon: Music },
+    { key: 'transition' as const, label: '전환', icon: Wand2 },
+    { key: 'reference' as const, label: '레퍼런스', icon: Image },
+    { key: 'effect' as const, label: '이펙트', icon: Sparkles },
   ];
 
-  const [panelWidth, setPanelWidth] = React.useState(500);
+  const [panelWidth, setPanelWidth] = React.useState(520);
   const panelInitRef = React.useRef(false);
   React.useEffect(() => {
     if (!panelInitRef.current) {
       panelInitRef.current = true;
-      setPanelWidth(Math.round(window.innerWidth * 0.675));
+      setPanelWidth(Math.max(420, Math.min(620, Math.round(window.innerWidth * 0.34))));
     }
   }, []);
   const [timelineHeight, setTimelineHeight] = React.useState(380);
@@ -337,7 +338,7 @@ function StudioEditor({ projectId }: { projectId: string }) {
     const onMove = (e: MouseEvent) => {
       if (panelDrag.current) {
         const delta = panelDrag.current.startX - e.clientX;
-        setPanelWidth(Math.max(Math.round(window.innerWidth * 0.5), Math.min(Math.round(window.innerWidth * 0.7), panelDrag.current.startW + delta)));
+        setPanelWidth(Math.max(380, Math.min(720, panelDrag.current.startW + delta)));
       }
       if (tlDrag.current) {
         const delta = tlDrag.current.startY - e.clientY;
@@ -392,36 +393,32 @@ function StudioEditor({ projectId }: { projectId: string }) {
             document.body.style.cursor = 'col-resize';
             document.body.style.userSelect = 'none';
           }}
-          style={{ width: 5, cursor: 'col-resize', background: '#1a1a1a', flexShrink: 0, transition: 'background .15s' }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = '#333')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = '#1a1a1a')}
+          style={{ width: 6, cursor: 'col-resize', background: '#171717', flexShrink: 0, transition: 'background .15s', borderLeft: '1px solid #262626', borderRight: '1px solid #050505' }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#2f67d8')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#171717')}
         />
 
         <div style={{
-          width: panelWidth, flexShrink: 0, background: '#141414',
-          borderLeft: '1px solid #2a2a2a', overflow: 'auto',
+          width: panelWidth, flexShrink: 0, background: '#101113',
+          borderLeft: '1px solid #272a31', overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
         }}>
-          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #2a2a2a', flexShrink: 0 }}>
-            {panels.map((tab) => (
+          <div className="studio-panel-tabs">
+            {panels.map((tab) => {
+              const Icon = tab.icon;
+              return (
               <button
                 key={tab.key}
                 onClick={() => useEditorStore.getState().setActivePanel(tab.key)}
-                style={{
-                  flex: 1, borderRadius: 0, border: 'none',
-                  borderBottom: activePanel === tab.key ? '2px solid #60a5fa' : '2px solid transparent',
-                  fontSize: 10, padding: '8px 0',
-                  background: activePanel === tab.key ? '#1a1a2a' : 'transparent',
-                  color: activePanel === tab.key ? '#60a5fa' : '#888',
-                  cursor: 'pointer',
-                }}
+                className={activePanel === tab.key ? 'is-active' : ''}
               >
+                <Icon size={17} />
                 {tab.label}
               </button>
-            ))}
+            );})}
           </div>
 
-          <div style={{ flex: 1, overflow: 'auto' }}>
+          <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
             {activePanel === 'subtitle' && <SubtitlePanel />}
             {activePanel === 'clip' && <ClipPanel />}
             {activePanel === 'bgm' && <BgmPanel />}

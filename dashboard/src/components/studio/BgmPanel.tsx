@@ -108,8 +108,8 @@ export const BgmPanel: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="studio-panel-content studio-panel-content-bgm" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="studio-panel-header-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
           BGM ({bgmClips.length})
         </div>
@@ -117,6 +117,7 @@ export const BgmPanel: React.FC = () => {
 
       {/* Upload area */}
       <div
+        className="studio-upload-card"
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
@@ -144,15 +145,15 @@ export const BgmPanel: React.FC = () => {
       </div>
 
       {bgmClips.length === 0 && (
-        <div style={{ color: '#555', fontSize: 11, textAlign: 'center', padding: 8 }}>
+        <div className="studio-card" style={{ color: '#555', fontSize: 11, textAlign: 'center', padding: 8 }}>
           BGM 트랙 없음
         </div>
       )}
 
       {bgmClips.map((bgm, i) => (
-        <div key={bgm.id || i} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a' }}>
+        <div key={bgm.id || i} className="studio-card studio-audio-card" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 10, color: '#a7f3d0', fontWeight: 600 }}>
+            <div className="studio-audio-title" style={{ fontSize: 10, color: '#a7f3d0', fontWeight: 600 }}>
               {bgm.source}
             </div>
             <button
@@ -238,9 +239,10 @@ export const BgmPanel: React.FC = () => {
 
           {/* Analyze results */}
           {activeAnalyzeIdx === i && analyzeResults.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 120, overflow: 'auto' }}>
+            <div className="studio-result-list" style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 120, overflow: 'auto' }}>
               {analyzeResults.map((result, ri) => (
                 <div
+                  className="studio-result-item"
                   key={ri}
                   onClick={() => applyAnalyzeResult(i, result)}
                   style={{

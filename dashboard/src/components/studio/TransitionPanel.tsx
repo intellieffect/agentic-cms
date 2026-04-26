@@ -42,12 +42,12 @@ export const TransitionPanel: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="studio-panel-content studio-panel-content-transition" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
       {/* Fade In/Out */}
-      <div style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
+      <div className="studio-panel-header-card" style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
         페이드 인/아웃
       </div>
-      <div style={{ padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="studio-card" style={{ padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             className={`be-btn ${fadeInOut.enabled ? 'be-btn-on' : ''}`}
@@ -89,12 +89,12 @@ export const TransitionPanel: React.FC = () => {
       </div>
 
       {/* Transitions */}
-      <div style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
+      <div className="studio-panel-header-card" style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
         트랜지션
       </div>
 
       {clips.length < 2 && (
-        <div style={{ color: '#555', fontSize: 11 }}>
+        <div className="studio-card" style={{ color: '#555', fontSize: 11 }}>
           클립이 2개 이상일 때 트랜지션을 설정할 수 있습니다
         </div>
       )}
@@ -102,7 +102,7 @@ export const TransitionPanel: React.FC = () => {
       {transitionIndices.map((idx) => {
         const t = transitions[idx] || { type: 'none', duration: 0 };
         return (
-          <div key={idx} style={{ padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div key={idx} className="studio-card" style={{ padding: 8, background: '#1a1a1a', borderRadius: 6, border: '1px solid #2a2a2a', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 10, color: '#888' }}>
               클립 {idx + 1} → 클립 {idx + 2}
             </div>

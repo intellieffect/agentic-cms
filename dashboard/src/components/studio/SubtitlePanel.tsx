@@ -171,9 +171,9 @@ export const SubtitlePanel: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="studio-panel-content studio-panel-content-subtitle" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
       {/* Header with add/delete */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="studio-panel-header-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
           자막 ({globalSubs.length})
         </div>
@@ -201,12 +201,13 @@ export const SubtitlePanel: React.FC = () => {
 
       {/* Subtitle list */}
       {globalSubs.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 250, overflow: 'auto' }}>
+        <div className="studio-card studio-subtitle-list" style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 250, overflow: 'auto' }}>
           {globalSubs
             .map((sub, i) => ({ sub, i }))
             .sort((a, b) => a.sub.start - b.sub.start)
             .map(({ sub, i }) => (
             <div
+              className="studio-subtitle-list-item"
               key={i}
               onClick={() => setSelectedSubIndex(i)}
               style={{
@@ -230,7 +231,7 @@ export const SubtitlePanel: React.FC = () => {
       )}
 
       {selectedSubIndex < 0 || selectedSubIndex >= globalSubs.length ? (
-        <div style={{ color: '#555', fontSize: 11 }}>
+        <div className="studio-card" style={{ color: '#555', fontSize: 11 }}>
           자막을 선택하거나 추가하세요
         </div>
       ) : (
@@ -248,7 +249,7 @@ const SubEditor: React.FC<{ index: number }> = ({ index }) => {
   const style = sub.style || {};
 
   return (
-    <>
+    <div className="studio-panel-subeditor">
       {/* Time inputs */}
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ flex: 1 }}>
@@ -482,6 +483,6 @@ const SubEditor: React.FC<{ index: number }> = ({ index }) => {
           />
         </div>
       </div>
-    </>
+    </div>
   );
 };
