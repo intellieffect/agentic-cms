@@ -285,7 +285,8 @@ export async function getGalleryItems(
     .select("*, media:cover_media_id(url, mime_type)");
 
   if (opts.status) q = q.eq("status", opts.status);
-  if (opts.kind) q = q.eq("kind", opts.kind);
+  // 다중 카테고리 도입 후 단일 컬럼 .eq 는 누락 위험 → kinds[] contains 매칭으로 정정.
+  if (opts.kind) q = q.contains("kinds", [opts.kind]);
   if (typeof opts.is_featured === "boolean") q = q.eq("is_featured", opts.is_featured);
 
   const { data, error } = await q

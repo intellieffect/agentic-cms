@@ -244,10 +244,7 @@ export interface ContentRelation {
 // ── Gallery (AWC Web + APP 공용) ──────────────────────────────
 export type GalleryKind =
   | 'landing'
-  | 'video'
   | 'ad'
-  | 'image'
-  | 'carousel'
   | 'case_study'
   | 'ai_influencer'
   | 'other';

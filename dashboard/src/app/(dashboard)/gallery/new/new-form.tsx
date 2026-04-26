@@ -50,7 +50,7 @@ export function NewGalleryForm() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
-  const [kinds, setKinds] = useState<GalleryKind[]>(["image"]);
+  const [kinds, setKinds] = useState<GalleryKind[]>(["ad"]);
   const [coverAspect, setCoverAspect] = useState<GalleryCoverAspect>("16:9");
   const [subtitle, setSubtitle] = useState("");
   const [summary, setSummary] = useState("");
@@ -82,11 +82,7 @@ export function NewGalleryForm() {
     setFile(f);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(f ? URL.createObjectURL(f) : null);
-    if (f?.type.startsWith("video/")) {
-      setKinds((prev) =>
-        prev.includes("video") ? prev : ["video", ...prev.filter((k) => k !== "image")]
-      );
-    }
+    // 미디어 포맷(image/video) 자동 추론은 cover_media.mime_type 으로 옮겨짐 — kind 자동 변경 없음.
   };
 
   const toggleKind = (k: GalleryKind) => {
