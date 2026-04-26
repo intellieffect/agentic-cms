@@ -141,6 +141,12 @@ export const ClipPanel: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clip?.source]);
 
+  // 저장 후 사용자가 클립을 다시 수정하면 status pill을 "대기"로 되돌려서
+  // "이미 저장됨"이 아닌 "변경 있음" 상태임을 시각적으로 알린다.
+  useEffect(() => {
+    setSaveStatus((prev) => (prev === 'saved' || prev === 'failed' ? 'idle' : prev));
+  }, [clips, clipMeta, clipCrops, clipZooms]);
+
   if (!clip) {
     return (
       <div className="studio-inspector-empty">
@@ -323,8 +329,8 @@ export const ClipPanel: React.FC = () => {
             <div className="studio-transform-group">
               <div className="studio-transform-heading"><Maximize2 size={14} />크기</div>
               <div className="studio-mini-fields">
-                <label>W<input type="number" value={Number((zoom.scale * 100).toFixed(0))} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: clamp(Number(e.target.value) / 100, 0.5, 3) })} /></label>
-                <label>H<input type="number" value={Number((zoom.scale * 100).toFixed(0))} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: clamp(Number(e.target.value) / 100, 0.5, 3) })} /></label>
+                <label><input type="number" min={50} max={300} value={Number((zoom.scale * 100).toFixed(0))} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: clamp(Number(e.target.value) / 100, 0.5, 3) })} />%</label>
+                <button type="button" onClick={() => updateClipZoom(selectedClipIndex, { scale: 1 })}><RotateCcw size={13} /></button>
               </div>
               <input type="range" min={0.5} max={3} step={0.1} value={zoom.scale} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: Number(e.target.value) })} />
             </div>
@@ -391,7 +397,7 @@ export const ClipPanel: React.FC = () => {
             </div>
           </InspectorSection>
 
-          <InspectorSection id="align" icon={<AlignCenter size={15} />} title="정렬" summary="가운데" open={openSections.align} onToggle={toggleSection}>
+          <InspectorSection id="align" icon={<AlignCenter size={15} />} title="정렬" summary={zoom.panX < -1 ? '왼쪽' : zoom.panX > 1 ? '오른쪽' : '가운데'} open={openSections.align} onToggle={toggleSection}>
             <div className="studio-align-row">
               <button onClick={() => updateClipZoom(selectedClipIndex, { panX: -50 + (50 / zoom.scale) })}><AlignStartHorizontal size={16} />왼쪽</button>
               <button onClick={() => updateClipZoom(selectedClipIndex, { panX: 0, panY: 0 })}><AlignCenter size={16} />중앙</button>
@@ -402,7 +408,7 @@ export const ClipPanel: React.FC = () => {
       </div>
 
       <div className="studio-inspector-footer">
-        <button className="studio-primary-action" type="button" onClick={saveProject}>선택 클립 적용</button>
+        <button className="studio-primary-action" type="button" onClick={saveProject}>프로젝트 저장</button>
         <button className="studio-secondary-action" type="button" onClick={() => copyClipSettingsToAll(selectedClipIndex)}>전체 클립에 복사</button>
         <span className={`studio-save-status is-${saveStatus}`}>
           <span />

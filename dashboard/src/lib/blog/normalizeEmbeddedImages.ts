@@ -73,36 +73,56 @@ async function uploadDataImage(
   return data.publicUrl;
 }
 
-async function normalizeNode(
-  value: unknown,
-  supabase: SupabaseClient,
-  postId: string,
-  uploadedPaths: string[]
-): Promise<unknown> {
-  if (Array.isArray(value)) {
-    const normalized = [];
-    for (const item of value) {
-      normalized.push(await normalizeNode(item, supabase, postId, uploadedPaths));
+const MAX_NODES_VISITED = 200_000;
+
+interface DataImageRef {
+  node: Record<string, unknown>;
+  key: string;
+  url: string;
+}
+
+/**
+ * Iterative DFS — collect data:image refs without recursion.
+ * 재귀 버전은 Plate editor.children 같은 깊은 트리에서 stack overflow 발생.
+ * Iterative + visited Set + cap으로 cycle/너무 큰 트리 방어.
+ */
+function collectDataImageRefs(content: unknown): DataImageRef[] {
+  const refs: DataImageRef[] = [];
+  const visited = new WeakSet<object>();
+  const stack: unknown[] = [content];
+  let count = 0;
+
+  while (stack.length > 0) {
+    if (count++ > MAX_NODES_VISITED) {
+      console.warn(`[normalize] visited cap ${MAX_NODES_VISITED} reached — content tree too large or cyclic`);
+      break;
     }
-    return normalized;
-  }
 
-  if (!isPlainObject(value)) {
-    return value;
-  }
+    const node = stack.pop();
+    if (node === null || typeof node !== "object") continue;
+    if (visited.has(node as object)) continue;
+    visited.add(node as object);
 
-  const next: Record<string, unknown> = {};
-
-  for (const [key, child] of Object.entries(value)) {
-    if ((key === "url" || key === "src") && typeof child === "string" && child.startsWith("data:image/")) {
-      next[key] = await uploadDataImage(supabase, postId, child, uploadedPaths);
+    if (Array.isArray(node)) {
+      for (let i = node.length - 1; i >= 0; i--) {
+        const item = node[i];
+        if (item !== null && typeof item === "object") stack.push(item);
+      }
       continue;
     }
 
-    next[key] = await normalizeNode(child, supabase, postId, uploadedPaths);
+    for (const [key, child] of Object.entries(node)) {
+      if ((key === "url" || key === "src") && typeof child === "string" && child.startsWith("data:image/")) {
+        refs.push({ node: node as Record<string, unknown>, key, url: child });
+        continue;
+      }
+      if (child !== null && typeof child === "object") {
+        stack.push(child);
+      }
+    }
   }
 
-  return next;
+  return refs;
 }
 
 export async function normalizeEmbeddedImagesInContent(
@@ -111,9 +131,21 @@ export async function normalizeEmbeddedImagesInContent(
   content: unknown
 ): Promise<{ content: unknown; uploadedPaths: string[] }> {
   const uploadedPaths: string[] = [];
+  const refs = collectDataImageRefs(content);
+
+  if (refs.length === 0) {
+    return { content, uploadedPaths };
+  }
+
   try {
-    const normalizedContent = await normalizeNode(content, supabase, postId, uploadedPaths);
-    return { content: normalizedContent, uploadedPaths };
+    // 모든 data:image 업로드를 병렬로 + in-place 치환
+    await Promise.all(
+      refs.map(async (ref) => {
+        const newUrl = await uploadDataImage(supabase, postId, ref.url, uploadedPaths);
+        ref.node[ref.key] = newUrl;
+      })
+    );
+    return { content, uploadedPaths };
   } catch (error) {
     const message = error instanceof Error ? error.message : "본문 이미지 정규화에 실패했습니다.";
     throw new EmbeddedImageNormalizationError(message, uploadedPaths);

@@ -149,31 +149,36 @@ async def get_carousel(carousel_id: str):
         return _serialize_row(found)
 
 
+# ─── DB columns helper ───
+# Supabase carousels 테이블 실제 컬럼: id, title, caption, slides, created_at, updated_at, variant_id
+# template/data/style_config/width/height 컬럼은 schema에 없음 → strip해야 PGRST204 회피.
+_CAROUSELS_DB_COLUMNS = {"title", "caption", "slides", "variant_id", "updated_at"}
+
+
 # ─── POST /api/carousels ───
 
 @router.post("")
 async def create_carousel(body: CarouselCreate):
     now = datetime.now(timezone.utc).isoformat()
 
-    # slides가 있으면 data.slides로 저장
-    data = body.data
-    template = body.template
-    if body.slides:
-        template = "slide-deck"
-        data = {"kind": "slide-deck", "slides": body.slides}
+    # slides 직접 컬럼에 저장 (data 컬럼 없음)
+    slides = body.slides
+    if slides is None and isinstance(body.data, dict):
+        legacy = body.data.get("slides")
+        if isinstance(legacy, list):
+            slides = legacy
 
-    row = {
+    row_full = {
         "id": f"carousel-{uuid.uuid4().hex[:8]}",
         "title": body.title,
-        "template": template,
-        "data": data,
-        "style_config": body.style_config,
-        "width": body.width,
-        "height": body.height,
+        "slides": slides or [],
         "caption": body.caption,
         "created_at": now,
         "updated_at": now,
     }
+    # supabase 컬럼만 선택 (created_at·id·updated_at 포함)
+    db_columns = _CAROUSELS_DB_COLUMNS | {"id", "created_at"}
+    row = {k: v for k, v in row_full.items() if k in db_columns}
 
     if _check_db():
         sb = _get_sb()
@@ -181,6 +186,7 @@ async def create_carousel(body: CarouselCreate):
             resp = sb.table(TABLE_CAROUSELS).insert(row).execute()
             return _serialize_row(resp.data[0]) if resp.data else _serialize_row(row)
         except Exception as e:
+            print(f"[carousel create] failed: {e}, row keys: {list(row.keys())}")
             return JSONResponse({"error": str(e)}, status_code=500)
     else:
         items = _read_local()
@@ -197,23 +203,20 @@ async def update_carousel(carousel_id: str, body: CarouselUpdate):
     update: dict = {"updated_at": now}
     if body.title is not None:
         update["title"] = body.title
-    if body.template is not None:
-        update["template"] = body.template
-    if body.style_config is not None:
-        update["style_config"] = body.style_config
     if body.caption is not None:
         update["caption"] = body.caption
-    if body.width is not None:
-        update["width"] = body.width
-    if body.height is not None:
-        update["height"] = body.height
 
-    # slides → data.slides로 저장
+    # slides → 직접 slides 컬럼에 저장 (data 컬럼 없음)
     if body.slides is not None:
-        update["template"] = "slide-deck"
-        update["data"] = {"kind": "slide-deck", "slides": body.slides}
-    elif body.data is not None:
-        update["data"] = body.data
+        update["slides"] = body.slides
+    elif body.data is not None and isinstance(body.data, dict):
+        # legacy data.slides 페이로드 호환
+        slides_in_data = body.data.get("slides")
+        if isinstance(slides_in_data, list):
+            update["slides"] = slides_in_data
+
+    # supabase 테이블에 없는 컬럼 제거 (PGRST204 방지)
+    update = {k: v for k, v in update.items() if k in _CAROUSELS_DB_COLUMNS}
 
     if _check_db():
         sb = _get_sb()
@@ -222,6 +225,7 @@ async def update_carousel(carousel_id: str, body: CarouselUpdate):
             row = resp.data[0] if resp.data else {"id": carousel_id, **update}
             return _serialize_row(row)
         except Exception as e:
+            print(f"[carousel update] failed: {e}, update keys: {list(update.keys())}")
             return JSONResponse({"error": str(e)}, status_code=500)
     else:
         items = _read_local()
