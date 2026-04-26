@@ -241,6 +241,12 @@ export interface GalleryItem {
   duration_minutes: number | null;
   source_label: string;
   metrics: Record<string, unknown>;
+  // SEO/AEO 메타 확장 (migration 20260426000000)
+  is_ai_generated: boolean;
+  ai_model: string | null;
+  transcript: string | null;
+  duration_seconds: number | null;
+  cover_poster_url: string | null;
 }
 
 export interface GalleryItemWithCover extends GalleryItem {
