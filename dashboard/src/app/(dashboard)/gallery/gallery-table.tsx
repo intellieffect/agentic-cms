@@ -42,6 +42,7 @@ function kindVariant(kind: GalleryKind) {
   if (kind === "ad") return "success" as const;
   if (kind === "case_study") return "info" as const;
   if (kind === "ai_influencer") return "info" as const;
+  if (kind === "research") return "info" as const;
   return "secondary" as const;
 }
 

@@ -247,6 +247,7 @@ export type GalleryKind =
   | 'ad'
   | 'case_study'
   | 'ai_influencer'
+  | 'research'
   | 'other';
 
 export type GalleryCoverAspect = '1:1' | '16:9' | '9:16' | '4:5' | '3:4';
