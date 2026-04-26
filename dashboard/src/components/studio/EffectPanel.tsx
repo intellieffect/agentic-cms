@@ -29,8 +29,8 @@ export const EffectPanel: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="studio-panel-content studio-panel-content-effect" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="studio-panel-header-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: '#888', textTransform: 'uppercase' }}>
           글로벌 이펙트
         </div>
@@ -47,7 +47,7 @@ export const EffectPanel: React.FC = () => {
         const val = getValue(def.type);
         const isModified = val !== def.defaultVal;
         return (
-          <div key={def.type} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div key={def.type} className="studio-card studio-effect-row" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label style={{ fontSize: 10, color: isModified ? '#c4b5fd' : '#aaa' }}>
                 {def.icon} {def.label}
@@ -76,7 +76,7 @@ export const EffectPanel: React.FC = () => {
         );
       })}
 
-      <div style={{ fontSize: 9, color: '#444', marginTop: 4 }}>
+      <div className="studio-card" style={{ fontSize: 9, color: '#444', marginTop: 4 }}>
         모든 클립에 일괄 적용됩니다. 100% = 원본
       </div>
     </div>

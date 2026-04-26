@@ -112,6 +112,7 @@ interface EditorState {
   // Clip detail mutations
   updateClipMeta: (index: number, meta: Partial<ClipMeta>) => void;
   setAllClipAudioMuted: (muted: boolean) => void;
+  copyClipSettingsToAll: (index: number) => void;
   updateClipCrop: (index: number, crop: Partial<ClipCrop>) => void;
   updateClipZoom: (index: number, zoom: Partial<ClipZoom>) => void;
 
@@ -809,6 +810,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }));
       const totalDuration = calcTotalDuration(state.clips, clipMeta, state.transitions);
       return { clipMeta, totalDuration };
+    });
+  },
+
+  copyClipSettingsToAll: (index) => {
+    get()._pushHistory();
+    set((state) => {
+      if (index < 0 || index >= state.clips.length) return state;
+      const sourceMeta = state.clipMeta[index] || { speed: 1 };
+      const sourceCrop = state.clipCrops[index] || { x: 0, y: 0, w: 100, h: 100 };
+      const sourceZoom = state.clipZooms[index] || { scale: 1, panX: 0, panY: 0 };
+      const clipMeta = state.clips.map(() => ({ ...sourceMeta }));
+      const clipCrops = state.clips.map(() => ({ ...sourceCrop }));
+      const clipZooms = state.clips.map(() => ({ ...sourceZoom }));
+      const totalDuration = calcTotalDuration(state.clips, clipMeta, state.transitions);
+      return { clipMeta, clipCrops, clipZooms, totalDuration };
     });
   },
 

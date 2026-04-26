@@ -1,9 +1,88 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AlignCenter,
+  AlignEndHorizontal,
+  AlignStartHorizontal,
+  ChevronRight,
+  Copy,
+  Crop,
+  Film,
+  Maximize2,
+  Move,
+  RotateCcw,
+  RotateCw,
+  Scissors,
+  SlidersHorizontal,
+  Trash2,
+  Volume2,
+  VolumeX,
+  Zap,
+} from 'lucide-react';
 import { getEditorConfig } from '@/lib/editor-config';
 import { useEditorStore } from './store';
 import type { ClipZoom } from './types';
+
+type SectionKey = 'speed' | 'crop' | 'zoom' | 'position' | 'audio' | 'align';
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
+const formatShortTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const getFileName = (source: string) => source.split('/').pop() || source;
+
+interface InspectorSectionProps {
+  id: SectionKey;
+  icon: React.ReactNode;
+  title: string;
+  summary: string;
+  open: boolean;
+  onToggle: (id: SectionKey) => void;
+  children: React.ReactNode;
+}
+
+function InspectorSection({ id, icon, title, summary, open, onToggle, children }: InspectorSectionProps) {
+  return (
+    <section className="studio-inspector-section">
+      <button className="studio-inspector-section-trigger" onClick={() => onToggle(id)} type="button">
+        <span className="studio-inspector-section-title">
+          {icon}
+          {title}
+        </span>
+        <span className="studio-inspector-section-summary">
+          {summary}
+          <ChevronRight className={open ? 'is-open' : ''} size={15} />
+        </span>
+      </button>
+      {open && <div className="studio-inspector-section-body">{children}</div>}
+    </section>
+  );
+}
+
+interface SliderRowProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  unit?: string;
+  onChange: (value: number) => void;
+}
+
+function SliderRow({ label, value, min, max, step = 1, unit = '', onChange }: SliderRowProps) {
+  return (
+    <div className="studio-control-row">
+      <label>{label}</label>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <span className="studio-value-pill">{value}{unit}</span>
+    </div>
+  );
+}
 
 export const ClipPanel: React.FC = () => {
   const selectedClipIndex = useEditorStore((s) => s.selectedClipIndex);
@@ -14,22 +93,27 @@ export const ClipPanel: React.FC = () => {
   const updateClip = useEditorStore((s) => s.updateClip);
   const updateClipMeta = useEditorStore((s) => s.updateClipMeta);
   const setAllClipAudioMuted = useEditorStore((s) => s.setAllClipAudioMuted);
+  const copyClipSettingsToAll = useEditorStore((s) => s.copyClipSettingsToAll);
   const updateClipCrop = useEditorStore((s) => s.updateClipCrop);
   const updateClipZoom = useEditorStore((s) => s.updateClipZoom);
   const splitClip = useEditorStore((s) => s.splitClip);
   const removeClip = useEditorStore((s) => s.removeClip);
   const replaceClipSource = useEditorStore((s) => s.replaceClipSource);
+  const copyClip = useEditorStore((s) => s.copyClip);
+  const paste = useEditorStore((s) => s.paste);
+  const getProjectData = useEditorStore((s) => s.getProjectData);
 
   const [sourceDuration, setSourceDuration] = useState(0);
   const [splitTime, setSplitTime] = useState<number | null>(null);
-  const [showSpeed, setShowSpeed] = useState(false);
-  const [showCrop, setShowCrop] = useState(false);
-  const [showZoom, setShowZoom] = useState(false);
-  const [showOpacity, setShowOpacity] = useState(false);
-  const [showRotation, setShowRotation] = useState(false);
-  const [showAlign, setShowAlign] = useState(false);
-  const [showVolume, setShowVolume] = useState(false);
-  const [showPosition, setShowPosition] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
+    speed: false,
+    crop: false,
+    zoom: false,
+    position: false,
+    audio: false,
+    align: false,
+  });
   const barRef = useRef<HTMLDivElement>(null);
 
   const clip = selectedClipIndex >= 0 && selectedClipIndex < clips.length ? clips[selectedClipIndex] : null;
@@ -45,25 +129,24 @@ export const ClipPanel: React.FC = () => {
   const posX = meta.positionX ?? 50;
   const posY = meta.positionY ?? 50;
 
-  // 소스 영상 전체 길이 프로브
   useEffect(() => {
     if (!clip) return;
+    // probe는 source(파일)에만 의존 — clip.end는 첫 응답 실패 시 fallback에만 쓰이므로
+    // deps에 넣으면 trim drag 매 프레임마다 fetch가 fire됨 (네트워크 폭격).
+    const fallback = clip.end + 10;
     fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
-      .then(r => r.json())
-      .then(d => setSourceDuration(d.duration || clip.end + 10))
-      .catch(() => setSourceDuration(clip.end + 10));
+      .then((r) => r.json())
+      .then((d) => setSourceDuration(d.duration || fallback))
+      .catch(() => setSourceDuration(fallback));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clip?.source]);
-
-  const fmtTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-  };
 
   if (!clip) {
     return (
-      <div style={{ padding: 12, color: '#555', fontSize: 11 }}>
-        타임라인에서 클립을 선택하세요
+      <div className="studio-inspector-empty">
+        <Film size={22} />
+        <strong>클립을 선택하세요</strong>
+        <span>타임라인에서 비디오 클립을 선택하면 속성 패널이 표시됩니다.</span>
       </div>
     );
   }
@@ -72,8 +155,10 @@ export const ClipPanel: React.FC = () => {
   const barTotal = sourceDuration || clip.end + 5;
   const barStartPct = (clip.start / barTotal) * 100;
   const barWidthPct = ((clip.end - clip.start) / barTotal) * 100;
+  const splitAt = splitTime ?? Number(((clip.start + clip.end) / 2).toFixed(1));
 
-  // 구간 바 드래그
+  const toggleSection = (id: SectionKey) => setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
+
   const handleBarMouseDown = (e: React.MouseEvent, type: 'left' | 'right' | 'move') => {
     e.preventDefault();
     const bar = barRef.current;
@@ -87,514 +172,243 @@ export const ClipPanel: React.FC = () => {
       const dx = ev.clientX - startX;
       const dt = (dx / rect.width) * barTotal;
       if (type === 'left') {
-        updateClip(selectedClipIndex, { start: Math.max(0, Math.min(origEnd - 0.1, origStart + dt)) });
+        updateClip(selectedClipIndex, { start: clamp(origStart + dt, 0, origEnd - 0.1) });
       } else if (type === 'right') {
-        updateClip(selectedClipIndex, { end: Math.max(origStart + 0.1, Math.min(barTotal, origEnd + dt)) });
+        updateClip(selectedClipIndex, { end: clamp(origEnd + dt, origStart + 0.1, barTotal) });
       } else {
         const dur = origEnd - origStart;
-        const newStart = Math.max(0, Math.min(barTotal - dur, origStart + dt));
+        const newStart = clamp(origStart + dt, 0, barTotal - dur);
         updateClip(selectedClipIndex, { start: newStart, end: newStart + dur });
       }
     };
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   };
 
-  const btnStyle: React.CSSProperties = {
-    background: '#222', border: '1px solid #444', color: '#ddd',
-    borderRadius: 4, width: 24, height: 24, cursor: 'pointer',
-    fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  const handleReplaceSource = async () => {
+    try {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/resolver/pick-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: '영상' }),
+      });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d.filepath) return;
+      const fname = d.filepath.split('/').pop() || 'video.mp4';
+      await fetch(`${getEditorConfig().apiUrl}/api/resolver/link-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fname, filepath: d.filepath }),
+      });
+      let duration = 10;
+      try {
+        const pr = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(fname)}`);
+        if (pr.ok) {
+          const pd = await pr.json();
+          duration = pd.duration || 10;
+        }
+      } catch {}
+      replaceClipSource(selectedClipIndex, fname, duration);
+    } catch {}
+  };
+
+  const duplicateSelectedClip = () => {
+    copyClip();
+    paste();
+  };
+
+  const resetSelectedClip = () => {
+    updateClipMeta(selectedClipIndex, { speed: 1, opacity: 100, rotation: 0, volume: 100, audioMuted: false, fitMode: 'cover', positionX: 50, positionY: 50 });
+    updateClipCrop(selectedClipIndex, { x: 0, y: 0, w: 100, h: 100 });
+    updateClipZoom(selectedClipIndex, { scale: 1, panX: 0, panY: 0, animation: 'none', scaleEnd: undefined, panXEnd: undefined, panYEnd: undefined });
+  };
+
+  const saveProject = async () => {
+    setSaveStatus('saving');
+    try {
+      const r = await fetch(`${getEditorConfig().apiUrl}/api/projects/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getProjectData()),
+      });
+      setSaveStatus(r.ok ? 'saved' : 'failed');
+    } catch {
+      setSaveStatus('failed');
+    }
   };
 
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* 헤더 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: '#888' }}>📎 #{selectedClipIndex + 1} / {clips.length}</span>
-        <button
-          onClick={() => removeClip(selectedClipIndex)}
-          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 11 }}
-        >🗑</button>
-      </div>
-
-      {/* 소스 + 변경 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 9, color: '#666' }}>소스</span>
-        <span style={{ flex: 1, fontSize: 10, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{clip.source}</span>
-        <button
-          onClick={async () => {
-            try {
-              const r = await fetch(`${getEditorConfig().apiUrl}/api/resolver/pick-file`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: '영상' }),
-              });
-              if (!r.ok) return;
-              const d = await r.json();
-              if (!d.filepath) return;
-              const fname = d.filepath.split('/').pop() || 'video.mp4';
-              await fetch(`${getEditorConfig().apiUrl}/api/resolver/link-file`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: fname, filepath: d.filepath }),
-              });
-              let duration = 10;
-              try {
-                const pr = await fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(fname)}`);
-                if (pr.ok) { const pd = await pr.json(); duration = pd.duration || 10; }
-              } catch {}
-              replaceClipSource(selectedClipIndex, fname, duration);
-            } catch {}
-          }}
-          style={{ background: '#1a1a1a', border: '1px solid #444', color: '#60a5fa', borderRadius: 4, padding: '2px 6px', cursor: 'pointer', fontSize: 9, whiteSpace: 'nowrap' }}
-        >🔄 변경</button>
-      </div>
-
-      {/* 시작/끝 입력 */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: 9, color: '#666', width: 24 }}>시작</span>
-        <input
-          type="number" min={0} max={clip.end - 0.1} step={0.1} value={Number(clip.start.toFixed(1))}
-          onChange={(e) => updateClip(selectedClipIndex, { start: Math.max(0, Math.min(clip.end - 0.1, Number(e.target.value))) })}
-          style={{ flex: 1, background: '#1a1a1a', border: '1px solid #333', color: '#ddd', padding: '5px 8px', borderRadius: 4, fontSize: 11 }}
-        />
-        <span style={{ fontSize: 9, color: '#666', width: 16 }}>끝</span>
-        <input
-          type="number" min={clip.start + 0.1} step={0.1} value={Number(clip.end.toFixed(1))}
-          onChange={(e) => updateClip(selectedClipIndex, { end: Math.max(clip.start + 0.1, Number(e.target.value)) })}
-          style={{ flex: 1, background: '#1a1a1a', border: '1px solid #333', color: '#ddd', padding: '5px 8px', borderRadius: 4, fontSize: 11 }}
-        />
-      </div>
-
-      {/* 시각적 구간 바 */}
-      <div
-        ref={barRef}
-        style={{ position: 'relative', height: 32, background: '#222', borderRadius: 4, overflow: 'hidden', cursor: 'default' }}
-      >
-        <div
-          onMouseDown={(e) => handleBarMouseDown(e, 'move')}
-          style={{
-            position: 'absolute',
-            left: `${barStartPct}%`,
-            width: `${barWidthPct}%`,
-            top: 0, bottom: 0,
-            background: 'linear-gradient(135deg, #c2742f, #e8954a)',
-            borderRadius: 4,
-            cursor: 'grab',
-            border: '2px solid #e8954a',
-            minWidth: 8,
-          }}
-        >
-          <div
-            onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, 'left'); }}
-            style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 8, cursor: 'ew-resize', background: 'rgba(255,255,255,0.3)', borderRadius: '4px 0 0 4px' }}
-          />
-          <div
-            onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, 'right'); }}
-            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 8, cursor: 'ew-resize', background: 'rgba(255,255,255,0.3)', borderRadius: '0 4px 4px 0' }}
-          />
-        </div>
-      </div>
-
-      {/* 타임코드 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#666' }}>
-        <span>{fmtTime(clip.start)}</span>
-        <span>{meta.speed}x</span>
-        <span>{fmtTime(sourceDuration)}</span>
-      </div>
-
-      {/* 길이 표시 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10 }}>
-        <span style={{ color: '#666' }}>길이</span>
-        <span style={{ color: '#ddd', fontWeight: 600 }}>{clipDuration.toFixed(1)}s</span>
-      </div>
-
-      {/* 블레이드 */}
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        <span style={{ fontSize: 9, color: '#666', whiteSpace: 'nowrap' }}>분할 지점</span>
-        <input
-          type="number"
-          min={clip.start + 0.1}
-          max={clip.end - 0.1}
-          step={0.1}
-          value={splitTime ?? Number(((clip.start + clip.end) / 2).toFixed(1))}
-          onChange={(e) => setSplitTime(Number(e.target.value))}
-          style={{ flex: 1, background: '#1a1a1a', border: '1px solid #333', color: '#ddd', padding: '4px 6px', borderRadius: 4, fontSize: 10 }}
-        />
-        <span style={{ fontSize: 8, color: '#555' }}>s</span>
-      </div>
-      <button
-        onClick={() => {
-          const t = splitTime ?? (clip.start + clip.end) / 2;
-          splitClip(selectedClipIndex, t);
-          setSplitTime(null);
-        }}
-        style={{ width: '100%', padding: '5px 0', background: '#1a1a1a', border: '1px solid #333', color: '#ddd', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}
-      >✂️ 클립 분할</button>
-
-      {/* 속도 (접이식) */}
-      <div
-        onClick={() => setShowSpeed(!showSpeed)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showSpeed ? '▼' : '▶'}</span> ⚡ 속도
-      </div>
-      {showSpeed && (
-        <div style={{ paddingLeft: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10 }}>
-            <button onClick={() => updateClipMeta(selectedClipIndex, { speed: Math.max(0.25, meta.speed - 0.25) })}
-              style={{ background: '#222', border: '1px solid #444', color: '#ddd', borderRadius: 4, width: 24, height: 24, cursor: 'pointer', fontSize: 12 }}>−</button>
-            <span style={{ color: '#ddd', minWidth: 24, textAlign: 'center' }}>{meta.speed}x</span>
-            <button onClick={() => updateClipMeta(selectedClipIndex, { speed: Math.min(4, meta.speed + 0.25) })}
-              style={{ background: '#222', border: '1px solid #444', color: '#ddd', borderRadius: 4, width: 24, height: 24, cursor: 'pointer', fontSize: 12 }}>+</button>
-            <button onClick={() => updateClipMeta(selectedClipIndex, { speed: 1 })}
-              style={{ background: '#222', border: '1px solid #444', color: '#888', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 9 }}>맞춤</button>
+    <div className="studio-inspector-shell">
+      <div className="studio-inspector-scroll">
+        <section className="studio-clip-hero-card">
+          <div className="studio-clip-icon"><Film size={28} /></div>
+          <div className="studio-clip-title-block">
+            <span>클립 {selectedClipIndex + 1} / {clips.length}</span>
+            <strong title={clip.source}>{getFileName(clip.source)}</strong>
           </div>
-        </div>
-      )}
+          <span className="studio-duration-badge">{clipDuration.toFixed(1)}s</span>
+          <button className="studio-icon-button studio-button-blue" onClick={handleReplaceSource} type="button">변경</button>
+          <button className="studio-icon-button studio-button-danger" onClick={() => removeClip(selectedClipIndex)} type="button" aria-label="클립 삭제">
+            <Trash2 size={15} />
+          </button>
+        </section>
 
-      {/* 크롭 (접이식) */}
-      <div
-        onClick={() => setShowCrop(!showCrop)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showCrop ? '▼' : '▶'}</span> 🔲 크롭
-      </div>
-      {showCrop && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, paddingLeft: 8 }}>
-          {(['x', 'y', 'w', 'h'] as const).map((key) => (
-            <div key={key}>
-              <label style={{ fontSize: 9, color: '#555' }}>{key.toUpperCase()}: {crop[key]}%</label>
-              <input type="range" min={0} max={100} value={crop[key]}
-                onChange={(e) => updateClipCrop(selectedClipIndex, { [key]: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: '#2563eb' }} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 줌 (접이식) */}
-      <div
-        onClick={() => setShowZoom(!showZoom)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showZoom ? '▼' : '▶'}</span> 🔍 줌
-      </div>
-      {showZoom && (
-        <div style={{ paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {/* 줌 애니메이션 프리셋 */}
-          <div>
-            <label style={{ fontSize: 9, color: '#555' }}>🎬 줌 애니메이션</label>
-            <select
-              value={zoom.animation || 'none'}
-              onChange={(e) => updateClipZoom(selectedClipIndex, { animation: e.target.value as ClipZoom['animation'] })}
-              className="filter-select"
-              style={{ width: '100%', marginTop: 2 }}
-            >
-              <option value="none">없음 (정적)</option>
-              <option value="zoomIn">줌 인 (확대)</option>
-              <option value="zoomOut">줌 아웃 (축소)</option>
-              <option value="panLeft">팬 ← (왼쪽 이동)</option>
-              <option value="panRight">팬 → (오른쪽 이동)</option>
-              <option value="panUp">팬 ↑ (위로 이동)</option>
-              <option value="panDown">팬 ↓ (아래로 이동)</option>
-              <option value="custom">커스텀 (시작→끝 직접 설정)</option>
-            </select>
+        <section className="studio-card">
+          <h3>빠른 작업</h3>
+          <div className="studio-action-grid">
+            <button type="button" onClick={() => splitClip(selectedClipIndex, splitAt)}><Scissors size={15} />분할</button>
+            <button type="button" onClick={duplicateSelectedClip}><Copy size={15} />복제</button>
+            <button type="button" onClick={() => updateClipMeta(selectedClipIndex, { audioMuted: !isAudioMuted })}>{isAudioMuted ? <Volume2 size={15} /> : <VolumeX size={15} />}{isAudioMuted ? '오디오 켜기' : '오디오 끄기'}</button>
+            <button type="button" onClick={resetSelectedClip}><RotateCcw size={15} />리셋</button>
           </div>
-          {zoom.animation && zoom.animation !== 'none' && zoom.animation !== 'custom' && (
-            <div style={{ fontSize: 9, color: '#7c3aed', padding: '2px 0' }}>
-              ✓ {
-                { zoomIn: '줌 인 — 재생하면서 점점 확대', zoomOut: '줌 아웃 — 재생하면서 점점 축소',
-                  panLeft: '왼쪽 팬 — 오른쪽→왼쪽 이동', panRight: '오른쪽 팬 — 왼쪽→오른쪽 이동',
-                  panUp: '위로 팬 — 아래→위 이동', panDown: '아래로 팬 — 위→아래 이동',
-                }[zoom.animation]
-              }
+        </section>
+
+        <section className="studio-card studio-trim-card">
+          <h3>구간 편집</h3>
+          <div className="studio-time-grid">
+            <label>
+              <span>시작</span>
+              <input type="number" min={0} max={clip.end - 0.1} step={0.1} value={Number(clip.start.toFixed(1))} onChange={(e) => updateClip(selectedClipIndex, { start: clamp(Number(e.target.value), 0, clip.end - 0.1) })} />
+            </label>
+            <span className="studio-link-mark">⌁</span>
+            <label>
+              <span>종료</span>
+              <input type="number" min={clip.start + 0.1} step={0.1} value={Number(clip.end.toFixed(1))} onChange={(e) => updateClip(selectedClipIndex, { end: Math.max(clip.start + 0.1, Number(e.target.value)) })} />
+            </label>
+          </div>
+          <div className="studio-waveform-bar" ref={barRef}>
+            <div className="studio-waveform-texture" />
+            <div className="studio-trim-selection" onMouseDown={(e) => handleBarMouseDown(e, 'move')} style={{ left: `${barStartPct}%`, width: `${barWidthPct}%` }}>
+              <span onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, 'left'); }} />
+              <span onMouseDown={(e) => { e.stopPropagation(); handleBarMouseDown(e, 'right'); }} />
             </div>
-          )}
-          {zoom.animation === 'custom' && (
-            <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: 4, padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 8, color: '#666' }}>시작 → 끝 값 (클립 재생 동안 보간)</span>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                <div>
-                  <label style={{ fontSize: 8, color: '#555' }}>Scale 시작: {zoom.scale.toFixed(1)}</label>
-                  <input type="range" min={0.5} max={3} step={0.1} value={zoom.scale}
-                    onChange={(e) => updateClipZoom(selectedClipIndex, { scale: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#7c3aed' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 8, color: '#555' }}>Scale 끝: {(zoom.scaleEnd ?? zoom.scale).toFixed(1)}</label>
-                  <input type="range" min={0.5} max={3} step={0.1} value={zoom.scaleEnd ?? zoom.scale}
-                    onChange={(e) => updateClipZoom(selectedClipIndex, { scaleEnd: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#7c3aed' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 8, color: '#555' }}>PanX 시작: {zoom.panX}%</label>
-                  <input type="range" min={-50} max={50} value={zoom.panX}
-                    onChange={(e) => updateClipZoom(selectedClipIndex, { panX: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#7c3aed' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 8, color: '#555' }}>PanX 끝: {(zoom.panXEnd ?? zoom.panX)}%</label>
-                  <input type="range" min={-50} max={50} value={zoom.panXEnd ?? zoom.panX}
-                    onChange={(e) => updateClipZoom(selectedClipIndex, { panXEnd: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#7c3aed' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 8, color: '#555' }}>PanY 시작: {zoom.panY}%</label>
-                  <input type="range" min={-50} max={50} value={zoom.panY}
-                    onChange={(e) => updateClipZoom(selectedClipIndex, { panY: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#7c3aed' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 8, color: '#555' }}>PanY 끝: {(zoom.panYEnd ?? zoom.panY)}%</label>
-                  <input type="range" min={-50} max={50} value={zoom.panYEnd ?? zoom.panY}
-                    onChange={(e) => updateClipZoom(selectedClipIndex, { panYEnd: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#7c3aed' }} />
-                </div>
+          </div>
+          <div className="studio-time-footer">
+            <span>{formatShortTime(clip.start)}</span>
+            <span className="studio-speed-chip">{meta.speed}x</span>
+            <span>{formatShortTime(sourceDuration)}</span>
+          </div>
+          <div className="studio-split-row">
+            <label>분할 지점</label>
+            <input type="number" min={clip.start + 0.1} max={clip.end - 0.1} step={0.1} value={splitAt} onChange={(e) => setSplitTime(Number(e.target.value))} />
+            <button type="button" onClick={() => { splitClip(selectedClipIndex, splitAt); setSplitTime(null); }}>분할</button>
+          </div>
+        </section>
+
+        <section className="studio-card studio-transform-card">
+          <h3>변형 (Transform)</h3>
+          <div className="studio-transform-grid">
+            <div className="studio-transform-group">
+              <div className="studio-transform-heading"><Move size={14} />위치</div>
+              <div className="studio-mini-fields">
+                <label>X<input type="number" value={posX} onChange={(e) => updateClipMeta(selectedClipIndex, { positionX: clamp(Number(e.target.value), 0, 100) })} /></label>
+                <label>Y<input type="number" value={posY} onChange={(e) => updateClipMeta(selectedClipIndex, { positionY: clamp(Number(e.target.value), 0, 100) })} /></label>
+                <button type="button" onClick={() => updateClipMeta(selectedClipIndex, { positionX: 50, positionY: 50 })}><RotateCcw size={13} /></button>
               </div>
+              <input type="range" min={0} max={100} value={posX} onChange={(e) => updateClipMeta(selectedClipIndex, { positionX: Number(e.target.value) })} />
             </div>
-          )}
-          <div style={{ borderTop: '1px solid #2a2a2a', paddingTop: 4 }}>
-            <label style={{ fontSize: 9, color: '#555' }}>기본 Scale: {zoom.scale.toFixed(1)}</label>
-            <input type="range" min={0.5} max={3} step={0.1} value={zoom.scale}
-              onChange={(e) => updateClipZoom(selectedClipIndex, { scale: Number(e.target.value) })}
-              style={{ width: '100%', accentColor: '#2563eb' }} />
+            <div className="studio-transform-group">
+              <div className="studio-transform-heading"><RotateCw size={14} />회전</div>
+              <div className="studio-mini-fields">
+                <label><input type="number" min={-360} max={360} value={rotation} onChange={(e) => updateClipMeta(selectedClipIndex, { rotation: clamp(Number(e.target.value), -360, 360) })} />°</label>
+                <button type="button" onClick={() => updateClipMeta(selectedClipIndex, { rotation: 0 })}><RotateCcw size={13} /></button>
+              </div>
+              <input type="range" min={-360} max={360} value={rotation} onChange={(e) => updateClipMeta(selectedClipIndex, { rotation: Number(e.target.value) })} />
+            </div>
+            <div className="studio-transform-group">
+              <div className="studio-transform-heading"><Maximize2 size={14} />크기</div>
+              <div className="studio-mini-fields">
+                <label>W<input type="number" value={Number((zoom.scale * 100).toFixed(0))} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: clamp(Number(e.target.value) / 100, 0.5, 3) })} /></label>
+                <label>H<input type="number" value={Number((zoom.scale * 100).toFixed(0))} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: clamp(Number(e.target.value) / 100, 0.5, 3) })} /></label>
+              </div>
+              <input type="range" min={0.5} max={3} step={0.1} value={zoom.scale} onChange={(e) => updateClipZoom(selectedClipIndex, { scale: Number(e.target.value) })} />
+            </div>
+            <div className="studio-transform-group">
+              <div className="studio-transform-heading"><SlidersHorizontal size={14} />불투명도</div>
+              <div className="studio-mini-fields"><label><input type="number" value={opacity} onChange={(e) => updateClipMeta(selectedClipIndex, { opacity: clamp(Number(e.target.value), 0, 100) })} />%</label></div>
+              <input type="range" min={0} max={100} value={opacity} onChange={(e) => updateClipMeta(selectedClipIndex, { opacity: Number(e.target.value) })} />
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <div>
-              <label style={{ fontSize: 9, color: '#555' }}>Pan X: {zoom.panX}%</label>
-              <input type="range" min={-50} max={50} value={zoom.panX}
-                onChange={(e) => updateClipZoom(selectedClipIndex, { panX: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: '#2563eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 9, color: '#555' }}>Pan Y: {zoom.panY}%</label>
-              <input type="range" min={-50} max={50} value={zoom.panY}
-                onChange={(e) => updateClipZoom(selectedClipIndex, { panY: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: '#2563eb' }} />
-            </div>
-          </div>
-        </div>
-      )}
+        </section>
 
-      {/* Clip Position (가로 영상 위치 조절, 접이식) */}
-      <div
-        onClick={() => setShowPosition(!showPosition)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showPosition ? '▼' : '▶'}</span> 🎯 영상 위치
-      </div>
-      {showPosition && (
-        <div style={{ paddingLeft: 8 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-            <span style={{ fontSize: 9, color: '#666' }}>세로 화면 배치 방식</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
-                onClick={() => updateClipMeta(selectedClipIndex, { fitMode: 'cover', positionX: 50, positionY: 50 })}
-                style={{ flex: 1, background: fitMode === 'cover' ? '#2563eb' : '#222', border: '1px solid #444', color: fitMode === 'cover' ? '#fff' : '#888', borderRadius: 4, padding: '4px 6px', cursor: 'pointer', fontSize: 9 }}
-              >
-                1. 세로 채우기
-              </button>
-              <button
-                onClick={() => updateClipMeta(selectedClipIndex, { fitMode: 'contain', positionX: 50, positionY: 50 })}
-                style={{ flex: 1, background: fitMode === 'contain' ? '#2563eb' : '#222', border: '1px solid #444', color: fitMode === 'contain' ? '#fff' : '#888', borderRadius: 4, padding: '4px 6px', cursor: 'pointer', fontSize: 9 }}
-              >
-                2. 가로 맞춤
-              </button>
+        <div className="studio-section-stack">
+          <InspectorSection id="speed" icon={<Zap size={15} />} title="속도" summary={`${meta.speed}x`} open={openSections.speed} onToggle={toggleSection}>
+            <div className="studio-stepper-row">
+              <button onClick={() => updateClipMeta(selectedClipIndex, { speed: Math.max(0.25, meta.speed - 0.25) })}>−</button>
+              <strong>{meta.speed}x</strong>
+              <button onClick={() => updateClipMeta(selectedClipIndex, { speed: Math.min(4, meta.speed + 0.25) })}>+</button>
+              <button onClick={() => updateClipMeta(selectedClipIndex, { speed: 1 })}>기본값</button>
             </div>
-            <div style={{ fontSize: 8, color: '#666', lineHeight: 1.4 }}>
-              {fitMode === 'contain'
-                ? '가로 길이 기준으로 중앙 표시, 위아래 검은 여백'
-                : '세로 길이 기준으로 꽉 채우기, 좌우 크롭'}
+          </InspectorSection>
+
+          <InspectorSection id="crop" icon={<Crop size={15} />} title="크롭" summary={crop.w === 100 && crop.h === 100 ? '없음' : `${crop.w}×${crop.h}%`} open={openSections.crop} onToggle={toggleSection}>
+            <div className="studio-crop-grid">
+              {(['x', 'y', 'w', 'h'] as const).map((key) => (
+                <SliderRow key={key} label={key.toUpperCase()} min={0} max={100} value={crop[key]} unit="%" onChange={(value) => updateClipCrop(selectedClipIndex, { [key]: value })} />
+              ))}
             </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 9, color: '#888', minWidth: 20 }}>좌우</span>
-            <input type="range" min={0} max={100} step={1} value={posX}
-              onChange={(e) => updateClipMeta(selectedClipIndex, { positionX: Number(e.target.value) })}
-              style={{ flex: 1, accentColor: '#2563eb' }} />
-            <span style={{ fontSize: 10, color: '#ddd', minWidth: 30, textAlign: 'right' }}>{posX}%</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <span style={{ fontSize: 9, color: '#888', minWidth: 20 }}>상하</span>
-            <input type="range" min={0} max={100} step={1} value={posY}
-              onChange={(e) => updateClipMeta(selectedClipIndex, { positionY: Number(e.target.value) })}
-              style={{ flex: 1, accentColor: '#2563eb' }} />
-            <span style={{ fontSize: 10, color: '#ddd', minWidth: 30, textAlign: 'right' }}>{posY}%</span>
-          </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button
-              onClick={() => updateClipMeta(selectedClipIndex, { positionX: 0 })}
-              style={{ background: posX === 0 ? '#2563eb' : '#222', border: '1px solid #444', color: posX === 0 ? '#fff' : '#888', borderRadius: 4, padding: '2px 6px', cursor: 'pointer', fontSize: 9 }}
-            >◀ 왼쪽</button>
-            <button
-              onClick={() => updateClipMeta(selectedClipIndex, { positionX: 50, positionY: 50 })}
-              style={{ background: (posX === 50 && posY === 50) ? '#2563eb' : '#222', border: '1px solid #444', color: (posX === 50 && posY === 50) ? '#fff' : '#888', borderRadius: 4, padding: '2px 6px', cursor: 'pointer', fontSize: 9 }}
-            >● 가운데</button>
-            <button
-              onClick={() => updateClipMeta(selectedClipIndex, { positionX: 100 })}
-              style={{ background: posX === 100 ? '#2563eb' : '#222', border: '1px solid #444', color: posX === 100 ? '#fff' : '#888', borderRadius: 4, padding: '2px 6px', cursor: 'pointer', fontSize: 9 }}
-            >▶ 오른쪽</button>
-          </div>
-        </div>
-      )}
+          </InspectorSection>
 
-      {/* Clip Audio Volume (접이식) */}
-      <div
-        onClick={() => setShowVolume(!showVolume)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showVolume ? '▼' : '▶'}</span> 🔊 영상 소리
-      </div>
-      {showVolume && (
-        <div style={{ paddingLeft: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 6 }}>
-            <span style={{ fontSize: 9, color: '#666' }}>클립 오디오</span>
-            <button
-              onClick={() => updateClipMeta(selectedClipIndex, { audioMuted: !isAudioMuted })}
-              style={{
-                background: isAudioMuted ? '#3a1a1a' : '#1a3a2a',
-                border: `1px solid ${isAudioMuted ? '#ef4444' : '#10b981'}`,
-                color: isAudioMuted ? '#fca5a5' : '#a7f3d0',
-                borderRadius: 4,
-                padding: '2px 8px',
-                cursor: 'pointer',
-                fontSize: 9,
-              }}
-            >
-              {isAudioMuted ? '🔇 꺼짐' : '🔊 켜짐'}
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: isAudioMuted ? 0.45 : 1 }}>
-            <input type="range" min={0} max={100} step={1} value={clipVolume}
-              onChange={(e) => updateClipMeta(selectedClipIndex, { volume: Number(e.target.value), audioMuted: false })}
-              style={{ flex: 1, accentColor: '#2563eb' }} />
-            <span style={{ fontSize: 10, color: '#ddd', minWidth: 30, textAlign: 'right' }}>{clipVolume}%</span>
-          </div>
-          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-            <button
-              onClick={() => updateClipMeta(selectedClipIndex, { audioMuted: true })}
-              style={{ background: isAudioMuted ? '#2563eb' : '#222', border: '1px solid #444', color: isAudioMuted ? '#fff' : '#888', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 9 }}
-            >🔇 음소거</button>
-            <button
-              onClick={() => updateClipMeta(selectedClipIndex, { volume: 100, audioMuted: false })}
-              style={{ background: '#222', border: '1px solid #444', color: '#888', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 9 }}
-            >↺ 초기화</button>
-          </div>
-          <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-            <button
-              onClick={() => setAllClipAudioMuted(true)}
-              style={{ flex: 1, background: allClipAudioMuted ? '#2563eb' : '#222', border: '1px solid #444', color: allClipAudioMuted ? '#fff' : '#888', borderRadius: 4, padding: '3px 8px', cursor: 'pointer', fontSize: 9 }}
-            >
-              전체 음소거
-            </button>
-            <button
-              onClick={() => setAllClipAudioMuted(false)}
-              style={{ flex: 1, background: !allClipAudioMuted ? '#2563eb' : '#222', border: '1px solid #444', color: !allClipAudioMuted ? '#fff' : '#888', borderRadius: 4, padding: '3px 8px', cursor: 'pointer', fontSize: 9 }}
-            >
-              전체 켜기
-            </button>
-          </div>
-        </div>
-      )}
+          <InspectorSection id="zoom" icon={<Maximize2 size={15} />} title="줌 애니메이션" summary={zoom.animation && zoom.animation !== 'none' ? zoom.animation : '없음'} open={openSections.zoom} onToggle={toggleSection}>
+            <select className="studio-select" value={zoom.animation || 'none'} onChange={(e) => updateClipZoom(selectedClipIndex, { animation: e.target.value as ClipZoom['animation'] })}>
+              <option value="none">없음 (정적)</option>
+              <option value="zoomIn">줌 인</option>
+              <option value="zoomOut">줌 아웃</option>
+              <option value="panLeft">팬 왼쪽</option>
+              <option value="panRight">팬 오른쪽</option>
+              <option value="panUp">팬 위</option>
+              <option value="panDown">팬 아래</option>
+              <option value="custom">커스텀</option>
+            </select>
+            <SliderRow label="Scale" min={0.5} max={3} step={0.1} value={Number(zoom.scale.toFixed(1))} onChange={(value) => updateClipZoom(selectedClipIndex, { scale: value })} />
+            <SliderRow label="Pan X" min={-50} max={50} value={zoom.panX} unit="%" onChange={(value) => updateClipZoom(selectedClipIndex, { panX: value })} />
+            <SliderRow label="Pan Y" min={-50} max={50} value={zoom.panY} unit="%" onChange={(value) => updateClipZoom(selectedClipIndex, { panY: value })} />
+          </InspectorSection>
 
-      {/* Feature 9: Opacity (접이식) */}
-      <div
-        onClick={() => setShowOpacity(!showOpacity)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showOpacity ? '▼' : '▶'}</span> 🔆 불투명도
-      </div>
-      {showOpacity && (
-        <div style={{ paddingLeft: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="range" min={0} max={100} step={1} value={opacity}
-              onChange={(e) => updateClipMeta(selectedClipIndex, { opacity: Number(e.target.value) })}
-              style={{ flex: 1, accentColor: '#2563eb' }} />
-            <span style={{ fontSize: 10, color: '#ddd', minWidth: 30, textAlign: 'right' }}>{opacity}%</span>
-          </div>
-        </div>
-      )}
-
-      {/* Feature 9: Rotation (접이식) */}
-      <div
-        onClick={() => setShowRotation(!showRotation)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showRotation ? '▼' : '▶'}</span> 🔄 회전
-      </div>
-      {showRotation && (
-        <div style={{ paddingLeft: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="range" min={-360} max={360} step={1} value={rotation}
-              onChange={(e) => updateClipMeta(selectedClipIndex, { rotation: Number(e.target.value) })}
-              style={{ flex: 1, accentColor: '#2563eb' }} />
-            <input
-              type="number" min={-360} max={360} step={1} value={rotation}
-              onChange={(e) => updateClipMeta(selectedClipIndex, { rotation: Math.max(-360, Math.min(360, Number(e.target.value))) })}
-              style={{ width: 50, background: '#1a1a1a', border: '1px solid #333', color: '#ddd', padding: '3px 6px', borderRadius: 4, fontSize: 10, textAlign: 'right' }}
-            />
-            <span style={{ fontSize: 9, color: '#666' }}>°</span>
-          </div>
-          <button
-            onClick={() => updateClipMeta(selectedClipIndex, { rotation: 0 })}
-            style={{ marginTop: 4, background: '#222', border: '1px solid #444', color: '#888', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 9 }}
-          >초기화</button>
-        </div>
-      )}
-
-      {/* Feature 10: Alignment (접이식) */}
-      <div
-        onClick={() => setShowAlign(!showAlign)}
-        style={{ fontSize: 10, color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        <span style={{ fontSize: 8 }}>{showAlign ? '▼' : '▶'}</span> 📐 정렬
-      </div>
-      {showAlign && (
-        <div style={{ paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div>
-            <span style={{ fontSize: 9, color: '#555', display: 'block', marginBottom: 4 }}>가로 정렬</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
-                onClick={() => updateClipZoom(selectedClipIndex, { panX: -50 + (50 / zoom.scale) })}
-                style={btnStyle}
-                title="왼쪽 정렬"
-              >◀</button>
-              <button
-                onClick={() => updateClipZoom(selectedClipIndex, { panX: 0 })}
-                style={btnStyle}
-                title="가운데 정렬"
-              >◆</button>
-              <button
-                onClick={() => updateClipZoom(selectedClipIndex, { panX: 50 - (50 / zoom.scale) })}
-                style={btnStyle}
-                title="오른쪽 정렬"
-              >▶</button>
+          <InspectorSection id="position" icon={<Move size={15} />} title="영상 위치" summary={fitMode === 'contain' ? '가로 맞춤' : '세로 채우기'} open={openSections.position} onToggle={toggleSection}>
+            <div className="studio-segmented">
+              <button className={fitMode === 'cover' ? 'is-active' : ''} onClick={() => updateClipMeta(selectedClipIndex, { fitMode: 'cover', positionX: 50, positionY: 50 })}>세로 채우기</button>
+              <button className={fitMode === 'contain' ? 'is-active' : ''} onClick={() => updateClipMeta(selectedClipIndex, { fitMode: 'contain', positionX: 50, positionY: 50 })}>가로 맞춤</button>
             </div>
-          </div>
-          <div>
-            <span style={{ fontSize: 9, color: '#555', display: 'block', marginBottom: 4 }}>세로 정렬</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
-                onClick={() => updateClipZoom(selectedClipIndex, { panY: -50 + (50 / zoom.scale) })}
-                style={btnStyle}
-                title="상단 정렬"
-              >▲</button>
-              <button
-                onClick={() => updateClipZoom(selectedClipIndex, { panY: 0 })}
-                style={btnStyle}
-                title="중앙 정렬"
-              >◆</button>
-              <button
-                onClick={() => updateClipZoom(selectedClipIndex, { panY: 50 - (50 / zoom.scale) })}
-                style={btnStyle}
-                title="하단 정렬"
-              >▼</button>
+            <SliderRow label="좌우" min={0} max={100} value={posX} unit="%" onChange={(value) => updateClipMeta(selectedClipIndex, { positionX: value })} />
+            <SliderRow label="상하" min={0} max={100} value={posY} unit="%" onChange={(value) => updateClipMeta(selectedClipIndex, { positionY: value })} />
+          </InspectorSection>
+
+          <InspectorSection id="audio" icon={isAudioMuted ? <VolumeX size={15} /> : <Volume2 size={15} />} title="영상 소리" summary={isAudioMuted ? '꺼짐' : `켜짐 ${clipVolume}%`} open={openSections.audio} onToggle={toggleSection}>
+            <div className="studio-segmented">
+              <button className={!isAudioMuted ? 'is-active' : ''} onClick={() => updateClipMeta(selectedClipIndex, { audioMuted: false })}>켜짐</button>
+              <button className={isAudioMuted ? 'is-active' : ''} onClick={() => updateClipMeta(selectedClipIndex, { audioMuted: true })}>음소거</button>
             </div>
-          </div>
+            <SliderRow label="볼륨" min={0} max={100} value={clipVolume} unit="%" onChange={(value) => updateClipMeta(selectedClipIndex, { volume: value, audioMuted: false })} />
+            <div className="studio-segmented">
+              <button className={allClipAudioMuted ? 'is-active' : ''} onClick={() => setAllClipAudioMuted(true)}>전체 음소거</button>
+              <button className={!allClipAudioMuted ? 'is-active' : ''} onClick={() => setAllClipAudioMuted(false)}>전체 켜기</button>
+            </div>
+          </InspectorSection>
+
+          <InspectorSection id="align" icon={<AlignCenter size={15} />} title="정렬" summary="가운데" open={openSections.align} onToggle={toggleSection}>
+            <div className="studio-align-row">
+              <button onClick={() => updateClipZoom(selectedClipIndex, { panX: -50 + (50 / zoom.scale) })}><AlignStartHorizontal size={16} />왼쪽</button>
+              <button onClick={() => updateClipZoom(selectedClipIndex, { panX: 0, panY: 0 })}><AlignCenter size={16} />중앙</button>
+              <button onClick={() => updateClipZoom(selectedClipIndex, { panX: 50 - (50 / zoom.scale) })}><AlignEndHorizontal size={16} />오른쪽</button>
+            </div>
+          </InspectorSection>
         </div>
-      )}
+      </div>
+
+      <div className="studio-inspector-footer">
+        <button className="studio-primary-action" type="button" onClick={saveProject}>선택 클립 적용</button>
+        <button className="studio-secondary-action" type="button" onClick={() => copyClipSettingsToAll(selectedClipIndex)}>전체 클립에 복사</button>
+        <span className={`studio-save-status is-${saveStatus}`}>
+          <span />
+          {saveStatus === 'saving' ? '저장 중' : saveStatus === 'failed' ? '실패' : saveStatus === 'saved' ? '저장됨' : '대기'}
+        </span>
+      </div>
     </div>
   );
 };
