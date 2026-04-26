@@ -8,6 +8,7 @@ export const GALLERY_KINDS: readonly GalleryKind[] = [
   "ad",
   "case_study",
   "ai_influencer",
+  "research",
   "other",
 ] as const;
 
