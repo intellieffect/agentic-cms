@@ -34,6 +34,36 @@ interface EditorElementNode {
   [key: string]: unknown;
 }
 
+/**
+ * Iterative DFS — content tree 안의 data:image base64 embed를 안전하게 검출.
+ * regex `body.match`는 거대 string에서 V8 stack overflow 일으킴 (사용자 보고 회귀).
+ */
+function findDataImageEmbeds(node: unknown): { count: number; totalBytes: number } {
+  let count = 0;
+  let totalBytes = 0;
+  const visited = new WeakSet<object>();
+  const stack: unknown[] = [node];
+  while (stack.length > 0) {
+    const n = stack.pop();
+    if (n === null || typeof n !== 'object') continue;
+    if (visited.has(n as object)) continue;
+    visited.add(n as object);
+    if (Array.isArray(n)) {
+      for (let i = n.length - 1; i >= 0; i--) stack.push(n[i]);
+      continue;
+    }
+    for (const [key, val] of Object.entries(n as Record<string, unknown>)) {
+      if ((key === 'url' || key === 'src') && typeof val === 'string' && val.startsWith('data:image/')) {
+        count++;
+        totalBytes += val.length;
+      } else if (val !== null && typeof val === 'object') {
+        stack.push(val);
+      }
+    }
+  }
+  return { count, totalBytes };
+}
+
 interface BlogManageEditorProps {
   postId: string;
   initialContent: EditorElementNode[];
@@ -85,16 +115,28 @@ export function BlogManageEditor({ postId, initialContent, onSave, onCancel }: B
     setSaving(true);
     try {
       const content = editor.children;
+      // base64 image embed 검사 — iterative DFS (regex match는 거대 string에서 V8 stack overflow)
+      const embeds = findDataImageEmbeds(content);
+      if (embeds.totalBytes > 0) {
+        console.warn(`[BlogManageEditor] base64 image embeds: ${embeds.count}개, 합계 ${(embeds.totalBytes / 1024).toFixed(1)} KB`);
+      }
+      const body = JSON.stringify({ content, skipPublishedAt: true });
+      console.log(`[BlogManageEditor] PUT body size: ${(body.length / 1024).toFixed(1)} KB`);
       const res = await fetch(`/api/blog-manage/${postId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, skipPublishedAt: true }),
+        body,
       });
-      if (!res.ok) throw new Error('저장 실패');
+      if (!res.ok) {
+        const data: { error?: string; stack?: string } = await res.json().catch(() => ({}));
+        if (data.stack) console.error('[BlogManageEditor] server stack:', data.stack);
+        throw new Error(data.error || `저장 실패 (HTTP ${res.status})`);
+      }
       toast.success('저장되었습니다.');
       onSave?.();
     } catch (e) {
-      toast.error('저장에 실패했습니다.');
+      const msg = e instanceof Error ? e.message : '저장에 실패했습니다.';
+      toast.error(msg);
       console.error(e);
     } finally {
       setSaving(false);

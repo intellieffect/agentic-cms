@@ -57,10 +57,19 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body = await req.json();
+    let body: Record<string, unknown>;
+    try {
+      const raw = await req.text();
+      console.log(`[blog-manage PUT ${id}] body bytes: ${raw.length}`);
+      body = JSON.parse(raw);
+    } catch (e) {
+      console.error(`[blog-manage PUT ${id}] body parse failed:`, e);
+      const message = e instanceof Error ? e.message : "본문 파싱 실패";
+      return NextResponse.json({ error: `본문 파싱 실패: ${message}` }, { status: 400 });
+    }
 
-    const VALID_STATUSES = ['draft', 'published', 'archived'] as const;
-    if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    const VALID_STATUSES: ReadonlyArray<string> = ['draft', 'published', 'archived'];
+    if (body.status !== undefined && (typeof body.status !== 'string' || !VALID_STATUSES.includes(body.status))) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
@@ -104,8 +113,13 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    console.error("[blog-manage PUT] unexpected error:", e);
+    const message = e instanceof Error ? e.message : "Internal server error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: message,
+        stack: process.env.NODE_ENV === "development" && e instanceof Error ? e.stack : undefined,
+      },
       { status: 500 }
     );
   }
