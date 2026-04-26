@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { OffthreadVideo, Video, useCurrentFrame, useVideoConfig, interpolate, getRemotionEnvironment } from "remotion";
 import { getEditorConfig } from "@/lib/editor-config";
 
@@ -126,9 +126,18 @@ export const VideoClip: React.FC<ClipProps> = ({
   const objPosY = positionY ?? 50;
   const objectPosition = (objPosX !== 50 || objPosY !== 50) ? `${objPosX}% ${objPosY}%` : undefined;
 
-  // HEVC originals may fail in browser during proxy generation — log only, errorFallback renders placeholder
+  // 404/HEVC decode 실패 등으로 source가 못 떠질 때, Player가 buffering 상태로 멈추지 않도록
+  // 1) preview에서 pauseWhenBuffering 제거 (frame 진행 강제) +
+  // 2) onError 시 errored 플래그 → placeholder 렌더로 다음 frame까지 깔끔히 통과시킨다.
+  // src가 바뀌면 errored 리셋 (편집 중 source 교체 케이스).
+  const [errored, setErrored] = useState(false);
+  useEffect(() => {
+    setErrored(false);
+  }, [src]);
+
   const handleError = (err: Error) => {
     console.debug(`[VideoClip] ${source}: ${err.message}`);
+    setErrored(true);
   };
 
   return (
@@ -141,7 +150,29 @@ export const VideoClip: React.FC<ClipProps> = ({
         opacity: clipOpacity,
       }}
     >
-      {getRemotionEnvironment().isRendering ? (
+      {errored ? (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            background: "#0a0a0a",
+            color: "#7f8590",
+            fontFamily: "system-ui, sans-serif",
+            fontSize: 12,
+            textAlign: "center",
+            padding: 16,
+          }}
+        >
+          <div style={{ fontWeight: 700, color: "#ef6b6b" }}>⚠ 미디어 로드 실패</div>
+          <div style={{ wordBreak: "break-all", maxWidth: "80%" }}>{source}</div>
+          <div style={{ opacity: 0.6 }}>파일이 디스크에 없거나 디코딩 실패</div>
+        </div>
+      ) : getRemotionEnvironment().isRendering ? (
         <OffthreadVideo
           src={src}
           startFrom={startFromFrame}
@@ -166,7 +197,6 @@ export const VideoClip: React.FC<ClipProps> = ({
           playbackRate={speed}
           volume={clipVolume}
           muted={audioMuted}
-          pauseWhenBuffering
           acceptableTimeShiftInSeconds={1}
           onError={handleError}
           style={{
