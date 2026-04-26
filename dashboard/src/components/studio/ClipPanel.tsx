@@ -131,11 +131,15 @@ export const ClipPanel: React.FC = () => {
 
   useEffect(() => {
     if (!clip) return;
+    // probe는 source(파일)에만 의존 — clip.end는 첫 응답 실패 시 fallback에만 쓰이므로
+    // deps에 넣으면 trim drag 매 프레임마다 fetch가 fire됨 (네트워크 폭격).
+    const fallback = clip.end + 10;
     fetch(`${getEditorConfig().apiUrl}/api/media/probe/${encodeURIComponent(clip.source)}`)
       .then((r) => r.json())
-      .then((d) => setSourceDuration(d.duration || clip.end + 10))
-      .catch(() => setSourceDuration(clip.end + 10));
-  }, [clip?.source, clip?.end]);
+      .then((d) => setSourceDuration(d.duration || fallback))
+      .catch(() => setSourceDuration(fallback));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clip?.source]);
 
   if (!clip) {
     return (
