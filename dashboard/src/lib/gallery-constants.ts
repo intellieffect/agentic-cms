@@ -5,14 +5,14 @@ export const GALLERY_VIDEO_MAX = 100 * 1024 * 1024;
 
 export const GALLERY_KINDS: readonly GalleryKind[] = [
   "landing",
-  "video",
   "ad",
-  "image",
-  "carousel",
   "case_study",
   "ai_influencer",
   "other",
 ] as const;
+
+export const GALLERY_MEDIA_TYPES = ["all", "image", "video"] as const;
+export type GalleryMediaType = (typeof GALLERY_MEDIA_TYPES)[number];
 
 export const GALLERY_KIND_FILTERS: readonly (GalleryKind | "all")[] = [
   "all",

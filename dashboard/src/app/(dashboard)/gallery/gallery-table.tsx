@@ -21,7 +21,11 @@ import type {
   GalleryKind,
   GalleryVisibility,
 } from "@/lib/types";
-import { GALLERY_KIND_FILTERS as KIND_FILTER } from "@/lib/gallery-constants";
+import {
+  GALLERY_KIND_FILTERS as KIND_FILTER,
+  GALLERY_MEDIA_TYPES,
+  type GalleryMediaType,
+} from "@/lib/gallery-constants";
 import {
   setGalleryFeatured,
   updateGalleryRank,
@@ -34,7 +38,6 @@ const STATUS_OPTIONS: GalleryItemStatus[] = ["draft", "published", "archived"];
 const VISIBILITY_OPTIONS: GalleryVisibility[] = ["public", "member", "internal"];
 
 function kindVariant(kind: GalleryKind) {
-  if (kind === "video") return "destructive" as const;
   if (kind === "landing") return "warning" as const;
   if (kind === "ad") return "success" as const;
   if (kind === "case_study") return "info" as const;
@@ -50,12 +53,18 @@ function statusVariant(status: GalleryItemStatus) {
 
 export function GalleryTable({ items }: { items: GalleryItemWithCover[] }) {
   const [kindFilter, setKindFilter] = useState<(typeof KIND_FILTER)[number]>("all");
+  const [mediaFilter, setMediaFilter] = useState<GalleryMediaType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | GalleryItemStatus>("all");
   const [featuredOnly, setFeaturedOnly] = useState(false);
 
   const filtered = items.filter((i) => {
     const itemKinds = i.kinds && i.kinds.length > 0 ? i.kinds : [i.kind];
     if (kindFilter !== "all" && !itemKinds.includes(kindFilter as GalleryKind)) return false;
+    if (mediaFilter !== "all") {
+      const isVideo = i.cover_mime?.startsWith("video/") ?? false;
+      if (mediaFilter === "video" && !isVideo) return false;
+      if (mediaFilter === "image" && isVideo) return false;
+    }
     if (statusFilter !== "all" && i.status !== statusFilter) return false;
     if (featuredOnly && !i.is_featured) return false;
     return true;
@@ -75,6 +84,21 @@ export function GalleryTable({ items }: { items: GalleryItemWithCover[] }) {
               {KIND_FILTER.map((k) => (
                 <SelectItem key={k} value={k}>
                   {k}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Media</span>
+          <Select value={mediaFilter} onValueChange={(v) => setMediaFilter(v as GalleryMediaType)}>
+            <SelectTrigger className="h-8 w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {GALLERY_MEDIA_TYPES.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
                 </SelectItem>
               ))}
             </SelectContent>

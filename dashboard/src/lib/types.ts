@@ -203,10 +203,7 @@ export interface FinishedVideo {
 // ── Gallery ──────────────────────────────────────────────
 export type GalleryKind =
   | 'landing'
-  | 'video'
   | 'ad'
-  | 'image'
-  | 'carousel'
   | 'case_study'
   | 'ai_influencer'
   | 'other';
