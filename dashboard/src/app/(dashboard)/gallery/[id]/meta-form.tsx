@@ -45,6 +45,11 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
     item.duration_seconds?.toString() ?? ""
   );
   const [coverPosterUrl, setCoverPosterUrl] = useState(item.cover_poster_url ?? "");
+  // BHW BP3 — sample case 정량 메트릭 4 필드
+  const [metricLabel, setMetricLabel] = useState(item.metric_label ?? "");
+  const [metricBefore, setMetricBefore] = useState(item.metric_before ?? "");
+  const [metricAfter, setMetricAfter] = useState(item.metric_after ?? "");
+  const [metricUnit, setMetricUnit] = useState(item.metric_unit ?? "");
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const toggleKind = (k: GalleryKind) => {
@@ -75,6 +80,10 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
           ? Number.parseInt(durationSeconds, 10)
           : null,
         cover_poster_url: coverPosterUrl || null,
+        metric_label: metricLabel || null,
+        metric_before: metricBefore || null,
+        metric_after: metricAfter || null,
+        metric_unit: metricUnit || null,
       });
       setSavedAt(new Date().toLocaleTimeString("ko-KR"));
     });
@@ -147,6 +156,31 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
                 </button>
               );
             })}
+          </div>
+        </Field>
+
+        <Field label="Sample Metric (BHW BP3 — AI 인용 친화)">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Input
+              value={metricLabel}
+              onChange={(e) => setMetricLabel(e.target.value)}
+              placeholder="라벨 (예: 보고서 시간)"
+            />
+            <Input
+              value={metricBefore}
+              onChange={(e) => setMetricBefore(e.target.value)}
+              placeholder="Before (예: 3시간)"
+            />
+            <Input
+              value={metricAfter}
+              onChange={(e) => setMetricAfter(e.target.value)}
+              placeholder="After (예: 10분)"
+            />
+            <Input
+              value={metricUnit}
+              onChange={(e) => setMetricUnit(e.target.value)}
+              placeholder="Unit (선택, 예: 분)"
+            />
           </div>
         </Field>
 

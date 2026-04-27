@@ -247,6 +247,12 @@ export interface GalleryItem {
   transcript: string | null;
   duration_seconds: number | null;
   cover_poster_url: string | null;
+  // BHW BP3 (Radarkitai 2026-02) — sample case 정량 메트릭. 4 필드 모두 nullable.
+  // label + before + after 3개 모두 채워진 경우만 web 측 UI/JSON-LD 노출.
+  metric_label: string | null;
+  metric_before: string | null;
+  metric_after: string | null;
+  metric_unit: string | null;
 }
 
 export interface GalleryItemWithCover extends GalleryItem {

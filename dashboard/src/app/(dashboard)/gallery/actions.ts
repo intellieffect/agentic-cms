@@ -78,6 +78,11 @@ export interface GalleryMetaPatch {
   transcript?: string | null;
   duration_seconds?: number | null;
   cover_poster_url?: string | null;
+  // BHW BP3 — sample case 정량 메트릭 (Radarkitai 2026-02 "proprietary data = citation magnet").
+  metric_label?: string | null;
+  metric_before?: string | null;
+  metric_after?: string | null;
+  metric_unit?: string | null;
 }
 
 export async function updateGalleryMeta(id: string, patch: GalleryMetaPatch) {
