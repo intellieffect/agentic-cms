@@ -62,7 +62,7 @@ export async function updateGalleryVisibility(id: string, visibility: GalleryVis
   revalidatePath("/gallery");
 }
 
-// ── 메타 편집 (title / subtitle / summary / tags / duration / cover_aspect / kinds) ─────────
+// ── 메타 편집 (title / subtitle / summary / tags / duration / cover_aspect / kinds + SEO 메타) ─────────
 export interface GalleryMetaPatch {
   title?: string;
   subtitle?: string | null;
@@ -72,6 +72,12 @@ export interface GalleryMetaPatch {
   cover_aspect?: GalleryCoverAspect;
   author?: string | null;
   kinds?: GalleryKind[];
+  // SEO/AEO 메타 확장 (migration 20260426000000)
+  is_ai_generated?: boolean;
+  ai_model?: string | null;
+  transcript?: string | null;
+  duration_seconds?: number | null;
+  cover_poster_url?: string | null;
 }
 
 export async function updateGalleryMeta(id: string, patch: GalleryMetaPatch) {

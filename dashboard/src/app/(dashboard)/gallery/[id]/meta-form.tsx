@@ -37,6 +37,14 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
   const [kinds, setKinds] = useState<GalleryKind[]>(
     item.kinds && item.kinds.length > 0 ? item.kinds : [item.kind]
   );
+  // SEO/AEO 메타 확장 (migration 20260426000000)
+  const [isAiGenerated, setIsAiGenerated] = useState(item.is_ai_generated);
+  const [aiModel, setAiModel] = useState(item.ai_model ?? "");
+  const [transcript, setTranscript] = useState(item.transcript ?? "");
+  const [durationSeconds, setDurationSeconds] = useState(
+    item.duration_seconds?.toString() ?? ""
+  );
+  const [coverPosterUrl, setCoverPosterUrl] = useState(item.cover_poster_url ?? "");
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const toggleKind = (k: GalleryKind) => {
@@ -60,6 +68,13 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
+        is_ai_generated: isAiGenerated,
+        ai_model: aiModel || null,
+        transcript: transcript || null,
+        duration_seconds: durationSeconds
+          ? Number.parseInt(durationSeconds, 10)
+          : null,
+        cover_poster_url: coverPosterUrl || null,
       });
       setSavedAt(new Date().toLocaleTimeString("ko-KR"));
     });
@@ -142,6 +157,61 @@ export function GalleryMetaForm({ item }: { item: GalleryItemWithCover }) {
             placeholder="landing, ad, beauty"
           />
         </Field>
+
+        {/* SEO/AEO 메타 — IPTC AI 라벨 + transcript + duration_seconds + poster */}
+        <div className="rounded-lg border border-border bg-muted/5 p-4">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            SEO / AEO 메타
+          </div>
+          <div className="space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAiGenerated}
+                onChange={(e) => setIsAiGenerated(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium">AI 생성 콘텐츠</div>
+                <div className="text-xs text-muted-foreground">
+                  IPTC digitalSourceType=trainedAlgorithmicMedia. Google "About this image" / Meta / LinkedIn CR 라벨 자동 표시.
+                </div>
+              </div>
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="AI Model (선택)">
+                <Input
+                  value={aiModel}
+                  onChange={(e) => setAiModel(e.target.value)}
+                  placeholder="gpt-image-2 / kling-1.6 / veo-3.1"
+                />
+              </Field>
+              <Field label="Duration (sec) — 짧은 영상 정확도">
+                <Input
+                  type="number"
+                  value={durationSeconds}
+                  onChange={(e) => setDurationSeconds(e.target.value)}
+                  placeholder="9"
+                />
+              </Field>
+            </div>
+            <Field label="Cover Poster URL (영상 cover의 첫 프레임 JPG)">
+              <Input
+                value={coverPosterUrl}
+                onChange={(e) => setCoverPosterUrl(e.target.value)}
+                placeholder="https://.../poster.jpg"
+              />
+            </Field>
+            <Field label="Transcript (영상 한글 5~10줄, AEO multimodal 친화)">
+              <Textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                rows={4}
+                placeholder="영상에서 말하는/표현하는 한글 텍스트. Perplexity/ChatGPT/Gemini가 인용 시 활용."
+              />
+            </Field>
+          </div>
+        </div>
 
         <div className="flex items-center gap-3">
           <Button onClick={save} disabled={pending}>
