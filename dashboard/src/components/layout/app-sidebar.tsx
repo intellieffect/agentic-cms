@@ -21,6 +21,7 @@ import {
   TrendingUpIcon,
   PenSquareIcon,
   GalleryHorizontalIcon,
+  RadarIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -84,6 +85,7 @@ const intelligenceNavItems: NavItem[] = [
   // 하위에 페이지가 늘어나면 그룹명을 유지하고 item 은 구체명(Traffic) 을 쓴다.
   // 기존 e2e 테스트(analytics.spec.ts) 가 "Traffic" text 로 assert 하므로 유지.
   { title: "Traffic", url: "/analytics/traffic", icon: TrendingUpIcon },
+  { title: "AEO Visibility", url: "/aeo", icon: RadarIcon },
   { title: "Activity", url: "/activity", icon: ActivityIcon },
 ];
 
