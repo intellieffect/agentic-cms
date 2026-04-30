@@ -20,6 +20,11 @@ dashboard/src/app/(dashboard)/video/templates_removed_*
 .*_removed_*/
 **/*.bak_*
 **/.env.bak_*
+dashboard/.next.removed_*/
+
+# Tooling caches / scratch
+.serena/
+tmp/
 
 # editor/ — Python FastAPI 영상 편집 서버 (embedded)
 # editor/.gitignore 도 개별 패턴을 갖고 있지만, top-level 에서도 중복 방어.
