@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrafficCompareView } from "./_components/TrafficCompareView";
 import { TrafficTodayView } from "./_components/TrafficTodayView";
 import { getTodayRangeComparisonCaption, type CompareMode, type TrafficApiResponse, type TrafficCompareApiResponse, type TrafficPreset, type TrafficTodayApiResponse } from "@/lib/analytics/traffic";
+import { isOrganicSearchChannel } from "@/lib/analytics/ga4-channels";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -503,8 +504,11 @@ function classifyPosition(pos: number): { tier: string; tone: string; label: str
   return { tier: "tail", tone: "text-[#666]", label: "4페이지+" };
 }
 
-// position 별 평균 CTR 기대치 (Sistrix 2024 click study 등 업계 통념 기반).
-// "이 위치에서 이 정도 CTR은 나와야 한다"의 baseline.
+// position 별 평균 CTR 기대치 — 글로벌 desktop SERP baseline (Sistrix 2024 등).
+// 주의:
+// - Korean SERP 는 Naver 영향·모바일 비중·AI Overviews/PAA box 로 실측이 30~50%
+//   낮을 수 있음. "CTR 부진" 판정은 false positive 발생 가능.
+// - 향후 자체 데이터로 position-bucketed self-baseline 계산해 대체 권장 (follow-up).
 const POSITION_CTR_BASELINE: { range: [number, number]; ctr: number }[] = [
   { range: [1, 1], ctr: 0.395 },
   { range: [2, 2], ctr: 0.184 },
@@ -727,8 +731,8 @@ function GSCInsightCards({ data }: { data: GSCData }) {
           label="CTR 부진 검색어"
           value={`${ctrLowQueries.length}건`}
           note={ctrLowQueries.length > 0
-            ? "1페이지 안인데 위치 평균 CTR 절반 이하. 제목·메타 description 재작성 우선순위."
-            : "1페이지 검색어들이 모두 기대 CTR 충족. 제목/메타는 현재 형태 유지."}
+            ? "1페이지 안인데 위치별 글로벌 baseline CTR 의 절반 이하 (Korean SERP 는 실측이 더 낮을 수 있어 false positive 가능). 제목·메타 재작성 후보."
+            : "1페이지 검색어들이 모두 글로벌 기대 CTR 충족."}
         />
         <InsightCard
           tone={deviceGap !== null && deviceGap >= 3 ? "amber" : "muted"}
@@ -816,18 +820,10 @@ function GSCTrackedKeywords({ tracked, days }: { tracked: GSCData["tracked"]; da
 }
 
 // 모바일 vs 데스크톱 비교 — 격차를 쌍둥이 카드 + delta 박스로 강조.
-function GSCDeviceComparison({ devices }: { devices: GSCData["devices"] }) {
-  if (!devices || devices.length === 0) return null;
-  const desktop = devices.find((d) => d.device.toUpperCase() === "DESKTOP");
-  const mobile = devices.find((d) => d.device.toUpperCase() === "MOBILE");
-  if (!desktop && !mobile) return null;
+type DeviceRow = NonNullable<GSCData["devices"]>[number];
 
-  const delta = desktop && mobile && mobile.position > 0 && desktop.position > 0
-    ? mobile.position - desktop.position
-    : null;
-  const ctrDelta = desktop && mobile ? (mobile.ctr - desktop.ctr) * 100 : null;
-
-  const Card = ({ title, d }: { title: string; d?: GSCData["devices"] extends (infer U)[] | undefined ? U : never }) => (
+function DeviceCard({ title, d }: { title: string; d?: DeviceRow }) {
+  return (
     <div className="flex-1 rounded-xl border border-[#222] bg-[#141414] p-4">
       <div className="text-xs text-[#aaa]">{title}</div>
       {d ? (
@@ -840,13 +836,25 @@ function GSCDeviceComparison({ devices }: { devices: GSCData["devices"] }) {
       ) : <div className="mt-2 text-sm text-[#666]">데이터 없음</div>}
     </div>
   );
+}
+
+function GSCDeviceComparison({ devices }: { devices: GSCData["devices"] }) {
+  if (!devices || devices.length === 0) return null;
+  const desktop = devices.find((d) => d.device.toUpperCase() === "DESKTOP");
+  const mobile = devices.find((d) => d.device.toUpperCase() === "MOBILE");
+  if (!desktop && !mobile) return null;
+
+  const delta = desktop && mobile && mobile.position > 0 && desktop.position > 0
+    ? mobile.position - desktop.position
+    : null;
+  const ctrDelta = desktop && mobile ? (mobile.ctr - desktop.ctr) * 100 : null;
 
   return (
     <>
       <SectionHeader title="모바일 vs 데스크톱" description="모바일 위치가 데스크톱보다 3 위 이상 낮으면 mobile-first indexing 신호 약함 — Core Web Vitals(LCP/INP/CLS), 모바일 레이아웃 시프트, 텍스트 가독성 점검 우선순위." />
       <div className="flex flex-wrap gap-3">
-        <Card title="데스크톱" d={desktop} />
-        <Card title="모바일" d={mobile} />
+        <DeviceCard title="데스크톱" d={desktop} />
+        <DeviceCard title="모바일" d={mobile} />
         {delta !== null && (
           <div className={`flex flex-col justify-center rounded-xl border px-4 py-4 ${delta >= 3 ? "border-amber-900/50 bg-amber-950/20" : "border-[#222] bg-[#141414]"}`} style={{ minWidth: 220 }}>
             <div className="text-xs text-[#aaa]">격차</div>
@@ -869,13 +877,19 @@ function GSCDeviceComparison({ devices }: { devices: GSCData["devices"] }) {
 // GA4 인사이트 카드 — 검색→체류→전환 funnel 의 각 단계 진단.
 // 1. Organic Search 비중  2. Organic 참여율  3. 전환 핵심 이벤트  4. 신호 누락 (key event 마킹 안 됨 등)
 function GA4InsightCards({ data }: { data: GA4Data }) {
-  const totalSessions = data.channels?.reduce((s, c) => s + c.sessions, 0) ?? data.overview.sessions;
-  const organic = data.channels?.find((c) => c.channel === "Organic Search");
+  const channels = data.channels ?? [];
+  const totalSessions = channels.reduce((s, c) => s + c.sessions, 0) || data.overview.sessions;
+  const organic = channels.find((c) => isOrganicSearchChannel(c.channel));
   const organicShare = totalSessions > 0 && organic ? (organic.sessions / totalSessions) * 100 : 0;
-  const totalKeyEvents = data.channels?.reduce((s, c) => s + c.keyEvents, 0) ?? 0;
+  const totalKeyEvents = channels.reduce((s, c) => s + c.keyEvents, 0);
   const newsletter = data.conversions?.newsletter;
   const newsletterFormViews = newsletter?.formViews ?? 0;
   const newsletterSubmits = newsletter?.submits ?? 0;
+
+  // 데이터 자체가 비어있는지 vs 데이터 있는데 항목이 0 인지 분기.
+  // - dataSparse: 신규 사이트·집계 지연·channel 응답 자체 없음 → 위험 톤이 아니라 muted ("측정 불가")
+  // - dataSparse=false 인데 organic share=0 → 진짜 검색 유입 부재 → rose
+  const dataSparse = channels.length === 0 || totalSessions === 0;
 
   // 신호 누락 진단: key event 0인데 sign_up/cta_click 같은 이벤트는 흐르고 있으면 GA4 admin에서 마킹 안 된 상태.
   const eventCount = (name: string) => data.events?.find((e) => e.eventName === name)?.count ?? 0;
@@ -887,37 +901,41 @@ function GA4InsightCards({ data }: { data: GA4Data }) {
       <SectionHeader title="이번 기간의 액션 큐" description="검색 → 도착 → 체류 → 전환의 4단계 funnel 에서 어디가 좋고 어디가 막히는지 카드 한 줄로 진단합니다." />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <InsightCard
-          tone={organicShare >= 10 ? "emerald" : organicShare > 0 ? "amber" : "rose"}
+          tone={dataSparse ? "muted" : organicShare >= 10 ? "emerald" : organicShare > 0 ? "amber" : "rose"}
           label="Organic Search 비중"
-          value={organic ? `${organicShare.toFixed(1)}%` : "—"}
-          note={organic
-            ? `세션 ${fmtNum(organic.sessions)} / 전체 ${fmtNum(totalSessions)}. 검색 유입을 늘리려면 GSC 끌어올림 후보부터 처리합니다.`
-            : "Organic Search 채널 데이터 없음."}
+          value={dataSparse ? "—" : `${organicShare.toFixed(1)}%`}
+          note={dataSparse
+            ? "측정 데이터 부족. 트래픽이 더 쌓이거나 채널 응답이 채워질 때까지 기다립니다."
+            : organic
+              ? `세션 ${fmtNum(organic.sessions)} / 전체 ${fmtNum(totalSessions)}. 검색 유입을 늘리려면 GSC 끌어올림 후보부터 처리합니다.`
+              : "Organic Search 채널 세션 0. 검색 유입이 아직 없음."}
         />
         <InsightCard
-          tone={organic && organic.engagementRate >= 0.6 ? "emerald" : organic && organic.engagementRate >= 0.4 ? "amber" : organic ? "rose" : "muted"}
+          tone={dataSparse || !organic ? "muted" : organic.engagementRate >= 0.6 ? "emerald" : organic.engagementRate >= 0.4 ? "amber" : "rose"}
           label="검색 유입 참여율"
-          value={organic ? `${(organic.engagementRate * 100).toFixed(1)}%` : "—"}
-          note={organic
-            ? organic.engagementRate >= 0.6
+          value={organic && organic.sessions > 0 ? `${(organic.engagementRate * 100).toFixed(1)}%` : "—"}
+          note={dataSparse || !organic || organic.sessions === 0
+            ? "Organic Search 세션이 없어 참여율 측정 불가."
+            : organic.engagementRate >= 0.6
               ? "검색으로 들어온 사용자가 잘 머무릅니다. 콘텐츠 의도 매칭 정상."
               : organic.engagementRate >= 0.4
                 ? "참여율 보통. 본문 첫 200자·H2 구조·내부 링크 점검."
-                : "검색 의도 mismatch 의심. 본문 첫 30%에 검색어와 정확히 매칭되는 답을 배치."
-            : "Organic Search 데이터 없음."}
+                : "검색 의도 mismatch 의심. 본문 첫 30%에 검색어와 정확히 매칭되는 답을 배치."}
         />
         <InsightCard
-          tone={newsletterSubmits > 0 ? "emerald" : newsletterFormViews > 0 ? "amber" : "rose"}
+          tone={dataSparse ? "muted" : newsletterSubmits > 0 ? "emerald" : newsletterFormViews > 0 ? "amber" : "rose"}
           label="뉴스레터 funnel"
-          value={`${fmtNum(newsletterFormViews)} → ${fmtNum(newsletterSubmits)}`}
-          note={newsletterFormViews === 0
-            ? "form_view 0 — 폼이 페이지에 노출되지 않거나 SubscribeForm IntersectionObserver 미발화."
-            : newsletterSubmits === 0
-              ? "form_view 발생, submit 0. 폼 UX·이메일 검증·전송 에러 로그 점검."
-              : `전환율 ${((newsletterSubmits / newsletterFormViews) * 100).toFixed(1)}%. 정상 흐름.`}
+          value={dataSparse ? "—" : `${fmtNum(newsletterFormViews)} → ${fmtNum(newsletterSubmits)}`}
+          note={dataSparse
+            ? "측정 데이터 부족."
+            : newsletterFormViews === 0
+              ? "form_view 0 — 폼이 페이지에 노출되지 않거나 SubscribeForm IntersectionObserver 미발화."
+              : newsletterSubmits === 0
+                ? "form_view 발생, submit 0. 폼 UX·이메일 검증·전송 에러 로그 점검."
+                : `전환율 ${((newsletterSubmits / newsletterFormViews) * 100).toFixed(1)}%. 정상 흐름.`}
         />
         <InsightCard
-          tone={keyEventsMissingMark ? "rose" : totalKeyEvents > 0 ? "emerald" : "muted"}
+          tone={dataSparse ? "muted" : keyEventsMissingMark ? "rose" : totalKeyEvents > 0 ? "emerald" : "muted"}
           label="Key event 마킹"
           value={totalKeyEvents > 0 ? fmtNum(totalKeyEvents) : keyEventsMissingMark ? "❗ 누락" : "—"}
           note={keyEventsMissingMark
@@ -951,7 +969,7 @@ function GA4ChannelsTable({ channels }: { channels: GA4Data["channels"] }) {
           </thead>
           <tbody>
             {channels.map((c) => {
-              const isOrganic = c.channel === "Organic Search";
+              const isOrganic = isOrganicSearchChannel(c.channel);
               return (
                 <tr key={c.channel} className={`border-b border-[#1a1a1a] hover:bg-[#1a1a1a] ${isOrganic ? "bg-cyan-950/15" : ""}`}>
                   <td className="px-4 py-2 text-[#ccc]">
@@ -974,8 +992,13 @@ function GA4ChannelsTable({ channels }: { channels: GA4Data["channels"] }) {
 }
 
 // Organic Search 만 필터한 landing page 별 engagement — 검색 유입 콘텐츠 품질.
+// GA4 가 referrer 누락·internal redirect 등으로 path 를 "(not set)" 로 반환하는
+// 행은 본문 분석 노이즈라 별도 합산 표시.
 function GA4OrganicLanding({ rows }: { rows: GA4Data["organicLanding"] }) {
   if (!rows || rows.length === 0) return null;
+  const isNotSet = (path: string) => !path || path === "(not set)";
+  const validRows = rows.filter((r) => !isNotSet(r.path));
+  const notSetSessions = rows.filter((r) => isNotSet(r.path)).reduce((s, r) => s + r.sessions, 0);
   return (
     <>
       <SectionHeader title="검색 유입 콘텐츠 품질" description="Organic Search 로 들어온 세션을 landing page 별로 분해. 참여율이 평균(60%)보다 낮은 페이지는 본문 첫 200자·H2 구조·검색어 매칭 점검 우선." />
@@ -992,13 +1015,15 @@ function GA4OrganicLanding({ rows }: { rows: GA4Data["organicLanding"] }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {validRows.length === 0 ? (
+              <tr><td colSpan={6}><EmptyRows label="Organic Search 도착 페이지 데이터가 없습니다." /></td></tr>
+            ) : validRows.map((r) => {
               const tag = r.engagementRate >= 0.6 ? { tone: "text-emerald-300", label: "양호" }
                 : r.engagementRate >= 0.4 ? { tone: "text-amber-300", label: "보통" }
                 : { tone: "text-rose-300", label: "개선 필요" };
               return (
                 <tr key={r.path} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
-                  <td className="px-4 py-2 text-[#ccc] max-w-[420px] truncate">{r.path || "(not set)"}</td>
+                  <td className="px-4 py-2 text-[#ccc] max-w-[420px] truncate">{r.path}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{fmtNum(r.sessions)}</td>
                   <td className={`px-4 py-2 text-right tabular-nums ${tag.tone}`}>{(r.engagementRate * 100).toFixed(1)}%</td>
                   <td className="px-4 py-2 text-right text-[#888]">{Math.round(r.avgSessionDuration)}s</td>
@@ -1007,6 +1032,12 @@ function GA4OrganicLanding({ rows }: { rows: GA4Data["organicLanding"] }) {
                 </tr>
               );
             })}
+            {notSetSessions > 0 && (
+              <tr className="border-b border-[#1a1a1a] bg-[#0d0d0d]">
+                <td className="px-4 py-2 text-[#666]" colSpan={2}>분석 불가 (path “(not set)”) — referrer 누락 또는 GA4 internal</td>
+                <td className="px-4 py-2 text-right tabular-nums text-[#666]" colSpan={4}>{fmtNum(notSetSessions)} 세션</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
