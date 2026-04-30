@@ -17,11 +17,11 @@ import { getSupabase } from '../shared/supabase.js';
 //   생기면 운영 사고 위험. HTTP wrapper + 링크 후처리만 책임진다.
 //
 // 전제:
-//   - DASHBOARD_API_URL 환경변수 (기본 http://localhost:3003) 에 dashboard 가 떠있어야 한다.
+//   - DASHBOARD_API_URL 환경변수 (기본 http://localhost:3000) 에 dashboard 가 떠있어야 한다.
 //   - dashboard 는 service-role Supabase 키로 동작하므로 별도 auth 필요 없음 (같은 신뢰 경계).
 export function registerNewsletterTools(server: McpServer, adapter: CMSAdapter): void {
   const sb = getSupabase();
-  const dashboardUrl = (process.env.DASHBOARD_API_URL ?? 'http://localhost:3003').replace(/\/+$/, '');
+  const dashboardUrl = (process.env.DASHBOARD_API_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
   // 선택적 shared-secret. dashboard 쪽에도 DASHBOARD_MCP_SECRET 이 같은 값으로 설정돼야 동작.
   // 미설정 시에는 헤더 없이 호출 → dashboard 도 미설정이면 통과 (backward compat).
   const dashboardSecret = process.env.DASHBOARD_MCP_SECRET ?? null;
@@ -32,7 +32,7 @@ export function registerNewsletterTools(server: McpServer, adapter: CMSAdapter):
       'Send a blog post as a newsletter to subscribers via the dashboard send pipeline.',
       'Optionally records which variant (format=blog) this send was derived from, so the',
       'Content detail page shows the send count on the Variants & Derivatives card.',
-      'Prerequisites: the dashboard app must be running (DASHBOARD_API_URL env var, default http://localhost:3003).',
+      'Prerequisites: the dashboard app must be running (DASHBOARD_API_URL env var, default http://localhost:3000).',
     ].join(' '),
     {
       post_id: z

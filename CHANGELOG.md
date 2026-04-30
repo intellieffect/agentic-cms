@@ -20,7 +20,7 @@ UI proxy 통합 → 실제 "포함" 으로 전환.
 ### After
 - `~/Projects/agentic-cms/editor/` (agentic-cms repo 안의 서브디렉토리, 자체 .venv)
 - Supabase 단일: `euhxmmiqfyptvsvvbbvp` — brxce-editor 테이블 전량 흡수
-- 실행: `cd dashboard && npm run dev:all` → Next(3003) + Python editor(8092) 동시 기동 (concurrently)
+- 실행: `cd dashboard && npm run dev:all` → Next(3000) + Python editor(8092) 동시 기동 (concurrently)
 - `link_video_project_to_variant` 정상 작동 — 방금 검증 완료
 
 ### Phase 별 진행
