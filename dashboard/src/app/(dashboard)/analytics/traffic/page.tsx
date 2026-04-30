@@ -77,7 +77,7 @@ function SectionHeader({ title, description }: { title: string; description: str
 
 export default function TrafficPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-[#777]">트래픽 화면 로딩 중...</div>}>
+    <Suspense fallback={<div className="rounded-xl border border-[#222] bg-[#141414] px-6 py-14 text-center text-sm text-[#777]">트래픽 화면 로딩 중...</div>}>
       <TrafficPageContent />
     </Suspense>
   );
@@ -473,7 +473,7 @@ interface GSCData {
   overview: { totalClicks: number; totalImpressions: number; avgCtr: number; avgPosition: number };
   queries: { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
   pages: { page: string; clicks: number; impressions: number; ctr: number; position: number }[];
-  daily: { date: string; clicks: number; impressions: number }[];
+  daily: { date: string; clicks: number; impressions: number; ctr: number; position: number }[];
   countries?: { country: string; clicks: number; impressions: number; ctr: number; position: number }[];
   devices?: { device: string; clicks: number; impressions: number; ctr: number; position: number }[];
 }
