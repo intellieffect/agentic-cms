@@ -4,15 +4,15 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
   use: {
-    baseURL: 'http://localhost:3003',
+    baseURL: 'http://localhost:3000',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },
   retries: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   webServer: {
-    command: 'PORT=3003 npm run dev',
-    port: 3003,
+    command: 'npm run dev',
+    port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },

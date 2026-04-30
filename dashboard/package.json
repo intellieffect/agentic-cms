@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:all": "concurrently -n next,editor -c cyan,yellow \"next dev\" \"npm run dev:editor 2>/dev/null || true\"",
+    "dev": "next dev --port 3000",
+    "dev:all": "concurrently -n next,editor -c cyan,yellow \"npm run dev\" \"npm run dev:editor 2>/dev/null || true\"",
     "dev:editor": "node scripts/start-editor.js",
     "build": "next build",
     "start": "next start",

@@ -31,8 +31,8 @@ export function BodyProcess({ title, steps, titleFontSize, bodyFontSize, ...colo
         </SlideTitle>
         <div style={{ marginTop: gap['4xl'], display: 'flex', flexDirection: 'column', gap: 0 }}>
           {(items || []).map((step, idx) => (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: gap.xl }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: gap.xl }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12 }}>
                 <div style={{
                   width: 56, height: 56, borderRadius: '50%', background: colors.accentColorEnd ? `linear-gradient(135deg, ${accent}, ${colors.accentColorEnd})` : accent,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
