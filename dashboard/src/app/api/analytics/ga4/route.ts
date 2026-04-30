@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { GA4_CHANNEL_ORGANIC_SEARCH } from "@/lib/analytics/ga4-channels";
+
+// 토글 시 GA4 Data API 호출 수가 비례 증가하므로 5분 segment 캐시.
+// GA4 도 사실상 분 단위 늦게 집계되어 5분 stale 영향 없음.
+export const revalidate = 300;
 
 const PROPERTY_ID = "530816613";
 
@@ -158,7 +163,7 @@ export async function GET(req: NextRequest) {
           dimensionFilter: {
             filter: {
               fieldName: "sessionDefaultChannelGroup",
-              stringFilter: { value: "Organic Search" },
+              stringFilter: { value: GA4_CHANNEL_ORGANIC_SEARCH },
             },
           },
           orderBys: [{ metric: { metricName: "sessions" }, desc: true }],

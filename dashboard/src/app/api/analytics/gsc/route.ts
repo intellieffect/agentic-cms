@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
+// GSC searchanalytics.query 호출이 한 요청 당 9회 (queries/pages/daily/countries
+// /devices + tracked 키워드 수만큼). 사용자 토글마다 GSC quota 가 비례 증가하므로
+// 5분 segment 캐시로 burst 차단. GSC 데이터는 일 단위 갱신이라 5분 stale 영향 없음.
+export const revalidate = 300;
+
 // GSC 분석 대상 site URL. NEXT_PUBLIC_GSC_SITE_URL (optional) 이 있으면 우선,
 // 없으면 NEXT_PUBLIC_SITE_URL 로 fallback. 둘 다 없으면 runtime error.
 const SITE_URL =
