@@ -7,15 +7,22 @@ export const TableRowElement = React.forwardRef<
     HTMLTableRowElement,
     any
 >(({className, children, ...props}, ref) => {
+    const {
+        editor, element, nodeProps, path, attributes, root, rootProps,
+        setOption, getOption, getOptions, setOptions, mergeOptions,
+        blockSelectionOptions,
+        ...domProps
+    } = props as any;
     return (
         <tr
+            {...(attributes ?? {})}
+            {...domProps}
             ref={ref}
             className={cn(
                 'transition-colors hover:bg-gray-50/30',
                 'border-b border-gray-100 last:border-0',
                 className
             )}
-            {...props}
         >
             {children}
         </tr>
