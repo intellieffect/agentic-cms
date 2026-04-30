@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       "page_not_found", "outbound_click",
     ];
 
-    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes, ctaRes] = await Promise.all([
+    const [overviewRes, pagesRes, sourcesRes, dailyRes, eventsRes, ctaRes, channelsRes, organicLandingRes] = await Promise.all([
       client.properties.runReport({
         property: `properties/${PROPERTY_ID}`,
         requestBody: {
@@ -125,6 +125,46 @@ export async function GET(req: NextRequest) {
           orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
         },
       }),
+      // 채널별 세션·참여 — Organic Search 비중과 전환 funnel 분석용.
+      client.properties.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        requestBody: {
+          dateRanges: [{ startDate, endDate: "today" }],
+          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          metrics: [
+            { name: "sessions" },
+            { name: "engagedSessions" },
+            { name: "engagementRate" },
+            { name: "averageSessionDuration" },
+            { name: "keyEvents" },
+          ],
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: "10",
+        },
+      }),
+      // Organic Search 만 필터한 landing page 별 engagement — 검색 유입 콘텐츠 품질 측정.
+      client.properties.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        requestBody: {
+          dateRanges: [{ startDate, endDate: "today" }],
+          dimensions: [{ name: "landingPage" }],
+          metrics: [
+            { name: "sessions" },
+            { name: "engagedSessions" },
+            { name: "engagementRate" },
+            { name: "averageSessionDuration" },
+            { name: "keyEvents" },
+          ],
+          dimensionFilter: {
+            filter: {
+              fieldName: "sessionDefaultChannelGroup",
+              stringFilter: { value: "Organic Search" },
+            },
+          },
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: "20",
+        },
+      }),
     ]);
 
     const ov = overviewRes.data.rows?.[0]?.metricValues || [];
@@ -197,7 +237,25 @@ export async function GET(req: NextRequest) {
       count: Number(r.metricValues?.[0]?.value || 0),
     }));
 
-    return NextResponse.json({ overview, pages, sources, daily, events, conversions, ctaClicks });
+    const channels = (channelsRes.data.rows || []).map((r) => ({
+      channel: r.dimensionValues?.[0]?.value || "(unknown)",
+      sessions: Number(r.metricValues?.[0]?.value || 0),
+      engagedSessions: Number(r.metricValues?.[1]?.value || 0),
+      engagementRate: Number(r.metricValues?.[2]?.value || 0),
+      avgSessionDuration: Number(r.metricValues?.[3]?.value || 0),
+      keyEvents: Number(r.metricValues?.[4]?.value || 0),
+    }));
+
+    const organicLanding = (organicLandingRes.data.rows || []).map((r) => ({
+      path: r.dimensionValues?.[0]?.value || "",
+      sessions: Number(r.metricValues?.[0]?.value || 0),
+      engagedSessions: Number(r.metricValues?.[1]?.value || 0),
+      engagementRate: Number(r.metricValues?.[2]?.value || 0),
+      avgSessionDuration: Number(r.metricValues?.[3]?.value || 0),
+      keyEvents: Number(r.metricValues?.[4]?.value || 0),
+    }));
+
+    return NextResponse.json({ overview, pages, sources, daily, events, conversions, ctaClicks, channels, organicLanding });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
