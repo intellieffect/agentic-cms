@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrafficCompareView } from "./_components/TrafficCompareView";
@@ -28,7 +28,62 @@ function fmtNum(n: number) {
   return n.toLocaleString();
 }
 
+function EmptyRows({ label = "표시할 데이터가 없습니다." }: { label?: string }) {
+  return <div className="px-4 py-10 text-center text-sm text-[#666]">{label}</div>;
+}
+
+function PeriodSelector({ days, onChange }: { days: Period; onChange: (days: Period) => void }) {
+  return (
+    <div className="flex gap-1">
+      {([7, 30, 90] as Period[]).map((p) => (
+        <button key={p} onClick={() => onChange(p)} className={`rounded px-3 py-1 text-xs font-medium transition-colors ${days === p ? "bg-[#333] text-white" : "text-[#888] hover:text-white"}`}>{p}일</button>
+      ))}
+    </div>
+  );
+}
+
+function SourceGuide({ title, summary, items }: { title: string; summary: string; items: string[] }) {
+  return (
+    <div className="min-w-[280px] flex-1 rounded-xl border border-[#222] bg-[#141414] p-4">
+      <div className="text-sm font-semibold text-[#f3f3f3]">{title}</div>
+      <p className="mt-2 text-sm leading-6 text-[#9a9a9a]">{summary}</p>
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        {items.map((item) => (
+          <div key={item} className="rounded-lg border border-[#242424] bg-[#101010] px-3 py-2 text-xs leading-5 text-[#b8b8b8]">{item}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="rounded-xl border border-[#222] bg-[#141414] p-4">
+      <div className="text-xs text-[#888]">{label}</div>
+      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
+      <div className="mt-2 text-xs leading-5 text-[#666]">{note}</div>
+    </div>
+  );
+}
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <div className="text-sm font-semibold text-[#ddd]">{title}</div>
+      <p className="mt-1 text-xs leading-5 text-[#777]">{description}</p>
+    </div>
+  );
+}
+
 export default function TrafficPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-[#777]">트래픽 화면 로딩 중...</div>}>
+      <TrafficPageContent />
+    </Suspense>
+  );
+}
+
+function TrafficPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -201,27 +256,29 @@ function GA4Tab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-1">
-        {([7, 30, 90] as Period[]).map((p) => (
-          <button key={p} onClick={() => setDays(p)} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${days === p ? "bg-[#333] text-white" : "text-[#888] hover:text-white"}`}>{p}일</button>
-        ))}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <SourceGuide
+          title="GA4: 방문 이후의 행동 데이터"
+          summary="사용자가 사이트에 들어온 뒤 어떤 페이지를 보고, 어떤 유입원에서 세션이 생기고, 어떤 이벤트와 전환을 남겼는지 확인합니다. 검색 노출이나 순위가 아니라 사이트 내부 행동을 판단하는 탭입니다."
+          items={[
+            "콘텐츠 소비: 페이지뷰, 사용자, 평균 체류",
+            "유입 품질: 세션, 소스별 이탈률",
+            "전환 행동: 뉴스레터, 부킹, CTA, 커스텀 이벤트",
+          ]}
+        />
+        <PeriodSelector days={days} onChange={setDays} />
       </div>
-      <div className="grid grid-cols-5 gap-3">
-        {[
-          { label: "페이지뷰", value: fmtNum(data.overview.pageViews) },
-          { label: "사용자", value: fmtNum(data.overview.users) },
-          { label: "세션", value: fmtNum(data.overview.sessions) },
-          { label: "평균 세션 시간", value: `${Math.round(data.overview.avgSessionDuration)}s` },
-          { label: "이탈률", value: `${(data.overview.bounceRate * 100).toFixed(1)}%` },
-        ].map((c) => (
-          <div key={c.label} className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-            <div className="text-xs text-[#888] mb-1">{c.label}</div>
-            <div className="text-2xl font-bold">{c.value}</div>
-          </div>
-        ))}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricCard label="페이지뷰" value={fmtNum(data.overview.pageViews)} note="화면/페이지가 조회된 총량입니다." />
+        <MetricCard label="사용자" value={fmtNum(data.overview.users)} note="기간 내 이벤트를 남긴 고유 사용자입니다." />
+        <MetricCard label="세션" value={fmtNum(data.overview.sessions)} note="사이트 방문 흐름이 시작된 횟수입니다." />
+        <MetricCard label="평균 세션 시간" value={`${Math.round(data.overview.avgSessionDuration)}s`} note="방문당 머무른 평균 시간입니다." />
+        <MetricCard label="이탈률" value={`${(data.overview.bounceRate * 100).toFixed(1)}%`} note="참여 조건을 충족하지 못한 세션 비율입니다." />
       </div>
+
       <div className="bg-[#141414] border border-[#222] rounded-xl p-4">
-        <div className="text-sm font-medium mb-4">GA4 일별 PV / 사용자</div>
+        <SectionHeader title="콘텐츠 소비 추이" description="일별 페이지뷰와 사용자를 함께 보며 콘텐츠 소비량이 실제 방문자 증가를 동반했는지 확인합니다." />
         {data.daily.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data.daily}>
@@ -237,8 +294,11 @@ function GA4Tab() {
           <div className="text-center py-10 text-[#555] text-sm">차트 데이터 없음</div>
         )}
       </div>
+
       <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
-        <div className="p-4 text-sm font-medium">트래픽 소스</div>
+        <div className="p-4">
+          <SectionHeader title="어떤 유입원이 질 좋은 방문을 만들었는가" description="소스별 세션과 사용자를 보고, 이탈률로 유입 품질을 비교합니다. 캠페인/검색/소셜/직접 유입의 방문 이후 행동을 보는 영역입니다." />
+        </div>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#222] text-[#888]">
@@ -249,19 +309,24 @@ function GA4Tab() {
             </tr>
           </thead>
           <tbody>
-            {data.sources.map((s) => (
+            {data.sources.length > 0 ? data.sources.map((s) => (
               <tr key={s.source} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
                 <td className="px-4 py-2 text-[#ccc]">{s.source}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmtNum(s.sessions)}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmtNum(s.users)}</td>
                 <td className="px-4 py-2 text-right text-[#888]">{(s.bounceRate * 100).toFixed(1)}%</td>
               </tr>
-            ))}
+            )) : (
+              <tr><td colSpan={4}><EmptyRows /></td></tr>
+            )}
           </tbody>
         </table>
       </div>
+
       <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
-        <div className="p-4 text-sm font-medium">인기 페이지</div>
+        <div className="p-4">
+          <SectionHeader title="어떤 페이지가 방문 후 소비되는가" description="페이지별 조회와 사용자, 평균 체류를 비교해 콘텐츠가 실제로 읽히는지 확인합니다." />
+        </div>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#222] text-[#888]">
@@ -272,14 +337,16 @@ function GA4Tab() {
             </tr>
           </thead>
           <tbody>
-            {data.pages.map((p) => (
+            {data.pages.length > 0 ? data.pages.map((p) => (
               <tr key={p.path} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
                 <td className="px-4 py-2 text-[#ccc] max-w-[300px] truncate">{p.path}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmtNum(p.pageViews)}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{fmtNum(p.users)}</td>
                 <td className="px-4 py-2 text-right text-[#888]">{Math.round(p.avgDuration)}s</td>
               </tr>
-            ))}
+            )) : (
+              <tr><td colSpan={4}><EmptyRows /></td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -287,30 +354,12 @@ function GA4Tab() {
       {/* 전환 퍼널 */}
       {data.conversions && (
         <>
-          <div className="text-sm font-medium text-[#ccc] mt-2">전환 퍼널</div>
-          <div className="grid grid-cols-4 gap-3">
-            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-              <div className="text-xs text-[#888] mb-1">뉴스레터 전환</div>
-              <div className="text-2xl font-bold">{(data.conversions.newsletter.rate * 100).toFixed(1)}%</div>
-              <div className="text-xs text-[#555] mt-1">
-                뷰 {fmtNum(data.conversions.newsletter.formViews)} → 제출 {fmtNum(data.conversions.newsletter.submits)}
-              </div>
-            </div>
-            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-              <div className="text-xs text-[#888] mb-1">부킹 전환</div>
-              <div className="text-2xl font-bold">{(data.conversions.booking.rate * 100).toFixed(1)}%</div>
-              <div className="text-xs text-[#555] mt-1">
-                뷰 {fmtNum(data.conversions.booking.pageViews)} → 제출 {fmtNum(data.conversions.booking.submits)} → 완료 {fmtNum(data.conversions.booking.completes)}
-              </div>
-            </div>
-            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-              <div className="text-xs text-[#888] mb-1">회원가입</div>
-              <div className="text-2xl font-bold">{fmtNum(data.conversions.signups)}</div>
-            </div>
-            <div className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-              <div className="text-xs text-[#888] mb-1">로그인</div>
-              <div className="text-2xl font-bold">{fmtNum(data.conversions.logins)}</div>
-            </div>
+          <SectionHeader title="어떤 행동이 전환으로 이어졌는가" description="GA4 커스텀 이벤트로 수집한 뉴스레터, 부킹, 가입, 로그인 흐름입니다. 이벤트가 누락되면 실제 전환보다 낮게 보일 수 있습니다." />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="뉴스레터 전환" value={`${(data.conversions.newsletter.rate * 100).toFixed(1)}%`} note={`폼 뷰 ${fmtNum(data.conversions.newsletter.formViews)} -> 제출 ${fmtNum(data.conversions.newsletter.submits)}`} />
+            <MetricCard label="부킹 전환" value={`${(data.conversions.booking.rate * 100).toFixed(1)}%`} note={`뷰 ${fmtNum(data.conversions.booking.pageViews)} -> 제출 ${fmtNum(data.conversions.booking.submits)} -> 완료 ${fmtNum(data.conversions.booking.completes)}`} />
+            <MetricCard label="회원가입" value={fmtNum(data.conversions.signups)} note="sign_up 이벤트 수입니다." />
+            <MetricCard label="로그인" value={fmtNum(data.conversions.logins)} note="login 이벤트 수입니다." />
           </div>
         </>
       )}
@@ -329,13 +378,10 @@ function GA4Tab() {
         };
         return (
           <>
-            <div className="text-sm font-medium text-[#ccc] mt-2">블로그 참여도</div>
-            <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${blogEvents.length}, minmax(0, 1fr))` }}>
+            <SectionHeader title="블로그 내부 참여" description="글 조회, 공유, 검색, 카테고리 클릭처럼 CMS 콘텐츠 운영에 직접 연결되는 이벤트입니다." />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {blogEvents.map((e) => (
-                <div key={e.eventName} className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-                  <div className="text-xs text-[#888] mb-1">{BLOG_LABEL[e.eventName] || e.eventName}</div>
-                  <div className="text-2xl font-bold">{fmtNum(e.count)}</div>
-                </div>
+                <MetricCard key={e.eventName} label={BLOG_LABEL[e.eventName] || e.eventName} value={fmtNum(e.count)} note={e.eventName} />
               ))}
             </div>
           </>
@@ -345,7 +391,9 @@ function GA4Tab() {
       {/* 커스텀 이벤트 테이블 */}
       {data.events && data.events.length > 0 && (
         <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
-          <div className="p-4 text-sm font-medium">커스텀 이벤트</div>
+          <div className="p-4">
+            <SectionHeader title="수집 중인 커스텀 이벤트" description="운영 이벤트가 GA4에 정상 수집되는지 확인하는 검증용 목록입니다. 전환 판단은 위 퍼널과 CTA 영역을 우선 봅니다." />
+          </div>
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-[#222] text-[#888]">
@@ -368,7 +416,9 @@ function GA4Tab() {
       {/* CTA 클릭 테이블 */}
       {data.ctaClicks && data.ctaClicks.length > 0 && (
         <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
-          <div className="p-4 text-sm font-medium">CTA 클릭</div>
+          <div className="p-4">
+            <SectionHeader title="어떤 CTA가 반응을 만들었는가" description="cta_id 커스텀 차원으로 묶은 클릭 수입니다. CTA 문구와 위치별 실험 결과를 비교하는 데 사용합니다." />
+          </div>
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-[#222] text-[#888]">
@@ -419,6 +469,7 @@ const DEVICE_NAME_KO: Record<string, string> = {
 const formatDevice = (code: string): string => DEVICE_NAME_KO[code.toUpperCase()] ?? code;
 
 interface GSCData {
+  meta?: { startDate: string; endDate: string; siteUrl: string; rowLimit: number };
   overview: { totalClicks: number; totalImpressions: number; avgCtr: number; avgPosition: number };
   queries: { query: string; clicks: number; impressions: number; ctr: number; position: number }[];
   pages: { page: string; clicks: number; impressions: number; ctr: number; position: number }[];
@@ -469,26 +520,33 @@ function GSCTab() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-1">
-        {([7, 30, 90] as Period[]).map((p) => (
-          <button key={p} onClick={() => setDays(p)} className={`px-3 py-1 rounded text-xs font-medium transition-colors ${days === p ? "bg-[#333] text-white" : "text-[#888] hover:text-white"}`}>{p}일</button>
-        ))}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <SourceGuide
+          title="Search Console: Google 검색결과의 발견 데이터"
+          summary="사용자가 사이트에 들어오기 전, Google 검색결과에서 어떤 검색어와 페이지가 노출되고 클릭됐는지 확인합니다. 사이트 내부 체류나 전환이 아니라 검색 수요, SERP 노출, CTR, 평균 순위를 판단하는 탭입니다."
+          items={[
+            "검색 수요: 검색어별 노출과 클릭",
+            "SEO 성과: 페이지별 CTR과 평균 순위",
+            "검색 환경: 국가와 기기별 검색 반응",
+          ]}
+        />
+        <PeriodSelector days={days} onChange={setDays} />
       </div>
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: "총 클릭수", value: fmtNum(data.overview.totalClicks) },
-          { label: "총 노출수", value: fmtNum(data.overview.totalImpressions) },
-          { label: "평균 CTR", value: `${(data.overview.avgCtr * 100).toFixed(1)}%` },
-          { label: "평균 순위", value: data.overview.avgPosition.toFixed(1) },
-        ].map((c) => (
-          <div key={c.label} className="p-4 bg-[#141414] border border-[#222] rounded-xl">
-            <div className="text-xs text-[#888] mb-1">{c.label}</div>
-            <div className="text-2xl font-bold">{c.value}</div>
-          </div>
-        ))}
+      {data.meta && (
+        <div className="text-xs text-[#666]">
+          기준 기간: {data.meta.startDate} ~ {data.meta.endDate} · 사이트: {data.meta.siteUrl} · 표는 클릭수 상위 {data.meta.rowLimit}개
+        </div>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="총 클릭수" value={fmtNum(data.overview.totalClicks)} note="Google 검색결과에서 사이트로 들어온 클릭입니다." />
+        <MetricCard label="총 노출수" value={fmtNum(data.overview.totalImpressions)} note="검색결과에 사이트가 표시된 횟수입니다." />
+        <MetricCard label="평균 CTR" value={`${(data.overview.avgCtr * 100).toFixed(1)}%`} note="클릭수 / 노출수입니다. 제목과 스니펫 반응을 봅니다." />
+        <MetricCard label="평균 순위" value={data.overview.avgPosition.toFixed(1)} note="검색결과에서 사이트의 평균 게재 위치입니다." />
       </div>
+
       <div className="bg-[#141414] border border-[#222] rounded-xl p-4">
-        <div className="text-sm font-medium mb-4">일별 클릭 / 노출</div>
+        <SectionHeader title="검색 노출이 클릭으로 이어지는가" description="일별 노출과 클릭을 함께 봅니다. 노출은 늘지만 클릭이 따라오지 않으면 제목, 메타 설명, 검색 의도 정합성을 먼저 점검합니다." />
         {data.daily.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data.daily}>
@@ -511,6 +569,22 @@ function GSCTab() {
         ))}
       </div>
       <div className="bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
+        <div className="p-4">
+          <SectionHeader
+            title={
+              view === "queries" ? "어떤 검색어가 수요를 만드는가" :
+              view === "pages" ? "어떤 페이지가 검색에서 선택되는가" :
+              view === "countries" ? "어느 국가에서 검색 반응이 오는가" :
+              "어떤 기기에서 검색 반응이 오는가"
+            }
+            description={
+              view === "queries" ? "검색어별 노출은 수요, CTR은 검색결과 매력도, 순위는 SEO 경쟁력을 보는 기준입니다." :
+              view === "pages" ? "페이지별 클릭과 CTR로 검색 유입을 만드는 콘텐츠와 개선이 필요한 페이지를 구분합니다." :
+              view === "countries" ? "국가별 검색 반응으로 언어, 지역 콘텐츠, 배포 우선순위를 판단합니다." :
+              "기기별 CTR과 순위 차이로 모바일/데스크톱 검색 경험 개선 우선순위를 판단합니다."
+            }
+          />
+        </div>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#222] text-[#888]">
@@ -528,6 +602,9 @@ function GSCTab() {
                 view === "pages" ? data.pages :
                 view === "countries" ? (data.countries ?? []) :
                 (data.devices ?? []);
+              if (rows.length === 0) {
+                return <tr><td colSpan={5}><EmptyRows /></td></tr>;
+              }
               return rows.map((r) => {
                 const rawKey =
                   view === "queries" ? (r as GSCData["queries"][0]).query :

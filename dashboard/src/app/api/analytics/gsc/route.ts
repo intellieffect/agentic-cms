@@ -38,11 +38,12 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const days = Number(req.nextUrl.searchParams.get("days") || "7");
+  const daysParam = Number(req.nextUrl.searchParams.get("days") || "7");
+  const days = [7, 30, 90].includes(daysParam) ? daysParam : 7;
   const endDate = new Date();
   endDate.setDate(endDate.getDate() - 1);
   const startDate = new Date(endDate);
-  startDate.setDate(startDate.getDate() - days);
+  startDate.setDate(startDate.getDate() - (days - 1));
 
   try {
     const client = await getClient();
@@ -114,15 +115,16 @@ export async function GET(req: NextRequest) {
       date: r.keys?.[0] || "",
       clicks: r.clicks || 0,
       impressions: r.impressions || 0,
-    }));
+      ctr: r.ctr || 0,
+      position: r.position || 0,
+    })).sort((a, b) => a.date.localeCompare(b.date));
 
-    const totalClicks = queries.reduce((s, q) => s + q.clicks, 0);
-    const totalImpressions = queries.reduce((s, q) => s + q.impressions, 0);
+    const totalClicks = daily.reduce((sum, row) => sum + row.clicks, 0);
+    const totalImpressions = daily.reduce((sum, row) => sum + row.impressions, 0);
     const avgCtr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
-    const avgPosition =
-      queries.length > 0
-        ? queries.reduce((s, q) => s + q.position, 0) / queries.length
-        : 0;
+    const avgPosition = totalImpressions > 0
+      ? daily.reduce((sum, row) => sum + row.position * row.impressions, 0) / totalImpressions
+      : 0;
 
     const countries = (countriesRes.data.rows || []).map((r) => ({
       country: r.keys?.[0] || "",
@@ -141,6 +143,12 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({
+      meta: {
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+        siteUrl: SITE_URL,
+        rowLimit: 20,
+      },
       overview: { totalClicks, totalImpressions, avgCtr, avgPosition },
       queries,
       pages,
