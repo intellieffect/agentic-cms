@@ -6,12 +6,31 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || undefined;
+    const categorySlug = searchParams.get("category") || undefined;
     const validSorts = ["created_at", "updated_at", "published_at", "title"];
     const rawSort = searchParams.get("sort") || "created_at";
     const sort = validSorts.includes(rawSort) ? rawSort : "created_at";
     const order = searchParams.get("order") || "desc";
 
     const sb = getSupabase();
+
+    let postIdFilter: string[] | null = null;
+    if (categorySlug) {
+      const { data: catRows, error: catErr } = await sb
+        .from("blog_post_categories")
+        .select("post_id, blog_categories!inner(slug)")
+        .eq("blog_categories.slug", categorySlug);
+
+      if (catErr) {
+        return NextResponse.json({ error: catErr.message }, { status: 500 });
+      }
+
+      postIdFilter = (catRows ?? []).flatMap((row) => (row.post_id ? [row.post_id] : []));
+
+      if (postIdFilter.length === 0) {
+        return NextResponse.json({ posts: [], total: 0 });
+      }
+    }
 
     let query = sb
       .from("blog_posts")
@@ -22,6 +41,10 @@ export async function GET(req: Request) {
 
     if (status) {
       query = query.eq("status", status);
+    }
+
+    if (postIdFilter) {
+      query = query.in("id", postIdFilter);
     }
 
     const { data, error } = await query;
