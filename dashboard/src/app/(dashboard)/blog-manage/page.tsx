@@ -38,6 +38,12 @@ const NEWSLETTER_BADGE: Record<string, { label: string; className: string }> = {
 type StatusFilter = "all" | "draft" | "published" | "archived";
 type SortBy = "created_at" | "updated_at";
 
+interface CategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 function renderNewsletterSummary(post: BlogPost) {
   if (!post.newsletter_status) {
     return <span className="text-[#555] text-xs">미발송</span>;
@@ -70,6 +76,21 @@ export default function BlogManagePage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("created_at");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch("/api/blog-manage/categories");
+        const data = await res.json();
+        setCategories(data.categories || []);
+      } catch (e) {
+        console.error("Failed to fetch categories", e);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -77,6 +98,7 @@ export default function BlogManagePage() {
       try {
         const params = new URLSearchParams();
         if (statusFilter !== "all") params.set("status", statusFilter);
+        if (categoryFilter !== "all") params.set("category", categoryFilter);
         params.set("sort", sortBy);
         params.set("order", "desc");
 
@@ -91,7 +113,7 @@ export default function BlogManagePage() {
     };
 
     fetchPosts();
-  }, [statusFilter, sortBy]);
+  }, [statusFilter, sortBy, categoryFilter]);
 
   const filters: { value: StatusFilter; label: string }[] = [
     { value: "all", label: "전체" },
@@ -120,6 +142,18 @@ export default function BlogManagePage() {
             </button>
           ))}
         </div>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[#333] bg-[#0a0a0a] text-sm text-[#fafafa] outline-none"
+        >
+          <option value="all">전체 카테고리</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.slug}>
+              {c.name}
+            </option>
+          ))}
+        </select>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortBy)}
